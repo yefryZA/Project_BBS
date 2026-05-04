@@ -7,16 +7,51 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <style>
-        :root { --dark: #0a192f; --light-dark: #112240; --gold: #ffb400; --green: #2ecc71; --red: #e74c3c; --text: #ccd6f6; }
+        :root { --dark: #0a192f; --light-dark: #112240; --gold: #ffb400; --green: #2ecc71; --red: #e74c3c; --text: #ccd6f6; --slate: #8892b0; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--dark); color: var(--text); padding: 20px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 450px; }
         .btn { width: 100%; padding: 20px; border: none; border-radius: 15px; color: white; font-weight: bold; cursor: pointer; margin-bottom: 15px; font-size: 16px; }
         .bg-green { background: var(--green); }
         .bg-red { background: var(--red); }
         .btn-pdf { background: transparent; border: 1px solid var(--gold); color: var(--gold); }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); padding: 20px; }
+        
+        /* Modal Style */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); padding: 20px; z-index: 999; }
         .modal-content { background: var(--light-dark); padding: 25px; border-radius: 20px; border: 1px solid var(--gold); margin-top: 50px; }
         input { width: 100%; padding: 15px; margin: 10px 0; background: var(--dark); border: 1px solid #233554; color: white; border-radius: 10px; box-sizing: border-box; }
+        
+        /* --- STYLE DROPDOWN KOREKSI --- */
+        .dropdown-header { 
+            background: var(--light-dark); 
+            padding: 15px; 
+            border-radius: 12px; 
+            border: 1px solid var(--gold); 
+            cursor: pointer; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            margin-top: 20px;
+            font-weight: bold;
+            color: var(--gold);
+        }
+        .dropdown-content { 
+            max-height: 0; 
+            overflow: hidden; 
+            transition: max-height 0.3s ease-out; 
+            background: rgba(17, 34, 64, 0.5);
+            border-radius: 0 0 12px 12px;
+        }
+        .dropdown-content.active { 
+            max-height: 500px; 
+            overflow-y: auto; 
+            border: 1px solid #233554;
+            border-top: none;
+            padding: 10px;
+        }
+        .item-koreksi { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #233554; }
+        .btn-hapus { background: none; border: 1px solid var(--red); color: var(--red); border-radius: 8px; cursor: pointer; padding: 5px 10px; font-size: 11px; }
+        .arrow { transition: transform 0.3s; }
+        .arrow.rotate { transform: rotate(180deg); }
     </style>
 </head>
 <body>
@@ -25,16 +60,24 @@
     <button class="btn bg-green" onclick="openModal('IN')">➕ TAMBAH SALDO</button>
     <button class="btn bg-red" onclick="openModal('OUT')">💸 INPUT PENGELUARAN</button>
     <button class="btn btn-pdf" onclick="generatePDF()">📄 DOWNLOAD LAPORAN PDF</button>
+
+    <div class="dropdown-header" onclick="toggleDropdown()">
+        <span>⚙️ PENGATURAN / KOREKSI DATA</span>
+        <span class="arrow" id="arrow-icon">▼</span>
+    </div>
+    <div class="dropdown-content" id="dropdown-area">
+        <div id="list-koreksi">
+            <p style="text-align:center; color:var(--slate); font-size: 12px; padding: 20px;">Memuat riwayat...</p>
+        </div>
+    </div>
 </div>
 
 <div id="modal-kas" class="modal">
     <div class="modal-content">
         <h3 id="modal-title" style="color:var(--gold)">INPUT DATA</h3>
         <input type="text" id="kas-ket" placeholder="Keterangan Transaksi">
-        
         <label style="font-size: 11px; color: var(--slate);">Nominal (Otomatis Titik)</label>
         <input type="text" id="kas-nom" placeholder="0" oninput="formatRupiah(this)">
-        
         <input type="hidden" id="kas-tipe">
         <button class="btn bg-green" onclick="simpan()">SIMPAN DATA</button>
         <button class="btn" onclick="closeModal()" style="color: black !important; background-color: #f1f1f1;">BATAL</button>
@@ -43,7 +86,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
-    import { getDatabase, ref, push, get, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+    import { getDatabase, ref, push, get, onValue, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyA_wvEsCCOEjiwxui7_pdOrG8-xMBCw3mw",
@@ -57,140 +100,111 @@
     const db = getDatabase(app);
     const pathKas = `BUKU_KAS`;
 
+    // --- FUNGSI TOGGLE DROPDOWN ---
+    window.toggleDropdown = () => {
+        const content = document.getElementById('dropdown-area');
+        const arrow = document.getElementById('arrow-icon');
+        content.classList.toggle('active');
+        arrow.classList.toggle('rotate');
+    }
+
     window.openModal = (t) => {
         document.getElementById('kas-tipe').value = t;
         document.getElementById('modal-title').innerText = t === 'IN' ? "TAMBAH SALDO" : "PENGELUARAN";
         document.getElementById('modal-kas').style.display = 'block';
     }
-    window.closeModal = () => document.getElementById('modal-kas').style.display = 'none';
+    window.closeModal = () => {
+        document.getElementById('modal-kas').style.display = 'none';
+        document.getElementById('kas-ket').value = "";
+        document.getElementById('kas-nom').value = "";
+    }
+
+    window.formatRupiah = (objek) => {
+        let angka = objek.value.replace(/[^,\d]/g, "").toString();
+        let split = angka.split(",");
+        let sisa = split[0].length % 3;
+        let rupiah = split[0].substr(0, sisa);
+        let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+        if (ribuan) {
+            let separator = sisa ? "." : "";
+            rupiah += separator + ribuan.join(".");
+        }
+        rupiah = split[1] != undefined ? rupiah + "," + split[1] : rupiah;
+        objek.value = rupiah;
+    }
 
     window.simpan = async () => {
         const k = document.getElementById('kas-ket').value;
-        const n = Number(document.getElementById('kas-nom').value);
+        const nRaw = document.getElementById('kas-nom').value;
         const t = document.getElementById('kas-tipe').value;
-        if(!k || !n) return alert("Isi Bro!");
-        await push(ref(db, pathKas), {
-            tgl: new Date().toLocaleDateString('id-ID'),
-            jam: new Date().toLocaleTimeString('id-ID'),
-            keterangan: k.toUpperCase(),
-            nominal: n,
-            tipe: t,
-            ts: serverTimestamp()
-        });
-        alert("Berhasil!"); closeModal();
+        const n = Number(nRaw.replace(/\./g, ''));
+        if(!k || !n) return alert("Isi Data Dulu Bang!");
+        try {
+            await push(ref(db, pathKas), {
+                tgl: new Date().toLocaleDateString('id-ID'),
+                jam: new Date().toLocaleTimeString('id-ID'),
+                keterangan: k.toUpperCase(),
+                nominal: n,
+                tipe: t,
+                ts: serverTimestamp()
+            });
+            alert("Tersimpan!"); closeModal();
+        } catch (e) { alert("Error: " + e.message); }
+    }
+
+    onValue(ref(db, pathKas), (snapshot) => {
+        let html = "";
+        const data = snapshot.val();
+        if(data) {
+            Object.keys(data).reverse().forEach(key => {
+                const item = data[key];
+                const warna = item.tipe === 'IN' ? 'var(--green)' : 'var(--red)';
+                html += `
+                    <div class="item-koreksi">
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; font-size: 13px; color: ${warna}">${item.keterangan}</div>
+                            <div style="color: var(--slate); font-size: 10px;">${item.tgl} | Rp ${item.nominal.toLocaleString('id-ID')}</div>
+                        </div>
+                        <button class="btn-hapus" onclick="hapusData('${key}', '${item.keterangan}')">HAPUS</button>
+                    </div>`;
+            });
+        }
+        document.getElementById('list-koreksi').innerHTML = html || "<p style='padding:20px;text-align:center;font-size:12px;'>Belum ada data</p>";
+    });
+
+    window.hapusData = (id, ket) => {
+        if(confirm(`Hapus transaksi: "${ket}"?`)) {
+            remove(ref(db, `${pathKas}/${id}`)).then(() => alert("Terhapus!"));
+        }
     }
 
     window.generatePDF = async () => {
-    const snap = await get(ref(db, pathKas));
-    if(!snap.exists()) return alert("Data Kosong!");
-    
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    // Header Laporan
-    doc.setFontSize(16);
-    doc.text("LAPORAN KAS PT. BBS", 105, 15, { align: "center" });
-    doc.setFontSize(10);
-    doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, 14, 22);
-
-    let s = 0;
-    const body = Object.values(snap.val()).map((v, i) => {
-        s += v.tipe === 'IN' ? v.nominal : -v.nominal;
-        return [
-            i + 1, 
-            v.tgl, 
-            v.keterangan, 
-            v.tipe === 'IN' ? v.nominal.toLocaleString('id-ID') : '-', 
-            v.tipe === 'OUT' ? v.nominal.toLocaleString('id-ID') : '-', 
-            s.toLocaleString('id-ID')
-        ];
-    });
-
-    doc.autoTable({ 
-        head: [['NO', 'TGL', 'KETERANGAN', 'IN (Rp)', 'OUT (Rp)', 'SALDO (Rp)']], 
-        body: body, 
-        startY: 28,
-        theme: 'grid',
-        headStyles: { fillColor: [255, 180, 0], textColor: [0, 0, 0] }
-    });
-
-    // --- BAGIAN TANDA TANGAN ---
-    const finalY = doc.lastAutoTable.finalY + 20; 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const rightPos = pageWidth - 60; 
-
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text("Dibuat oleh,", rightPos, finalY);
-    
-    // Nama Manager
-    doc.setFont("helvetica", "bold");
-    doc.text("Yefry ZA.", rightPos, finalY + 25); 
-    
-    // Garis Bawah Nama (Panjang disesuaikan agar tidak kepanjangan)
-    const textWidth = doc.getTextWidth("Yefry ZA."); // Menghitung lebar teks nama
-    doc.line(rightPos, finalY + 26, rightPos + textWidth, finalY + 26);
-
-    // Jabatan
-    doc.setFont("helvetica", "normal");
-    doc.text("Manager", rightPos, finalY + 31);
-
-    // --- FOOTER DI BAWAH KERTAS ---
- // --- FOOTER DI BAWAH KERTAS ---
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150); // Warna abu-abu samar
-    
-    // Set font ke helvetica dan gaya italic (miring)
-    doc.setFont("helvetica", "italic"); 
-    
-    doc.text("Laporan ini dibuat secara otomatis oleh system digital PT. BBS", pageWidth / 2, pageHeight - 10, { align: "center" });
-    // Simpan PDF
-    doc.save(`Laporan_Kas_BBS_${new Date().getTime()}.pdf`);
-}
-
-    // Fungsi Ajaib Penambah Titik Otomatis
-window.formatRupiah = (objek) => {
-    let angka = objek.value.replace(/[^,\d]/g, "").toString();
-    let split = angka.split(",");
-    let sisa = split[0].length % 3;
-    let rupiah = split[0].substr(0, sisa);
-    let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
-
-    if (ribuan) {
-        let separator = sisa ? "." : "";
-        rupiah += separator + ribuan.join(".");
-    }
-
-    rupiah = split[1] != undefined ? rupiah + "," + split[1] : rupiah;
-    objek.value = rupiah;
-}
-
-// Update fungsi simpan (karena nominal sekarang ada titiknya, harus dibersihkan dulu sebelum kirim ke Firebase)
-window.simpan = async () => {
-    const k = document.getElementById('kas-ket').value;
-    const nRaw = document.getElementById('kas-nom').value;
-    const t = document.getElementById('kas-tipe').value;
-    
-    // Bersihkan titik agar jadi angka murni lagi (misal: "50.000" jadi 50000)
-    const n = Number(nRaw.replace(/\./g, ''));
-
-    if(!k || !n) return alert("Isi Keterangan & Nominal dulu Bang!");
-
-    try {
-        await push(ref(db, pathKas), {
-            tgl: new Date().toLocaleDateString('id-ID'),
-            jam: new Date().toLocaleTimeString('id-ID'),
-            keterangan: k.toUpperCase(),
-            nominal: n,
-            tipe: t,
-            ts: serverTimestamp()
+        const snap = await get(ref(db, pathKas));
+        if(!snap.exists()) return alert("Kosong!");
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(16);
+        doc.text("LAPORAN KAS PT. BBS", 105, 15, { align: "center" });
+        let s = 0;
+        const body = Object.values(snap.val()).map((v, i) => {
+            s += v.tipe === 'IN' ? v.nominal : -v.nominal;
+            return [i+1, v.tgl, v.keterangan, v.tipe==='IN'?v.nominal.toLocaleString():'-', v.tipe==='OUT'?v.nominal.toLocaleString():'-', s.toLocaleString()];
         });
-        alert("Data Tersimpan: Rp " + n.toLocaleString('id-ID')); 
-        closeModal();
-    } catch (e) { alert("Gagal: " + e.message); }
-}
-
+        doc.autoTable({ head: [['NO', 'TGL', 'KET', 'IN', 'OUT', 'SALDO']], body, startY: 28, theme: 'grid' });
+        
+        const fY = doc.lastAutoTable.finalY + 20;
+        const pW = doc.internal.pageSize.getWidth();
+        const pH = doc.internal.pageSize.getHeight();
+        doc.text("Dibuat oleh,", pW-60, fY);
+        doc.setFont("helvetica", "bold");
+        doc.text("Yefry ZA.", pW-60, fY+25);
+        doc.line(pW-60, fY+26, pW-60+doc.getTextWidth("Yefry ZA."), fY+26);
+        doc.setFont("helvetica", "normal");
+        doc.text("Manager", pW-60, fY+31);
+        doc.setFontSize(8); doc.setTextColor(150); doc.setFont("helvetica", "italic");
+        doc.text("Laporan ini dibuat secara otomatis oleh system digital PT. BBS", pW/2, pH-10, {align:"center"});
+        doc.save(`Laporan_Kas_BBS.pdf`);
+    }
 </script>
 </body>
 </html>
