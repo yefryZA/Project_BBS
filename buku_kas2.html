@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIEWER - SALDO KAS</title>
+    <style>
+        :root { --dark: #276f59; --light-dark: #112240; --gold: #ffb400; --green: #2ecc71; --red: #e74c3c; --text: #ccd6f6; --slate: #8892b0; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--dark); color: var(--text); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 450px; }
+        .card-saldo { background: var(--light-dark); padding: 30px 20px; border-radius: 25px; text-align: center; border: 1px solid rgba(255, 180, 0, 0.2); margin-bottom: 25px; border-top: 5px solid var(--gold); }
+        .saldo-amount { font-size: 38px; font-weight: bold; color: var(--gold); margin: 10px 0; }
+        .list-container { background: var(--light-dark); border-radius: 20px; padding: 15px; border: 1px solid #233554; }
+        .item-kas { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #233554; }
+        .item-ket { font-size: 13px; font-weight: bold; }
+        .item-tgl { font-size: 10px; color: var(--slate); }
+        .nom-in { color: var(--green); }
+        .nom-out { color: var(--red); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2 style="text-align:center; color:var(--gold);">KEUANGAN BERSAMA</h2>
+    <div class="card-saldo">
+        <div style="font-size: 12px; color: var(--slate);">SALDO SAAT INI</div>
+        <div class="saldo-amount" id="total-saldo">RP 0</div>
+    </div>
+    <div style="font-weight:bold; margin-bottom:10px; color:var(--gold);">RINCIAN TRANSAKSI</div>
+    <div class="list-container" id="list-transaksi">
+        <p style="text-align:center; color:var(--slate);">Memuat data...</p>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyA_wvEsCCOEjiwxui7_pdOrG8-xMBCw3mw",
+        authDomain: "barcode-warung-81e97.firebaseapp.com",
+        databaseURL: "https://barcode-warung-81e97-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "barcode-warung-81e97",
+        appId: "1:1089837830503:web:410644c17a04314e37dfc2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const pathKas = `SALDO_BERSAMA`;
+
+    onValue(ref(db, pathKas), (snap) => {
+        let total = 0; let html = "";
+        const data = snap.val();
+        if(data) {
+            Object.values(data).reverse().forEach(item => {
+                const isIn = item.tipe === 'IN';
+                total += isIn ? item.nominal : -item.nominal;
+                html += `<div class="item-kas">
+                    <div><div class="item-ket">${item.keterangan}</div><div class="item-tgl">${item.tgl} | ${item.jam}</div></div>
+                    <div style="font-weight:bold" class="${isIn?'nom-in':'nom-out'}">${isIn?'+':'-'}${item.nominal.toLocaleString()}</div>
+                </div>`;
+            });
+        }
+        document.getElementById('total-saldo').innerText = "RP " + total.toLocaleString('id-ID');
+        document.getElementById('list-transaksi').innerHTML = html || "Belum ada riwayat";
+    });
+</script>
+</body>
+</html>

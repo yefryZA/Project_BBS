@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INPUT KAS SALDO</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root { --dark: #268b15; --light-dark: #112240; --gold: #ffb400; --green: #2ecc71; --red: #e74c3c; --text: #ccd6f6; --slate: #8892b0; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--dark); color: var(--text); padding: 20px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 450px; }
+        .btn { width: 100%; padding: 20px; border: none; border-radius: 15px; color: white; font-weight: bold; cursor: pointer; margin-bottom: 15px; font-size: 16px; }
+        .bg-green { background: var(--green); }
+        .bg-red { background: var(--red); }
+        .btn-pdf { background: transparent; border: 1px solid var(--gold); color: var(--gold); }
+        
+        /* Modal Style */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); padding: 20px; z-index: 999; }
+        .modal-content { background: var(--light-dark); padding: 25px; border-radius: 20px; border: 1px solid var(--gold); margin-top: 50px; }
+        input { width: 100%; padding: 15px; margin: 10px 0; background: var(--dark); border: 1px solid #233554; color: white; border-radius: 10px; box-sizing: border-box; }
+        
+        /* --- STYLE DROPDOWN KOREKSI --- */
+        .dropdown-header { 
+            background: var(--light-dark); 
+            padding: 15px; 
+            border-radius: 12px; 
+            border: 1px solid var(--gold); 
+            cursor: pointer; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            margin-top: 20px;
+            font-weight: bold;
+            color: var(--gold);
+        }
+        .dropdown-content { 
+            max-height: 0; 
+            overflow: hidden; 
+            transition: max-height 0.3s ease-out; 
+            background: rgba(17, 34, 64, 0.5);
+            border-radius: 0 0 12px 12px;
+        }
+        .dropdown-content.active { 
+            max-height: 500px; 
+            overflow-y: auto; 
+            border: 1px solid #233554;
+            border-top: none;
+            padding: 10px;
+        }
+        .item-koreksi { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #233554; }
+        .btn-hapus { background: none; border: 1px solid var(--red); color: var(--red); border-radius: 8px; cursor: pointer; padding: 5px 10px; font-size: 11px; }
+        .arrow { transition: transform 0.3s; }
+        .arrow.rotate { transform: rotate(180deg); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2 style="text-align:center; color:var(--gold);">SALDO BERSAMA</h2>
+    <button class="btn bg-green" onclick="openModal('IN')">➕ TAMBAH SALDO</button>
+    <button class="btn bg-red" onclick="openModal('OUT')">💸 INPUT PENGELUARAN</button>
+    <button class="btn btn-pdf" onclick="generatePDF()">📄 DOWNLOAD LAPORAN PDF</button>
+
+    <div class="dropdown-header" onclick="toggleDropdown()">
+        <span>⚙️ PENGATURAN / KOREKSI DATA</span>
+        <span class="arrow" id="arrow-icon">▼</span>
+    </div>
+    <div class="dropdown-content" id="dropdown-area">
+        <div id="list-koreksi">
+            <p style="text-align:center; color:var(--slate); font-size: 12px; padding: 20px;">Memuat riwayat...</p>
+        </div>
+    </div>
+</div>
+
+<div id="modal-kas" class="modal">
+    <div class="modal-content">
+        <h3 id="modal-title" style="color:#ffffff">INPUT DATA</h3> <input type="text" id="kas-ket" placeholder="Keterangan Transaksi" 
+               style="font-size: 20px; font-weight: bold; color: #ffffff; height: 50px;">
+        
+        <label style="font-size: 11px; color: var(--slate);">Nominal (Otomatis Titik)</label>
+        
+        <input type="text" id="kas-nom" placeholder="0" oninput="formatRupiah(this)" 
+               style="font-size: 24px; font-weight: bold; color: #ffffff; height: 60px;">
+        
+        <input type="hidden" id="kas-tipe">
+        <button class="btn bg-green" onclick="simpan()">SIMPAN DATA</button>
+        <button class="btn" onclick="closeModal()" style="color: black !important; background-color: #f1f1f1;">BATAL</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
+    import { getDatabase, ref, push, get, onValue, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyA_wvEsCCOEjiwxui7_pdOrG8-xMBCw3mw",
+        authDomain: "barcode-warung-81e97.firebaseapp.com",
+        databaseURL: "https://barcode-warung-81e97-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "barcode-warung-81e97",
+        appId: "1:1089837830503:web:410644c17a04314e37dfc2"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const pathKas = `SALDO_BERSAMA`;
+
+    // --- FUNGSI TOGGLE DROPDOWN ---
+    window.toggleDropdown = () => {
+        const content = document.getElementById('dropdown-area');
+        const arrow = document.getElementById('arrow-icon');
+        content.classList.toggle('active');
+        arrow.classList.toggle('rotate');
+    }
+
+    window.openModal = (t) => {
+        document.getElementById('kas-tipe').value = t;
+        document.getElementById('modal-title').innerText = t === 'IN' ? "TAMBAH SALDO" : "PENGELUARAN";
+        document.getElementById('modal-kas').style.display = 'block';
+    }
+    window.closeModal = () => {
+        document.getElementById('modal-kas').style.display = 'none';
+        document.getElementById('kas-ket').value = "";
+        document.getElementById('kas-nom').value = "";
+    }
+
+    window.formatRupiah = (objek) => {
+        let angka = objek.value.replace(/[^,\d]/g, "").toString();
+        let split = angka.split(",");
+        let sisa = split[0].length % 3;
+        let rupiah = split[0].substr(0, sisa);
+        let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+        if (ribuan) {
+            let separator = sisa ? "." : "";
+            rupiah += separator + ribuan.join(".");
+        }
+        rupiah = split[1] != undefined ? rupiah + "," + split[1] : rupiah;
+        objek.value = rupiah;
+    }
+
+    window.simpan = async () => {
+        const k = document.getElementById('kas-ket').value;
+        const nRaw = document.getElementById('kas-nom').value;
+        const t = document.getElementById('kas-tipe').value;
+        const n = Number(nRaw.replace(/\./g, ''));
+        if(!k || !n) return alert("Isi Data Dulu Bang!");
+        try {
+            await push(ref(db, pathKas), {
+                tgl: new Date().toLocaleDateString('id-ID'),
+                jam: new Date().toLocaleTimeString('id-ID'),
+                keterangan: k.toUpperCase(),
+                nominal: n,
+                tipe: t,
+                ts: serverTimestamp()
+            });
+            alert("Tersimpan!"); closeModal();
+        } catch (e) { alert("Error: " + e.message); }
+    }
+
+    onValue(ref(db, pathKas), (snapshot) => {
+        let html = "";
+        const data = snapshot.val();
+        if(data) {
+            Object.keys(data).reverse().forEach(key => {
+                const item = data[key];
+                const warna = item.tipe === 'IN' ? 'var(--green)' : 'var(--red)';
+                html += `
+                    <div class="item-koreksi">
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; font-size: 13px; color: ${warna}">${item.keterangan}</div>
+                            <div style="color: var(--slate); font-size: 10px;">${item.tgl} | Rp ${item.nominal.toLocaleString('id-ID')}</div>
+                        </div>
+                        <button class="btn-hapus" onclick="hapusData('${key}', '${item.keterangan}')">HAPUS</button>
+                    </div>`;
+            });
+        }
+        document.getElementById('list-koreksi').innerHTML = html || "<p style='padding:20px;text-align:center;font-size:12px;'>Belum ada data</p>";
+    });
+
+    window.hapusData = (id, ket) => {
+        if(confirm(`Hapus transaksi: "${ket}"?`)) {
+            remove(ref(db, `${pathKas}/${id}`)).then(() => alert("Terhapus!"));
+        }
+    }
+
+    window.generatePDF = async () => {
+        const snap = await get(ref(db, pathKas));
+        if(!snap.exists()) return alert("Kosong!");
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(16);
+        doc.text("LAPORAN KAS PT. BBS", 105, 15, { align: "center" });
+        let s = 0;
+        const body = Object.values(snap.val()).map((v, i) => {
+            s += v.tipe === 'IN' ? v.nominal : -v.nominal;
+            return [i+1, v.tgl, v.keterangan, v.tipe==='IN'?v.nominal.toLocaleString():'-', v.tipe==='OUT'?v.nominal.toLocaleString():'-', s.toLocaleString()];
+        });
+        doc.autoTable({ head: [['NO', 'TGL', 'KET', 'IN', 'OUT', 'SALDO']], body, startY: 28, theme: 'grid' });
+        
+        const fY = doc.lastAutoTable.finalY + 20;
+        const pW = doc.internal.pageSize.getWidth();
+        const pH = doc.internal.pageSize.getHeight();
+        doc.text("Dibuat oleh,", pW-60, fY);
+        doc.setFont("helvetica", "bold");
+        doc.text("Yefry ZA.", pW-60, fY+25);
+        doc.line(pW-60, fY+26, pW-60+doc.getTextWidth("Yefry ZA."), fY+26);
+        doc.setFont("helvetica", "normal");
+        doc.text("Manager", pW-60, fY+31);
+        doc.setFontSize(8); doc.setTextColor(150); doc.setFont("helvetica", "italic");
+        doc.text("Laporan ini dibuat secara otomatis oleh system digital PT. BBS", pW/2, pH-10, {align:"center"});
+        doc.save(`Laporan_Kas_BBS.pdf`);
+    }
+</script>
+</body>
+</html>
