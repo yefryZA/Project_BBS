@@ -74,13 +74,24 @@
 
 <div id="modal-kas" class="modal">
     <div class="modal-content">
-        <h3 id="modal-title" style="color:var(--gold)">INPUT DATA</h3>
-        <input type="text" id="kas-ket" placeholder="Keterangan Transaksi">
-        <label style="font-size: 11px; color: var(--slate);">Nominal (Otomatis Titik)</label>
+        <h3 id="modal-title" style="color:#ffffff">INPUT DATA</h3> 
+        
+        <input type="text" id="kas-ket" placeholder="Keterangan Transaksi" 
+               style="font-size: 20px; font-weight: bold; color: #ffffff; height: 50px;">
+        
+        <label style="font-size: 11px; color: var(--slate);">Nominal (Harga Rekanan)</label>
         <input type="text" id="kas-nom" placeholder="0" oninput="formatRupiah(this)" 
-       style="font-size: 24px; font-weight: bold; color: var(--gold); height: 60px;">
+               style="font-size: 24px; font-weight: bold; color: #ffffff; height: 60px;">
+
+        <div id="area-margin" style="display:none; margin-top: 10px; border: 1px dashed var(--gold); padding: 10px; border-radius: 10px;">
+            <label style="font-size: 11px; color: var(--gold);">Potongan Margin BBS (Selisih Harga)</label>
+            <input type="text" id="kas-margin" placeholder="0" oninput="formatRupiah(this)" 
+                   style="font-size: 20px; font-weight: bold; color: var(--gold); height: 50px; background: transparent;">
+            <p style="font-size: 9px; color: var(--slate); margin: 0;">*Nominal ini akan mengurangi beban saldo di dashboard internal BBS.</p>
+        </div>
+        
         <input type="hidden" id="kas-tipe">
-        <button class="btn bg-green" onclick="simpan()">SIMPAN DATA</button>
+        <button class="btn bg-green" onclick="simpan()" style="margin-top: 15px;">SIMPAN DATA</button>
         <button class="btn" onclick="closeModal()" style="color: black !important; background-color: #f1f1f1;">BATAL</button>
     </div>
 </div>
@@ -101,7 +112,6 @@
     const db = getDatabase(app);
     const pathKas = `BUKU_KAS`;
 
-    // --- FUNGSI TOGGLE DROPDOWN ---
     window.toggleDropdown = () => {
         const content = document.getElementById('dropdown-area');
         const arrow = document.getElementById('arrow-icon');
@@ -112,12 +122,18 @@
     window.openModal = (t) => {
         document.getElementById('kas-tipe').value = t;
         document.getElementById('modal-title').innerText = t === 'IN' ? "TAMBAH SALDO" : "PENGELUARAN";
+        
+        // Tampilkan area margin rahasia hanya jika OUT (Pengeluaran)
+        document.getElementById('area-margin').style.display = t === 'OUT' ? 'block' : 'none';
+        
         document.getElementById('modal-kas').style.display = 'block';
     }
+
     window.closeModal = () => {
         document.getElementById('modal-kas').style.display = 'none';
         document.getElementById('kas-ket').value = "";
         document.getElementById('kas-nom').value = "";
+        document.getElementById('kas-margin').value = "";
     }
 
     window.formatRupiah = (objek) => {
@@ -137,22 +153,33 @@
     window.simpan = async () => {
         const k = document.getElementById('kas-ket').value;
         const nRaw = document.getElementById('kas-nom').value;
+        const mRaw = document.getElementById('kas-margin').value || "0";
         const t = document.getElementById('kas-tipe').value;
-        const n = Number(nRaw.replace(/\./g, ''));
-        if(!k || !n) return alert("Isi Data Dulu Bang!");
+        
+        const nRekanan = Number(nRaw.replace(/\./g, ''));
+        const mBBS = Number(mRaw.replace(/\./g, ''));
+        
+        // nAsli adalah harga dasar (Rekanan - Margin)
+        const nAsliBBS = nRekanan - mBBS;
+
+        if(!k || !nRekanan) return alert("Isi Data Dulu Bang!");
+        
         try {
             await push(ref(db, pathKas), {
                 tgl: new Date().toLocaleDateString('id-ID'),
                 jam: new Date().toLocaleTimeString('id-ID'),
                 keterangan: k.toUpperCase(),
-                nominal: n,
+                nominal: nRekanan,    // Tetap simpan ini untuk kompatibilitas lama
+                nominal_rekanan: nRekanan,
+                nominal_bbs: nAsliBBS, 
+                margin_rahasia: mBBS,
                 tipe: t,
                 ts: serverTimestamp()
             });
             alert("Tersimpan!"); closeModal();
         } catch (e) { alert("Error: " + e.message); }
     }
-
+    
     onValue(ref(db, pathKas), (snapshot) => {
         let html = "";
         const data = snapshot.val();
