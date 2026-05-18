@@ -169,28 +169,44 @@ input::placeholder {
 
    // FUNGSI: ENGINE PENYALUR GPS BERKALA (VERSI SILUMAN - TANPA TEXT DI LAYAR HP)
     function aktifkanMesinGPS() {
-        if (!navigator.geolocation) {
-            return;
+    if (!navigator.geolocation) {
+        return;
+    }
+
+    // Pemicu otomatis biar HP sopir gak berani tidur saat GPS aktif
+    if (typeof requestWakeLock === 'function') {
+        requestWakeLock();
+    }
+
+    gpsInterval = navigator.geolocation.watchPosition(async (position) => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+
+        // 🚀 1. KODINGAN ASLI ABANG (Tetap jalan saat aplikasi terbuka)
+        await update(ref(db, `bbs_tracking/${dbKey}/${currentIdTransaksi}`), {
+            lat: latitude,
+            lng: longitude,
+            waktu_update: new Date().toISOString()
+        });
+
+        // 📡 2. JEMBATAN EMAS (Selipkan data ke Service Worker agar tetap kirim saat aplikasi ditutup)
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+                type: 'TRACK_GPS_BACKGROUND',
+                latitude: latitude,
+                longitude: longitude,
+                dbPath: `bbs_tracking/${dbKey}/${currentIdTransaksi}` // Kirim alamat jalurnya ke SW
+            });
         }
 
-        gpsInterval = navigator.geolocation.watchPosition(async (position) => {
-            const latitude = position.coords.latitude;
-            const longitude = position.coords.longitude;
-
-            // 🚀 Sistem langsung nembak koordinat ke Firebase secara diam-diam tanpa nulis apa pun di HP sopir
-            await update(ref(db, `bbs_tracking/${dbKey}/${currentIdTransaksi}`), {
-                lat: latitude,
-                lng: longitude,
-                waktu_update: new Date().toISOString()
-            });
-        }, (error) => {
-            console.error("Error GPS:", error);
-        }, {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 0
-        });
-    }
+    }, (error) => {
+        console.error("Error GPS:", error);
+    }, {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0
+    });
+}
     
     // FUNGSI: MATIKAN TRACKING (OTOMATIS CEK PIN REALTIME DARI DASHBOARD)
     window.stopTracking = async function() {
@@ -242,7 +258,28 @@ if ('serviceWorker' in navigator) {
             .catch((err) => console.error('❌ Eror PWA Driver:', err));
     });
 }
-    
+
+    let wakeLock = null;
+
+// Fungsi memaksa layar/sistem HP tetap melek
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('🔒 HP Dipaksa Melek, GPS Anti-Mati!');
+        }
+    } catch (err) {
+        console.error('❌ Gagal mengunci sistem melek:', err);
+    }
+}
+
+// Jalankan saat halaman dibuka
+window.addEventListener('load', requestWakeLock);
+document.addEventListener('visibilitychange', () => {
+    if (wakeLock !== null && document.visibilityState === 'visible') {
+        requestWakeLock();
+    }
+});
 </script>
 
 </body>
