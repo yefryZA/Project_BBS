@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BBS MONITORING DASHBOARD + REALTIME MAPS</title>
+    
+    <link rel="manifest" href="manifest-dashboard.json">
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -328,6 +331,19 @@ if (data.lat && data.lng) {
             document.getElementById('stat-otw').innerText = otw;
             document.getElementById('stat-selesai').innerText = selesai;
         }
+
+        // 🎯 KODE BIAR DASHBOARD BISA DIDOWNLOAD DI LAPTOP
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        const swCode = `self.addEventListener('fetch', function(event) {});`;
+        const blob = new Blob([swCode], { type: 'application/javascript' });
+        const swUrl = URL.createObjectURL(blob);
+        
+        navigator.serviceWorker.register(swUrl, { scope: './' })
+            .then((reg) => console.log('🚀 PWA Dashboard Aktif!', reg))
+            .catch((err) => console.error('❌ Eror PWA Dashboard:', err));
+    });
+}
     </script>
 </body>
 </html>
