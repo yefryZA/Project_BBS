@@ -69,16 +69,14 @@ input::placeholder {
         <button class="btn-start" onclick="mulaiTracking()">MULAI PERJALANAN</button>
     </div>
 
-    <div id="lock-area" style="display: none;">
+   <div id="lock-area" style="display: none;">
         <div class="status-box" id="status-box" style="display: block;">
             <span class="pulse"></span> <b>SELAMAT BERGABUNG DI PT. BBS</b><br>
             <span style="color:#8892b0; font-size:11px;">HATI HATI DIJALAN PAK SOPIR</span>
-            <hr style="border: 0; border-top: 1px solid #233554; margin: 10px 0;">
-            <span id="koordinat-txt" style="font-family: monospace; color: #64ffda;">......</span>
         </div>
         
         <div class="form-group" style="margin-top: 20px;">
-            <label>PIN PETUGAS BONGKAR</label>
+            <label>KUNCI BONGKAR (PIN PETUGAS)</label>
             <input type="password" id="pin-input" placeholder="Masukkan PIN untuk Berhenti" pattern="\d*" inputmode="numeric" style="text-align: center; font-size: 18px; letter-spacing: 5px;">
         </div>
         <button class="btn-stop" onclick="stopTracking()">TIBA BONGKAR</button>
@@ -169,22 +167,17 @@ input::placeholder {
         aktifkanMesinGPS();
     }
 
-      // FUNGSI: ENGINE PENYALUR GPS BERKALA (VERSI AGRESIF - ANTI MAMPET)
+   // FUNGSI: ENGINE PENYALUR GPS BERKALA (VERSI SILUMAN - TANPA TEXT DI LAYAR HP)
     function aktifkanMesinGPS() {
         if (!navigator.geolocation) {
-            document.getElementById('koordinat-txt').innerText = "❌ GPS Gak Didukung HP Ini";
             return;
         }
 
-        // Pakai watchPosition agar Chrome terus memantau satelit secara agresif
         gpsInterval = navigator.geolocation.watchPosition(async (position) => {
             const latitude = position.coords.latitude;
             const longitude = position.coords.longitude;
-            
-            // Update tampilan di layar HP sopir
-            document.getElementById('koordinat-txt').innerText = `Lat: ${latitude.toFixed(5)} | Lng: ${longitude.toFixed(5)}`;
 
-            // Langsung setorkan ke Firebase Realtime Database
+            // 🚀 Sistem langsung nembak koordinat ke Firebase secara diam-diam tanpa nulis apa pun di HP sopir
             await update(ref(db, `bbs_tracking/${dbKey}/${currentIdTransaksi}`), {
                 lat: latitude,
                 lng: longitude,
@@ -192,18 +185,13 @@ input::placeholder {
             });
         }, (error) => {
             console.error("Error GPS:", error);
-            if(error.code === 1) {
-                document.getElementById('koordinat-txt').innerText = "⚠️ AKTOR BLOKIR IZIN GPS CHROME!";
-            } else {
-                document.getElementById('koordinat-txt').innerText = "⚠️ Satelit Lemah, Cari Ruang Terbuka";
-            }
         }, {
-            enableHighAccuracy: true, // Paksa pakai GPS Satelit asli (Akurasi Tinggi)
-            timeout: 15000,           // Jeda tunggu satelit 15 detik
-            maximumAge: 0             // Jangan pakai data cache lokasi lama
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
         });
     }
-
+    
     // FUNGSI: MATIKAN TRACKING (OTOMATIS CEK PIN REALTIME DARI DASHBOARD)
     window.stopTracking = async function() {
         const inputPin = document.getElementById('pin-input').value.trim();
