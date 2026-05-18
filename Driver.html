@@ -309,9 +309,9 @@ function aktifkanMesinGPS() {
             console.error("Gagal membaca PIN dari server:", error);
             alert("❌ KONEKSI ERROR: Gagal memvalidasi PIN ke server. Coba lagi!");
         }
-    }
-    // 🎣 KAIL PANCINGAN SAKTI: Memaksa HP memunculkan dialog IZIN GPS saat aplikasi baru dibuka
-// Ini juga berfungsi mendaftarkan menu Lokasi di Pengaturan HP secara paksa!
+    };
+
+        
 (function pancingIzinGPS() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -321,6 +321,7 @@ function aktifkanMesinGPS() {
         );
     }
 })();
+    
 </script>
 </body>
 </html>
