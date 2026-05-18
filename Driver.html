@@ -149,7 +149,7 @@ input::placeholder {
         }
     }
 
-    // FUNGSI: MULAI PERJALANAN 
+ 
     // FUNGSI: MULAI PERJALANAN (VERSI SIDAK GPS SEBELUM TEMBAK FIREBASE)
 window.mulaiTracking = async function() {
     const plat = document.getElementById('plat').value.trim().toUpperCase();
@@ -310,6 +310,17 @@ function aktifkanMesinGPS() {
             alert("❌ KONEKSI ERROR: Gagal memvalidasi PIN ke server. Coba lagi!");
         }
     }
+    // 🎣 KAIL PANCINGAN SAKTI: Memaksa HP memunculkan dialog IZIN GPS saat aplikasi baru dibuka
+// Ini juga berfungsi mendaftarkan menu Lokasi di Pengaturan HP secara paksa!
+(function pancingIzinGPS() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => { console.log("🎣 Pancingan Sukses: Izin GPS aman aktif!"); },
+            (err) => { console.warn("🎣 Pancingan Siap: Menunggu user mengaktifkan izin."); },
+            { enableHighAccuracy: false, timeout: 3000 }
+        );
+    }
+})();
 </script>
 </body>
 </html>
