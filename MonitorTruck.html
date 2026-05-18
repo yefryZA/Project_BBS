@@ -121,16 +121,16 @@
     <div class="table-container">
         <h2>📊 Realtime GPS Data Log</h2>
         <table>
-            <thead>
-                <tr>
-                    <th>Waktu Mulai</th>
-                    <th>ID Perjalanan</th>
-                    <th>Plat Nomor</th>
-                    <th>Nama Sopir</th>
-                    <th>Posisi Terakhir (Lat, Lng)</th>
-                    <th>Update Terakhir</th>
-                    <th>Status</th>
-                </tr>
+           <thead>
+            <tr>
+        <th>Jam Mulai</th>
+        <th>ID Track</th>
+        <th>Plat Nomor</th>
+        <th>Nama Sopir</th>
+        <th>Posisi Terakhir</th>
+        <th>Jam Update</th>
+        <th>Koneksi Sinyal</th> <th>Status</th>
+            </tr>
             </thead>
             <tbody id="data-tracking-table">
                 <tr>
@@ -144,7 +144,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // 🎯 TAMBAHKAN 'remove' AGAR BISA MENGHAPUS NODE FIREBASE SECARA BERSIH
         import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = { 
@@ -165,6 +164,7 @@
         }).addTo(map);
 
         let armadaMarkers = {};
+        let rawDataCache = []; // Tempat menyimpan data mentah untuk fungsi hitung mundur otomatis
 
         const bbsTruckIcon = L.icon({
             iconUrl: 'https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png',
@@ -203,14 +203,12 @@
             if (!konfirmasi) return;
 
             try {
-                // 1. Hapus total node pelacakan di Firebase Realtime Database
                 await remove(ref(db, `bbs_tracking/${dbKey}`));
 
-                // 2. Sapu bersih seluruh marker logo truk yang sedang nempel di peta dashboard
                 for (const id_track in armadaMarkers) {
                     map.removeLayer(armadaMarkers[id_track]);
                 }
-                armadaMarkers = {}; // Kosongkan objek memori marker
+                armadaMarkers = {}; 
 
                 alert("🗑️ SUKSES BERSIH TOTAL! Seluruh database tracking telah di-wipe out dan siap digunakan kembali.");
             } catch (err) {
@@ -218,20 +216,41 @@
             }
         }
 
-        // 2. MONITORING REALTIME DAFTAR LOG TRACKING DRIVER + LIVE MAP RADAR
-        onValue(ref(db, `bbs_tracking/${dbKey}`), (snapshot) => {
-            const tbody = document.getElementById('data-tracking-table');
-            tbody.innerHTML = ""; 
+        // 🧠 FUNGSI HITUNG MUNDUR: Deteksi otomatis apakah HP Sopir mati sinyal / tewas
+        function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan) {
+            // Jika sopir sudah ketok PIN alias Selesai Bongkar, otomatis status sinyal MATI BERSIH (Aman)
+            if (statusPerjalanan === "SELESAI_BONGKAR") {
+                return { teks: "🏁 SELESAI", warna: "#8892b0", barisBg: "transparent" };
+            }
+            if (!waktuUpdateTerakhir) {
+                return { teks: "⏳ MENCARI GPS", warna: "#ffb74d", barisBg: "transparent" };
+            }
 
-            if (!snapshot.exists()) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #8892b0; padding: 20px;">Belum ada armada yang berjalan / Data telah direset.</td></tr>`;
+            const selisihMilidetik = new Date() - new Date(waktuUpdateTerakhir);
+            const selisihMenit = selisihMilidetik / (1000 * 60);
+
+            // ⚠️ AMBANG BATAS 12 MENIT: Lewat dari 12 menit gak nembak data = HP Mati/Sinyal Eror
+            if (selisihMenit > 12) {
+                return { 
+                    teks: "🔴 OFFLINE (HP Mati/Sinyal)", 
+                    warna: "#ff4c4c", 
+                    barisBg: "rgba(255, 76, 76, 0.08)" // Kasih aksen background merah tipis di baris tabel
+                };
+            } else {
+                return { 
+                    teks: "🟢 ONLINE", 
+                    warna: "#00e676", 
+                    barisBg: "transparent" 
+                };
+            }
+        }
+
+        // 🔄 FUNGSI RENDER TABEL: Untuk menggambar tabel secara berulang demi keakuratan status sinyal
+        function renderTabelDanRadar() {
+            const tbody = document.getElementById('data-tracking-table');
+            if (rawDataCache.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #8892b0; padding: 20px;">Belum ada armada yang berjalan / Data telah direset.</td></tr>`;
                 updateStatistik(0, 0, 0);
-                
-                // Jaga-jaga bersihkan sisa marker jika firebase kosong pasca reset
-                for (const id in armadaMarkers) {
-                    map.removeLayer(armadaMarkers[id]);
-                }
-                armadaMarkers = {};
                 return;
             }
 
@@ -241,80 +260,82 @@
             let rowsHtml = "";
             const currentActiveIds = [];
 
-            const dataLogs = [];
-            snapshot.forEach((childSnapshot) => {
-                dataLogs.push(childSnapshot.val());
-            });
-            dataLogs.reverse();
-
-            dataLogs.forEach((data) => {
+            rawDataCache.forEach((data) => {
                 totalArmada++;
                 currentActiveIds.push(data.id_track);
                 
                 const tglMulai = data.waktu_mulai ? new Date(data.waktu_mulai).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : "-";
                 const tglUpdate = data.waktu_update ? new Date(data.waktu_update).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : "-";
 
+                // Panggil logika sakti deteksi sinyal
+                const infoSinyal = hitungStatusSinyal(data.waktu_update, data.status_perjalanan);
+
                 let badgeStatus = "";
                 if (data.status_perjalanan === "MENGIRIM_POSISI") {
                     totalOtw++;
-                    badgeStatus = `<span class="badge badge-otw"><span class="pulse"></span> OTW</span>`;
+                    // Jika terdeteksi offline, animasinya kita matikan biar gak menipu orang kantor
+                    if (infoSinyal.teks.includes("OFFLINE")) {
+                        badgeStatus = `<span class="badge badge-otw" style="background: #555; color: #aaa;">OTW (MACET)</span>`;
+                    } else {
+                        badgeStatus = `<span class="badge badge-otw"><span class="pulse"></span> OTW</span>`;
+                    }
                 } else {
                     totalSelesai++;
                     badgeStatus = `<span class="badge badge-done">✓ SAMPAI</span>`;
                 }
 
                 let koordinatTxt = "Mencari GPS...";
+                if (data.lat && data.lng) {
+                    koordinatTxt = `${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}`;
 
-if (data.lat && data.lng) {
-    koordinatTxt = `${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}`;
+                    if (data.status_perjalanan === "MENGIRIM_POSISI") {
+                        if (armadaMarkers[data.id_track]) {
+                            armadaMarkers[data.id_track].setLatLng([data.lat, data.lng]);
+                        } else {
+                            armadaMarkers[data.id_track] = L.marker([data.lat, data.lng], {icon: bbsTruckIcon}).addTo(map);
+                        }
+                        
+                        // Setel text tooltip plat nomor melayang di atas logo
+                        let warnaLabelSinyal = infoSinyal.teks.includes("OFFLINE") ? "#ff4c4c" : "#64ffda";
+                        armadaMarkers[data.id_track].bindTooltip(`<b style="color:${warnaLabelSinyal}; font-size:12px;">${data.plat_nomor}</b>`, {
+                            permanent: true,
+                            direction: 'top',
+                            offset: [0, -30],
+                            className: 'map-plat-label'
+                        }).openTooltip();
 
-    if (data.status_perjalanan === "MENGIRIM_POSISI") {
-        if (armadaMarkers[data.id_track]) {
-            // Jika armada sudah ada, geser posisinya secara realtime
-            armadaMarkers[data.id_track].setLatLng([data.lat, data.lng]);
-        } else {
-            // Jika armada baru muncul, buat penanda logo BBS baru di peta
-            armadaMarkers[data.id_track] = L.marker([data.lat, data.lng], {icon: bbsTruckIcon}).addTo(map);
-        }
-        
-        // 🎯 LOGIKA BARU: PLAT NOMOR LANGSUNG MUNCUL MELAYANG DI ATAS LOGO (TANPA PERLU DIKLIK)
-        armadaMarkers[data.id_track].bindTooltip(`<b style="color:#64ffda; font-size:12px;">${data.plat_nomor}</b>`, {
-            permanent: true,       // Muncul terus tanpa nunggu disentuh
-            direction: 'top',      // Posisinya melayang pas di atas logo BBS
-            offset: [0, -30],      // Jarak amannya biar pas di atas logo
-            className: 'map-plat-label' // Class untuk custom style dark-mode nanti
-        }).openTooltip();
+                        armadaMarkers[data.id_track].bindPopup(`
+                            <div style="color:#fff; font-size:13px;">
+                                Plat Nomor: <b style="color:#64ffda;">${data.plat_nomor}</b><br>
+                                Nama Sopir: <b>${data.nama_sopir}</b><br>
+                                Koneksi: <span style="color:${infoSinyal.warna}; font-weight:bold;">${infoSinyal.teks}</span><br>
+                                Update Terakhir: <span style="color:#8892b0;">${tglUpdate} WIB</span>
+                            </div>
+                        `);
+                    } else {
+                        if (armadaMarkers[data.id_track]) {
+                            map.removeLayer(armadaMarkers[data.id_track]);
+                            delete armadaMarkers[data.id_track];
+                        }
+                    }
+                }
 
-        // Balon popup info lengkap (Sopir & Jam) muncul kalau logonya disentuh/diklik
-        armadaMarkers[data.id_track].bindPopup(`
-            <div style="color:#fff; font-size:13px;">
-                Plat Nomor: <b style="color:#64ffda;">${data.plat_nomor}</b><br>
-                Nama Sopir: <b>${data.nama_sopir}</b><br>
-                Update Terakhir: <span style="color:#8892b0;">${tglUpdate} WIB</span>
-            </div>
-        `);
-    } else {
-        // FIX BUG: Jika status SELESAI, hapus logo truk dari peta secara bersih
-        if (armadaMarkers[data.id_track]) {
-            map.removeLayer(armadaMarkers[data.id_track]);
-            delete armadaMarkers[data.id_track];
-        }
-    }
-}
-
+                // 📺 RENDERING TR: Ditambahkan kolom Indikator Koneksi Sinyal
                 rowsHtml += `
-                    <tr>
+                    <tr style="background-color: ${infoSinyal.barisBg}; transition: background 0.5s;">
                         <td><b>${tglMulai}</b> WIB</td>
                         <td style="font-family: monospace; color:#8892b0;">${data.id_track}</td>
                         <td><b style="color:#64ffda;">${data.plat_nomor}</b></td>
                         <td>${data.nama_sopir}</td>
                         <td style="font-family: monospace; color:#64ffda;">${koordinatTxt}</td>
                         <td>${tglUpdate} WIB</td>
+                        <td style="color: ${infoSinyal.warna}; font-weight: bold; font-size: 13px;">${infoSinyal.teks}</td>
                         <td>${badgeStatus}</td>
                     </tr>
                 `;
             });
 
+            // Bersihkan marker lama
             for (const id_track in armadaMarkers) {
                 if (!currentActiveIds.includes(id_track)) {
                     map.removeLayer(armadaMarkers[id_track]);
@@ -324,6 +345,26 @@ if (data.lat && data.lng) {
 
             tbody.innerHTML = rowsHtml;
             updateStatistik(totalArmada, totalOtw, totalSelesai);
+        }
+
+        // 2. MONITORING REALTIME DAFTAR LOG TRACKING DRIVER
+        onValue(ref(db, `bbs_tracking/${dbKey}`), (snapshot) => {
+            rawDataCache = [];
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnapshot) => {
+                    rawDataCache.push(childSnapshot.val());
+                });
+                rawDataCache.reverse(); // Urutan terbaru paling atas
+            } else {
+                // Jaga-jaga bersihkan sisa marker jika firebase kosong pasca reset
+                for (const id in armadaMarkers) {
+                    map.removeLayer(armadaMarkers[id]);
+                }
+                armadaMarkers = {};
+            }
+            
+            // Gambar tabel & update posisi peta
+            renderTabelDanRadar();
         });
 
         function updateStatistik(total, otw, selesai) {
@@ -332,14 +373,21 @@ if (data.lat && data.lng) {
             document.getElementById('stat-selesai').innerText = selesai;
         }
 
-// 🎯 KODE RESMI PEMANGGIL SERVICE WORKER FISIK (ANTI-BLOKIR CHROME)
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js', { scope: './' })
-            .then((reg) => console.log('🚀 PWA Dashboard Resmi Aktif!', reg))
-            .catch((err) => console.error('❌ Eror PWA Dashboard:', err));
-    });
-}
+        // ⏳ RADAR DETEKTIF MANDIRI: Komputer Dashboard akan menghitung mundur ulang status sinyal 
+        // setiap 30 detik secara mandiri, tanpa perlu menunggu setoran data dari driver!
+        setInterval(() => {
+            console.log("🔍 Sidak Sinyal: Mengecek kesehatan koneksi HP sopir...");
+            renderTabelDanRadar();
+        }, 30 * 1000);
+
+        // KODE RESMI PEMANGGIL SERVICE WORKER FISIK (ANTI-BLOKIR CHROME)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js', { scope: './' })
+                    .then((reg) => console.log('🚀 PWA Dashboard Resmi Aktif!', reg))
+                    .catch((err) => console.error('❌ Eror PWA Dashboard:', err));
+            });
+        }
     </script>
 </body>
 </html>
