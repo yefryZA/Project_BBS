@@ -1,6 +1,6 @@
 {
   "id": "/Project_BBS/dashboard.html",
-  "name": "PT. Berkah Baja Steel - Monitoring Dashboard",
+  "name": "Monitoring Dashboard",
   "short_name": "BBS Dashboard",
   "start_url": "dashboard.html",
   "display": "standalone",
