@@ -1,4 +1,5 @@
 {
+  "id": "/Project_BBS/dashboard.html",
   "name": "PT. Berkah Baja Steel - Monitoring Dashboard",
   "short_name": "BBS Dashboard",
   "start_url": "dashboard.html",
@@ -8,15 +9,25 @@
   "icons": [
     {
       "src": "https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png",
-      "sizes": "192x192",
+      "sizes": "2000x2000",
       "type": "image/png",
       "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png",
+      "sizes": "2000x2000",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Tampilan Desktop PT. BBS"
     },
     {
       "src": "https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png",
-      "sizes": "512x512",
+      "sizes": "2000x2000",
       "type": "image/png",
-      "purpose": "any"
+      "form_factor": "narrow",
+      "label": "Tampilan Mobile PT. BBS"
     }
   ]
 }
