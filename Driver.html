@@ -212,6 +212,7 @@ window.mulaiTracking = async function() {
 }
     // FUNGSI: RADAR UTAMA GPS (Sudah tersisip jembatan ke Service Worker latar belakang)
     // FUNGSI: ENGINE PENYALUR GPS BERKALA (VERSI JOSS HEMAT BATERAI - TIAP 10 MENIT)
+// FUNGSI: ENGINE PENYALUR GPS BERKALA (VERSI TOTAL SAKTI - AMAN DATA & HEMAT BATERAI)
 function aktifkanMesinGPS() {
     if (!navigator.geolocation) {
         return;
@@ -224,6 +225,7 @@ function aktifkanMesinGPS() {
 
     // 🕒 FUNGSI INTERNAL: Mengambil koordinat dan menembak ke Firebase + Service Worker
     async function kirimKoordinatKeSistem() {
+        // 🚀 KUNCI ILMU SAKTI: Selalu paksa cek apakah GPS aktif di setiap putaran waktu!
         navigator.geolocation.getCurrentPosition(async (position) => {
             const latitude = position.coords.latitude;
             const longitude = position.coords.longitude;
@@ -247,9 +249,15 @@ function aktifkanMesinGPS() {
             console.log("📡 Radar 10 Menitan: Koordinat Sukses Terkirim!");
 
         }, (error) => {
-            console.error("Gagal mengambil koordinat berkala:", error);
+            // 🚨 JIKA DI TENGAH JALAN SOPIR MEMATIKAN GPS / REWEL:
+            console.error("Gagal mengambil koordinat berkala / GPS Dimatikan:", error);
+            
+            // Opsional: Abang bisa kasih tanda di database kalau dia sengaja matiin GPS
+            update(ref(db, `bbs_tracking/${dbKey}/${currentIdTransaksi}`), {
+                koordinat_txt: "⚠️ GPS SENGAJA DIMATIKAN DRIVER"
+            });
         }, {
-            enableHighAccuracy: true,
+            enableHighAccuracy: true, // Wajib true agar sidaknya akurat lewat satelit
             timeout: 10000
         });
     }
@@ -258,7 +266,7 @@ function aktifkanMesinGPS() {
     kirimKoordinatKeSistem();
 
     // ⏳ EKSEKUSI BERKALA: HP akan tidur tenang dan baru melek nembak data tiap 10 MENIT SEKALI
-    // Angka 10 * 60 * 1000 = 600.000 milidetik (Kalau mau 15 menit, tinggal ganti jadi 15 * 60 * 1000)
+    // Angka 10 * 60 * 1000 = 600.000 milidetik
     gpsInterval = setInterval(kirimKoordinatKeSistem, 10 * 60 * 1000); 
 }
     
