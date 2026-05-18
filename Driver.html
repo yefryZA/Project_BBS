@@ -234,6 +234,15 @@ input::placeholder {
             alert("❌ KONEKSI ERROR: Gagal memvalidasi PIN ke server. Coba lagi!");
         }
     }
+// 🎯 KODE RESMI PEMANGGIL SERVICE WORKER FISIK (ANTI-BLOKIR CHROME)
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js', { scope: './' })
+            .then((reg) => console.log('🚀 PWA Driver Resmi Aktif!', reg))
+            .catch((err) => console.error('❌ Eror PWA Driver:', err));
+    });
+}
+    
 </script>
 
 </body>
