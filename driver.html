@@ -150,42 +150,66 @@ input::placeholder {
     }
 
     // FUNGSI: MULAI PERJALANAN 
-    window.mulaiTracking = async function() {
-        const plat = document.getElementById('plat').value.trim().toUpperCase();
-        const sopir = document.getElementById('sopir').value.trim();
+    // FUNGSI: MULAI PERJALANAN (VERSI SIDAK GPS SEBELUM TEMBAK FIREBASE)
+window.mulaiTracking = async function() {
+    const plat = document.getElementById('plat').value.trim().toUpperCase();
+    const sopir = document.getElementById('sopir').value.trim();
 
-        if (!plat || !sopir) {
-            alert("❌ Harap isi Plat Nomor dan Nama Sopir lebih dulu!");
-            return;
-        }
+    // 1. Validasi Inputan Form (Harus diisi)
+    if (!plat || !sopir) {
+        alert("❌ Harap isi Plat Nomor dan Nama Sopir lebih dulu!");
+        return;
+    }
 
-        if (!navigator.geolocation) {
-            alert("❌ HP ini tidak mendukung sensor GPS!");
-            return;
-        }
+    if (!navigator.geolocation) {
+        alert("❌ HP ini tidak mendukung sensor GPS!");
+        return;
+    }
 
+    // 🚀 2. SIDAK DADAKAN: Cek apakah GPS aktif dan diizinkan SEBELUM bikin ID & kirim data
+    navigator.geolocation.getCurrentPosition(async (position) => {
+        // === JIKA GPS AKTIF DAN DIIZINKAN ===
+        
+        // Generate ID perjalanan unik berdasarkan waktu
         currentIdTransaksi = "TRACK-" + Date.now();
 
+        // Kunci status di localStorage (Anti Amnesia)
         localStorage.setItem('bbs_active_id', currentIdTransaksi);
         localStorage.setItem('bbs_active_plat', plat);
         localStorage.setItem('bbs_active_sopir', sopir);
 
+        // Ubah tampilan web, langsung sembunyikan form input
         document.getElementById('form-area').style.display = 'none';
         document.getElementById('lock-area').style.display = 'block';
 
+        // BARULAH DATA DIKIRIM KE FIREBASE (Data suci, koordinat pasti akurat bukan nol)
         await set(ref(db, `bbs_tracking/${dbKey}/${currentIdTransaksi}`), {
             id_track: currentIdTransaksi,
             plat_nomor: plat,
             nama_sopir: sopir,
             waktu_mulai: new Date().toISOString(),
             status_perjalanan: "MENGIRIM_POSISI",
-            lat: 0,
-            lng: 0
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
         });
 
+        // Hidupkan radar GPS agresif berkala
         aktifkanMesinGPS();
-    }
 
+    }, (error) => {
+        // === JIKA GPS MATI ATAU SOPIR KLIK TOLAK ===
+        
+        // Tampilkan pesan peringatan keras
+        alert("❌ PENGIRIMAN PERJALANAN DITOLAK!\n\nAplikasi mendeteksi GPS Anda MATI atau Izin Akses Ditolak.\n\nSilakan aktifkan GPS HP Anda dan pilih 'IZINKAN' agar perjalanan bisa dimulai!");
+        
+        // Di sini KITA JANGAN TULIS KODE APA-APA (Jangan ganti tampilan, jangan kirim Firebase, jangan clear inputan)
+        // Hasilnya: Nama dan Plat Nomor tetap aman menempel di layar HP sopir!
+        console.warn("klik dulu ALLOW WHILE USING APP, silahkan coba lagi.");
+    }, {
+        enableHighAccuracy: true, // Wajib true agar sidaknya akurat lewat satelit
+        timeout: 7000 // Kita kasih waktu HP ngecek selama 7 detik
+    });
+}
     // FUNGSI: RADAR UTAMA GPS (Sudah tersisip jembatan ke Service Worker latar belakang)
     function aktifkanMesinGPS() {
         if (!navigator.geolocation) {
