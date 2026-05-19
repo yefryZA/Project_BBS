@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BBS MONITORING DASHBOARD + REALTIME MAPS</title>
+    <title>BBS REALTIME MAPS</title>
     
     <link rel="manifest" href="manifest-dashboard.json">
     <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png">
@@ -121,17 +121,18 @@
     <div class="table-container">
         <h2>📊 Realtime GPS Data Log</h2>
         <table>
-           <thead>
-            <tr>
+         <thead>
+    <tr>
         <th>Jam Mulai</th>
         <th>ID Track</th>
         <th>Plat Nomor</th>
         <th>Nama Sopir</th>
         <th>Posisi Terakhir</th>
         <th>Jam Update</th>
-        <th>Koneksi Sinyal</th> <th>Status</th>
-            </tr>
-            </thead>
+        <th>Surat Jalan</th> <th>Koneksi Sinyal</th>
+        <th>Status</th>
+    </tr>
+        </thead>
             <tbody id="data-tracking-table">
                 <tr>
                     <td colspan="7" style="text-align: center; color: #8892b0; padding: 30px;">Menghubungkan ke satelit Firebase...</td>
@@ -144,7 +145,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyAfeLTKRQ66tjZjAt7tg6KcrWhtmv0y3fo", 
@@ -321,6 +322,31 @@
                 }
 
                 // 📺 RENDERING TR: Ditambahkan kolom Indikator Koneksi Sinyal
+                // 📂 LOGIKA TOMBOL SURAT JALAN DINAMIS
+                let tombolSuratJalan = "-";
+                if (data.status_perjalanan === "MENGIRIM_POSISI") {
+                    // Jika link sudah ada di Firebase, warnai hijau (Update). Jika belum, warnai biru (Tempel)
+                    if (data.link_surat_jalan) {
+                        tombolSuratJalan = `
+                            <button onclick="window.tempelSuratJalan('${data.id_track}', '${data.plat_nomor}')" 
+                                    style="background: #00e676; color: #000; font-weight: bold; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                ✅ Update Link
+                            </button>
+                        `;
+                    } else {
+                        tombolSuratJalan = `
+                            <button onclick="window.tempelSuratJalan('${data.id_track}', '${data.plat_nomor}')" 
+                                    style="background: #29b6f6; color: #000; font-weight: bold; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                ➕ Tempel Link
+                            </button>
+                        `;
+                    }
+                } else {
+                    // Jika status sudah selesai bongkar, tampilkan teks ceklis aman saja
+                    tombolSuratJalan = data.link_surat_jalan ? `<a href="${data.link_surat_jalan}" target="_blank" style="color: #64ffda; text-decoration: underline; font-size: 12px;">📄 Lihat Arsip</a>` : "🔒 Terkunci";
+                }
+
+                // 📺 RENDERING TR: Ditambahkan kolom Indikator Surat Jalan
                 rowsHtml += `
                     <tr style="background-color: ${infoSinyal.barisBg}; transition: background 0.5s;">
                         <td><b>${tglMulai}</b> WIB</td>
@@ -329,7 +355,7 @@
                         <td>${data.nama_sopir}</td>
                         <td style="font-family: monospace; color:#64ffda;">${koordinatTxt}</td>
                         <td>${tglUpdate} WIB</td>
-                        <td style="color: ${infoSinyal.warna}; font-weight: bold; font-size: 13px;">${infoSinyal.teks}</td>
+                        <td>${tombolSuratJalan}</td> <td style="color: ${infoSinyal.warna}; font-weight: bold; font-size: 13px;">${infoSinyal.teks}</td>
                         <td>${badgeStatus}</td>
                     </tr>
                 `;
@@ -366,6 +392,25 @@
             // Gambar tabel & update posisi peta
             renderTabelDanRadar();
         });
+
+        // 🔥 FUNGSI GLOBAL: MENEMPELKAN LINK SURAT JALAN GOOGLE DRIVE KE FIREBASE
+window.tempelSuratJalan = async function(idTrack, platNomor) {
+    // Munculkan kotak pop-up input teks bawaan browser
+    const linkDrive = prompt(`Masukkan / Paste Link Google Drive Surat Jalan untuk Armada [${platNomor}]:`);
+    
+    // Jika Abang klik batalkan atau isinya kosong, stop proses
+    if (linkDrive === null) return; 
+    
+    try {
+        // Tembak data ke Firebase node armada tersebut
+        await update(ref(db, `bbs_tracking/${dbKey}/${idTrack}`), {
+            link_surat_jalan: linkDrive.trim()
+        });
+        alert(`🚀 SUKSES: Surat jalan untuk ${platNomor} berhasil diterapkan!`);
+    } catch (err) {
+        alert("❌ Gagal menyimpan link surat jalan: " + err.message);
+    }
+}
 
         function updateStatistik(total, otw, selesai) {
             document.getElementById('stat-total').innerText = total;
