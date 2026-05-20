@@ -142,297 +142,402 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        const firebaseConfig = { 
-            apiKey: "AIzaSyAfeLTKRQ66tjZjAt7tg6KcrWhtmv0y3fo", 
-            databaseURL: "https://berkah-baja-steel-default-rtdb.asia-southeast1.firebasedatabase.app", 
-            projectId: "berkah-baja-steel" 
-        };
-        
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const dbKey = "BBS_PROYEK_SATOE";
-
-        // INITIALIZATION PETA
-        const map = L.map('map').setView([-6.4025, 108.1741], 11);
-        
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap'
-        }).addTo(map);
-
-        let armadaMarkers = {};
-        let rawDataCache = []; // Tempat menyimpan data mentah untuk fungsi hitung mundur otomatis
-
-        const bbsTruckIcon = L.icon({
-            iconUrl: 'https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png',
-            iconSize: [35, 35], 
-            iconAnchor: [17, 35],
-            popupAnchor: [0, -35]
-        });
-
-        // 1. MONITORING SINKRONISASI DATA PIN BONGKAR
-        onValue(ref(db, `bbs_config/${dbKey}/pin_bongkar`), (snapshot) => {
-            if (snapshot.exists()) {
-                document.getElementById('pin-display').value = snapshot.val();
-            } else {
-                document.getElementById('pin-display').value = "2026";
-            }
-        });
-
-        window.perbaruiPinSistem = async function() {
-            const pinBaru = document.getElementById('pin-display').value.trim();
-            if (!pinBaru) {
-                alert("❌ Input PIN tidak boleh kosong!");
-                return;
-            }
-            try {
-                await set(ref(db, `bbs_config/${dbKey}/pin_bongkar`), pinBaru);
-                alert("🚀 KODE PIN BERHASIL DIUPDATE!");
-            } catch (err) {
-                alert("❌ Gagal memperbarui PIN: " + err.message);
-            }
-        }
-
-        // 🔥 FUNGSI GLOBAL: SAKLAR RESET TOTAL DATA SAKTI KE FIREBASE
-        window.eksekusiResetTotalData = async function() {
-            const konfirmasi = confirm("⚠️ PERINGATAN KERAS!!\n\nApakah Abang yakin ingin menghapus TOTAL seluruh log pelacakan GPS armada hari ini dari Firebase?\n\nSemua tanda truk di peta akan dihilangkan.");
-            
-            if (!konfirmasi) return;
-
-            try {
-                await remove(ref(db, `bbs_tracking/${dbKey}`));
-
-                for (const id_track in armadaMarkers) {
-                    map.removeLayer(armadaMarkers[id_track]);
-                }
-                armadaMarkers = {}; 
-
-                alert("🗑️ SUKSES BERSIH TOTAL! Seluruh database tracking telah di-wipe out dan siap digunakan kembali.");
-            } catch (err) {
-                alert("❌ Gagal melakukan Reset Data: " + err.message);
-            }
-        }
-
-        // 🧠 FUNGSI HITUNG MUNDUR: Deteksi otomatis apakah HP Sopir mati sinyal / tewas
-        function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan) {
-            // Jika sopir sudah ketok PIN alias Selesai Bongkar, otomatis status sinyal MATI BERSIH (Aman)
-            if (statusPerjalanan === "SELESAI_BONGKAR") {
-                return { teks: "🏁 SELESAI", warna: "#8892b0", barisBg: "transparent" };
-            }
-            if (!waktuUpdateTerakhir) {
-                return { teks: "⏳ MENCARI GPS", warna: "#ffb74d", barisBg: "transparent" };
-            }
-
-            const selisihMilidetik = new Date() - new Date(waktuUpdateTerakhir);
-            const selisihMenit = selisihMilidetik / (1000 * 60);
-
-            // ⚠️ AMBANG BATAS 12 MENIT: Lewat dari 12 menit gak nembak data = HP Mati/Sinyal Eror
-            if (selisihMenit > 12) {
-                return { 
-                    teks: "🔴 OFFLINE (HP Mati/Sinyal)", 
-                    warna: "#ff4c4c", 
-                    barisBg: "rgba(255, 76, 76, 0.08)" // Kasih aksen background merah tipis di baris tabel
-                };
-            } else {
-                return { 
-                    teks: "🟢 ONLINE", 
-                    warna: "#00e676", 
-                    barisBg: "transparent" 
-                };
-            }
-        }
-
-        // 🔄 FUNGSI RENDER TABEL: Untuk menggambar tabel secara berulang demi keakuratan status sinyal
-        function renderTabelDanRadar() {
-            const tbody = document.getElementById('data-tracking-table');
-            if (rawDataCache.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #8892b0; padding: 20px;">Belum ada armada yang berjalan / Data telah direset.</td></tr>`;
-                updateStatistik(0, 0, 0);
-                return;
-            }
-
-            let totalArmada = 0;
-            let totalOtw = 0;
-            let totalSelesai = 0;
-            let rowsHtml = "";
-            const currentActiveIds = [];
-
-            rawDataCache.forEach((data) => {
-                totalArmada++;
-                currentActiveIds.push(data.id_track);
-                
-                const tglMulai = data.waktu_mulai ? new Date(data.waktu_mulai).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : "-";
-                const tglUpdate = data.waktu_update ? new Date(data.waktu_update).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : "-";
-
-                // Panggil logika sakti deteksi sinyal
-                const infoSinyal = hitungStatusSinyal(data.waktu_update, data.status_perjalanan);
-
-                let badgeStatus = "";
-                if (data.status_perjalanan === "MENGIRIM_POSISI") {
-                    totalOtw++;
-                    // Jika terdeteksi offline, animasinya kita matikan biar gak menipu orang kantor
-                    if (infoSinyal.teks.includes("OFFLINE")) {
-                        badgeStatus = `<span class="badge badge-otw" style="background: #555; color: #aaa;">OTW (MACET)</span>`;
-                    } else {
-                        badgeStatus = `<span class="badge badge-otw"><span class="pulse"></span> OTW</span>`;
-                    }
-                } else {
-                    totalSelesai++;
-                    badgeStatus = `<span class="badge badge-done">✓ SAMPAI</span>`;
-                }
-
-                let koordinatTxt = "Mencari GPS...";
-                if (data.lat && data.lng) {
-                    koordinatTxt = `${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}`;
-
-                    if (data.status_perjalanan === "MENGIRIM_POSISI") {
-                        if (armadaMarkers[data.id_track]) {
-                            armadaMarkers[data.id_track].setLatLng([data.lat, data.lng]);
-                        } else {
-                            armadaMarkers[data.id_track] = L.marker([data.lat, data.lng], {icon: bbsTruckIcon}).addTo(map);
-                        }
-                        
-                        // Setel text tooltip plat nomor melayang di atas logo
-                        let warnaLabelSinyal = infoSinyal.teks.includes("OFFLINE") ? "#ff4c4c" : "#64ffda";
-                        armadaMarkers[data.id_track].bindTooltip(`<b style="color:${warnaLabelSinyal}; font-size:12px;">${data.plat_nomor}</b>`, {
-                            permanent: true,
-                            direction: 'top',
-                            offset: [0, -30],
-                            className: 'map-plat-label'
-                        }).openTooltip();
-
-                        armadaMarkers[data.id_track].bindPopup(`
-                            <div style="color:#fff; font-size:13px;">
-                                Plat Nomor: <b style="color:#64ffda;">${data.plat_nomor}</b><br>
-                                Nama Sopir: <b>${data.nama_sopir}</b><br>
-                                Koneksi: <span style="color:${infoSinyal.warna}; font-weight:bold;">${infoSinyal.teks}</span><br>
-                                Update Terakhir: <span style="color:#8892b0;">${tglUpdate} WIB</span>
-                            </div>
-                        `);
-                    } else {
-                        if (armadaMarkers[data.id_track]) {
-                            map.removeLayer(armadaMarkers[data.id_track]);
-                            delete armadaMarkers[data.id_track];
-                        }
-                    }
-                }
-
-                // 📺 RENDERING TR: Ditambahkan kolom Indikator Koneksi Sinyal
-                // 📂 LOGIKA TOMBOL SURAT JALAN DINAMIS
-                let tombolSuratJalan = "-";
-                if (data.status_perjalanan === "MENGIRIM_POSISI") {
-                    // Jika link sudah ada di Firebase, warnai hijau (Update). Jika belum, warnai biru (Tempel)
-                    if (data.link_surat_jalan) {
-                        tombolSuratJalan = `
-                            <button onclick="window.tempelSuratJalan('${data.id_track}', '${data.plat_nomor}')" 
-                                    style="background: #00e676; color: #000; font-weight: bold; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
-                                ✅ Update Link
-                            </button>
-                        `;
-                    } else {
-                        tombolSuratJalan = `
-                            <button onclick="window.tempelSuratJalan('${data.id_track}', '${data.plat_nomor}')" 
-                                    style="background: #29b6f6; color: #000; font-weight: bold; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
-                                ➕ Tempel Link
-                            </button>
-                        `;
-                    }
-                } else {
-                    // Jika status sudah selesai bongkar, tampilkan teks ceklis aman saja
-                    tombolSuratJalan = data.link_surat_jalan ? `<a href="${data.link_surat_jalan}" target="_blank" style="color: #64ffda; text-decoration: underline; font-size: 12px;">📄 Lihat Arsip</a>` : "🔒 Terkunci";
-                }
-
-                // 📺 RENDERING TR: Ditambahkan kolom Indikator Surat Jalan
-                rowsHtml += `
-                    <tr style="background-color: ${infoSinyal.barisBg}; transition: background 0.5s;">
-                        <td><b>${tglMulai}</b> WIB</td>
-                        <td style="font-family: monospace; color:#8892b0;">${data.id_track}</td>
-                        <td><b style="color:#64ffda;">${data.plat_nomor}</b></td>
-                        <td>${data.nama_sopir}</td>
-                        <td style="font-family: monospace; color:#64ffda;">${koordinatTxt}</td>
-                        <td>${tglUpdate} WIB</td>
-                        <td>${tombolSuratJalan}</td> <td style="color: ${infoSinyal.warna}; font-weight: bold; font-size: 13px;">${infoSinyal.teks}</td>
-                        <td>${badgeStatus}</td>
-                    </tr>
-                `;
-            });
-
-            // Bersihkan marker lama
-            for (const id_track in armadaMarkers) {
-                if (!currentActiveIds.includes(id_track)) {
-                    map.removeLayer(armadaMarkers[id_track]);
-                    delete armadaMarkers[id_track];
-                }
-            }
-
-            tbody.innerHTML = rowsHtml;
-            updateStatistik(totalArmada, totalOtw, totalSelesai);
-        }
-
-        // 2. MONITORING REALTIME DAFTAR LOG TRACKING DRIVER
-        onValue(ref(db, `bbs_tracking/${dbKey}`), (snapshot) => {
-            rawDataCache = [];
-            if (snapshot.exists()) {
-                snapshot.forEach((childSnapshot) => {
-                    rawDataCache.push(childSnapshot.val());
-                });
-                rawDataCache.reverse(); // Urutan terbaru paling atas
-            } else {
-                // Jaga-jaga bersihkan sisa marker jika firebase kosong pasca reset
-                for (const id in armadaMarkers) {
-                    map.removeLayer(armadaMarkers[id]);
-                }
-                armadaMarkers = {};
-            }
-            
-            // Gambar tabel & update posisi peta
-            renderTabelDanRadar();
-        });
-
-        // 🔥 FUNGSI GLOBAL: MENEMPELKAN LINK SURAT JALAN GOOGLE DRIVE KE FIREBASE
-window.tempelSuratJalan = async function(idTrack, platNomor) {
-    // Munculkan kotak pop-up input teks bawaan browser
-    const linkDrive = prompt(`Masukkan / Paste Link Google Drive Surat Jalan untuk Armada [${platNomor}]:`);
+    const firebaseConfig = { 
+        apiKey: "AIzaSyAfeLTKRQ66tjZjAt7tg6KcrWhtmv0y3fo", 
+        databaseURL: "https://berkah-baja-steel-default-rtdb.asia-southeast1.firebasedatabase.app", 
+        projectId: "berkah-baja-steel" 
+    };
     
-    // Jika Abang klik batalkan atau isinya kosong, stop proses
-    if (linkDrive === null) return; 
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const dbKey = "BBS_PROYEK_SATOE";
+
+    // INITIALIZATION PETA
+    const map = L.map('map').setView([-6.4025, 108.1741], 11);
     
-    try {
-        // Tembak data ke Firebase node armada tersebut
-        await update(ref(db, `bbs_tracking/${dbKey}/${idTrack}`), {
-            link_surat_jalan: linkDrive.trim()
-        });
-        alert(`🚀 SUKSES: Surat jalan untuk ${platNomor} berhasil diterapkan!`);
-    } catch (err) {
-        alert("❌ Gagal menyimpan link surat jalan: " + err.message);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    let armadaMarkers = {};
+    let rawDataCache = []; // Tempat menyimpan data mentah untuk fungsi hitung mundur otomatis
+
+    const bbsTruckIcon = L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png',
+        iconSize: [35, 35], 
+        iconAnchor: [17, 35],
+        popupAnchor: [0, -35]
+    });
+
+    // 1. MONITORING SINKRONISASI DATA PIN BONGKAR
+    onValue(ref(db, `bbs_config/${dbKey}/pin_bongkar`), (snapshot) => {
+        if (snapshot.exists()) {
+            document.getElementById('pin-display').value = snapshot.val();
+        } else {
+            document.getElementById('pin-display').value = "2026";
+        }
+    });
+
+    window.perbaruiPinSistem = async function() {
+        const pinBaru = document.getElementById('pin-display').value.trim();
+        if (!pinBaru) {
+            alert("❌ Input PIN tidak boleh kosong!");
+            return;
+        }
+        try {
+            await set(ref(db, `bbs_config/${dbKey}/pin_bongkar`), pinBaru);
+            alert("🚀 KODE PIN BERHASIL DIUPDATE!");
+        } catch (err) {
+            alert("❌ Gagal memperbarui PIN: " + err.message);
+        }
     }
-}
 
-        function updateStatistik(total, otw, selesai) {
-            document.getElementById('stat-total').innerText = total;
-            document.getElementById('stat-otw').innerText = otw;
-            document.getElementById('stat-selesai').innerText = selesai;
+    // 🔥 FUNGSI GLOBAL: SAKLAR RESET TOTAL DATA SAKTI KE FIREBASE
+    window.eksekusiResetTotalData = async function() {
+        const konfirmasi = confirm("⚠️ PERINGATAN KERAS!!\n\nApakah Abang yakin ingin menghapus TOTAL seluruh log pelacakan GPS armada hari ini dari Firebase?\n\nSemua tanda truk di peta akan dihilangkan.");
+        
+        if (!konfirmasi) return;
+
+        try {
+            await remove(ref(db, `bbs_tracking/${dbKey}`));
+
+            for (const id_track in armadaMarkers) {
+                map.removeLayer(armadaMarkers[id_track]);
+            }
+            armadaMarkers = {}; 
+
+            alert("🗑️ SUKSES BERSIH TOTAL! Seluruh database tracking telah di-wipe out dan siap digunakan kembali.");
+        } catch (err) {
+            alert("❌ Gagal melakukan Reset Data: " + err.message);
+        }
+    }
+
+    // 🧠 FUNGSI HITUNG MUNDUR: Deteksi otomatis apakah HP Sopir mati sinyal / tewas
+    function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan) {
+        if (statusPerjalanan === "SELESAI_BONGKAR") {
+            return { teks: "🏁 SELESAI", warna: "#8892b0", barisBg: "transparent" };
+        }
+        if (!waktuUpdateTerakhir) {
+            return { teks: "⏳ MENCARI GPS", warna: "#ffb74d", barisBg: "transparent" };
         }
 
-        // ⏳ RADAR DETEKTIF MANDIRI: Komputer Dashboard akan menghitung mundur ulang status sinyal 
-        // setiap 30 detik secara mandiri, tanpa perlu menunggu setoran data dari driver!
-        setInterval(() => {
-            console.log("🔍 Sidak Sinyal: Mengecek kesehatan koneksi HP sopir...");
-            renderTabelDanRadar();
-        }, 30 * 1000);
+        const selisihMilidetik = new Date() - new Date(waktuUpdateTerakhir);
+        const selisihMenit = selisihMilidetik / (1000 * 60);
 
-        // KODE RESMI PEMANGGIL SERVICE WORKER FISIK (ANTI-BLOKIR CHROME)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js', { scope: './' })
-                    .then((reg) => console.log('🚀 PWA Dashboard Resmi Aktif!', reg))
-                    .catch((err) => console.error('❌ Eror PWA Dashboard:', err));
+        if (selisihMenit > 12) {
+            return { 
+                teks: "🔴 OFFLINE (HP Mati/Sinyal)", 
+                warna: "#ff4c4c", 
+                barisBg: "rgba(255, 76, 76, 0.08)" 
+            };
+        } else {
+            return { 
+                teks: "🟢 ONLINE", 
+                warna: "#00e676", 
+                barisBg: "transparent" 
+            };
+        }
+    }
+
+    // 🔄 FUNGSI RENDER TABEL: Untuk menggambar tabel secara berulang demi keakuratan status sinyal
+    function renderTabelDanRadar() {
+        const tbody = document.getElementById('data-tracking-table');
+        if (rawDataCache.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #8892b0; padding: 20px;">Belum ada armada yang berjalan / Data telah direset.</td></tr>`;
+            updateStatistik(0, 0, 0);
+            return;
+        }
+
+        let totalArmada = 0;
+        let totalOtw = 0;
+        let totalSelesai = 0;
+        let rowsHtml = "";
+        const currentActiveIds = [];
+
+        rawDataCache.forEach((data) => {
+            totalArmada++;
+            currentActiveIds.push(data.id_track);
+            
+            const tglMulai = data.waktu_mulai ? new Date(data.waktu_mulai).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : "-";
+            const tglUpdate = data.waktu_update ? new Date(data.waktu_update).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : "-";
+
+            // Panggil logika sakti deteksi sinyal
+            const infoSinyal = hitungStatusSinyal(data.waktu_update, data.status_perjalanan);
+
+            let badgeStatus = "";
+            let tombolAksiDokumen = "-"; // Wadah tombol cetak khusus yang sudah sampai
+
+            if (data.status_perjalanan === "MENGIRIM_POSISI") {
+                totalOtw++;
+                if (infoSinyal.teks.includes("OFFLINE")) {
+                    badgeStatus = `<span class="badge badge-otw" style="background: #555; color: #aaa;">OTW (MACET)</span>`;
+                } else {
+                    badgeStatus = `<span class="badge badge-otw"><span class="pulse"></span> OTW</span>`;
+                }
+            } else {
+                totalSelesai++;
+                badgeStatus = `<span class="badge badge-done">✓ SAMPAI</span>`;
+                
+                // 🎯 FITUR 4: Jika status sudah SAMPAI, munculkan tombol "Cetak & Bersihkan"
+                // Kita parsing seluruh string datanya ke format JSON aman agar bisa dibaca fungsi PDF
+                const dataString = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+                tombolAksiDokumen = `
+                    <button onclick="window.unduhPdfDanWipeFirebase('${dataString}')" 
+                            style="background: #ff5252; color: #fff; font-weight: bold; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                        📄 Cetak & Bersihkan
+                    </button>
+                `;
+            }
+
+            let koordinatTxt = "Mencari GPS...";
+            if (data.lat && data.lng) {
+                koordinatTxt = `${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}`;
+
+                if (data.status_perjalanan === "MENGIRIM_POSISI") {
+                    if (armadaMarkers[data.id_track]) {
+                        armadaMarkers[data.id_track].setLatLng([data.lat, data.lng]);
+                    } else {
+                        armadaMarkers[data.id_track] = L.marker([data.lat, data.lng], {icon: bbsTruckIcon}).addTo(map);
+                    }
+                    
+                    let warnaLabelSinyal = infoSinyal.teks.includes("OFFLINE") ? "#ff4c4c" : "#64ffda";
+                    armadaMarkers[data.id_track].bindTooltip(`<b style="color:${warnaLabelSinyal}; font-size:12px;">${data.plat_nomor}</b>`, {
+                        permanent: true,
+                        direction: 'top',
+                        offset: [0, -30],
+                        className: 'map-plat-label'
+                    }).openTooltip();
+
+                    armadaMarkers[data.id_track].bindPopup(`
+                        <div style="color:#fff; font-size:13px;">
+                            Plat Nomor: <b style="color:#64ffda;">${data.plat_nomor}</b><br>
+                            Nama Sopir: <b>${data.nama_sopir}</b><br>
+                            Koneksi: <span style="color:${infoSinyal.warna}; font-weight:bold;">${infoSinyal.teks}</span><br>
+                            Update Terakhir: <span style="color:#8892b0;">${tglUpdate} WIB</span>
+                        </div>
+                    `);
+                } else {
+                    if (armadaMarkers[data.id_track]) {
+                        map.removeLayer(armadaMarkers[data.id_track]);
+                        delete armadaMarkers[data.id_track];
+                    }
+                }
+            }
+
+            // 🎯 FITUR 1: LOGIKA INPUTAN SURAT JALAN + BOP OPERASIONAL MANUAL
+            let tombolSuratJalan = "-";
+            let displayBop = data.nilai_bop ? `Rp ${parseInt(data.nilai_bop).toLocaleString('id-ID')}` : "-";
+
+            if (data.status_perjalanan === "MENGIRIM_POSISI") {
+                if (data.link_surat_jalan) {
+                    tombolSuratJalan = `
+                        <button onclick="window.tempelSuratJalan('${data.id_track}', '${data.plat_nomor}')" 
+                                style="background: #00e676; color: #000; font-weight: bold; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                            ✅ Update data
+                        </button>
+                    `;
+                } else {
+                    tombolSuratJalan = `
+                        <button onclick="window.tempelSuratJalan('${data.id_track}', '${data.plat_nomor}')" 
+                                style="background: #29b6f6; color: #000; font-weight: bold; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                            ➕ Surat & BOP
+                        </button>
+                    `;
+                }
+            } else {
+                tombolSuratJalan = data.link_surat_jalan ? `<a href="${data.link_surat_jalan}" target="_blank" style="color: #64ffda; text-decoration: underline; font-size: 12px;">📄 Lihat Arsip</a>` : "🔒 Terkunci";
+            }
+
+            // RENDERING TR (Kini ada 10 kolom lengkap dengan Nilai BOP dan Aksi Cetak)
+            rowsHtml += `
+                <tr style="background-color: ${infoSinyal.barisBg}; transition: background 0.5s;">
+                    <td><b>${tglMulai}</b> WIB</td>
+                    <td style="font-family: monospace; color:#8892b0;">${data.id_track}</td>
+                    <td><b style="color:#64ffda;">${data.plat_nomor}</b></td>
+                    <td>${data.nama_sopir}</td>
+                    <td style="font-family: monospace; color:#64ffda;">${koordinatTxt}</td>
+                    <td>${tglUpdate} WIB</td>
+                    <td>${tombolSuratJalan}</td>
+                    <td style="color: #64ffda; font-weight: bold;">${displayBop}</td>
+                    <td style="color: ${infoSinyal.warna}; font-weight: bold; font-size: 13px;">${infoSinyal.teks}</td>
+                    <td>${badgeStatus}</td>
+                    <td>${tombolAksiDokumen}</td>
+                </tr>
+            `;
+        });
+
+        // Bersihkan marker lama
+        for (const id_track in armadaMarkers) {
+            if (!currentActiveIds.includes(id_track)) {
+                map.removeLayer(armadaMarkers[id_track]);
+                delete armadaMarkers[id_track];
+            }
+        }
+
+        tbody.innerHTML = rowsHtml;
+        updateStatistik(totalArmada, totalOtw, totalSelesai);
+    }
+
+    // 2. MONITORING REALTIME DAFTAR LOG TRACKING DRIVER
+    onValue(ref(db, `bbs_tracking/${dbKey}`), (snapshot) => {
+        rawDataCache = [];
+        if (snapshot.exists()) {
+            snapshot.forEach((childSnapshot) => {
+                rawDataCache.push(childSnapshot.val());
             });
+            rawDataCache.reverse(); 
+        } else {
+            for (const id in armadaMarkers) {
+                map.removeLayer(armadaMarkers[id]);
+            }
+            armadaMarkers = {};
         }
+        renderTabelDanRadar();
+    });
+
+    // 🎯 FITUR 1 MODIFIKASI: PROMPT BERUNTUN INPUT MANUAL SURAT JALAN + BOP SEKALIGUS
+    window.tempelSuratJalan = async function(idTrack, platNomor) {
+        // Langkah 1: Minta link surat jalan
+        const linkDrive = prompt(`[1/2] Masukkan / Paste Link Google Drive Surat Jalan untuk Armada [${platNomor}]:`);
+        if (linkDrive === null) return; // Klik Batal
+
+        // Langkah 2: Minta input BOP
+        const bopManual = prompt(`[2/2] Masukkan Nominal BOP Manual untuk Armada [${platNomor}] (Hanya angka, contoh: 550000):`);
+        if (bopManual === null) return; // Klik Batal
+
+        const bopBersih = bopManual.replace(/[^0-9]/g, ''); // Ambil angkanya saja jika driver ketik pakai titik/Rp
+        if (!bopBersih) {
+            alert("❌ Nominal BOP harus diisi dengan angka valid!");
+            return;
+        }
+        
+        try {
+            // Tembak kedua data sekaligus ke node transaksi berjalan di Firebase
+            await update(ref(db, `bbs_tracking/${dbKey}/${idTrack}`), {
+                link_surat_jalan: linkDrive.trim(),
+                nilai_bop: parseInt(bopBersih)
+            });
+            alert(`🚀 SUKSES: Dokumen Surat Jalan & BOP senilai Rp ${parseInt(bopBersih).toLocaleString('id-ID')} untuk ${platNomor} berhasil dipasang!`);
+        } catch (err) {
+            alert("❌ Gagal menyimpan data operasional: " + err.message);
+        }
+    }
+
+    // 🎯 FITUR 2 & 3: GENERATE PDF OTOMATIS DAN BERSIHKAN NODE FIREBASE
+    window.unduhPdfDanWipeFirebase = function(base64Data) {
+        // Decode data aman yang tadi di-passing dari tabel
+        const data = JSON.parse(decodeURIComponent(escape(atob(base64Data))));
+        
+        const konfirmasi = confirm(`Apakah Anda ingin mencetak PDF Manifes untuk Sopir ${data.nama_sopir} (${data.plat_nomor})?\n\nSetelah PDF sukses di-download, data armada ini akan otomatis dihapus permanen dari Firebase.`);
+        if (!konfirmasi) return;
+
+        // Tarik objek jsPDF global dari browser
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a5" }); // Kita cetak format struk A5 ringkas kantoran
+
+        const formatBop = data.nilai_bop ? parseInt(data.nilai_bop) : 0;
+        const tglBongkar = data.waktu_selesai ? new Date(data.waktu_selesai).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : "-";
+        const jamBongkar = data.waktu_selesai ? new Date(data.waktu_selesai).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : "-";
+
+        // DESAIN INTERFACES PDF RESMI PT. BBS
+        doc.setFillColor(33, 43, 54);
+        doc.rect(0, 0, 148, 18, "F");
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text("PT. BERKAH BAJA STEEL", 10, 12);
+
+        doc.setTextColor(50, 50, 50);
+        doc.setFontSize(10);
+        doc.setFont("Helvetica", "normal");
+        doc.text("KUITANSI MANIFES BONGKAR LOGISTIK", 10, 26);
+        doc.text(`ID Transaksi: ${data.id_track}`, 10, 31);
+        
+        // Garis batas tipis
+        doc.setLineWidth(0.3);
+        doc.line(10, 35, 138, 35);
+
+        // Isi Data Ringkasan Konten PDF
+        doc.setFontSize(11);
+        doc.text("Plat Kendaraan", 10, 45);
+        doc.setFont("Helvetica", "bold");
+        doc.text(`:  ${data.plat_nomor}`, 45, 45);
+
+        doc.setFont("Helvetica", "normal");
+        doc.text("Nama Sopir", 10, 53);
+        doc.setFont("Helvetica", "bold");
+        doc.text(`:  ${data.nama_sopir}`, 45, 53);
+
+        doc.setFont("Helvetica", "normal");
+        doc.text("Waktu Bongkar", 10, 61);
+        doc.text(`:  ${tglBongkar} @ ${jamBongkar} WIB`, 45, 61);
+
+        doc.text("Biaya BOP Unit", 10, 69);
+        doc.text(`:  Rp ${formatBop.toLocaleString('id-ID')}`, 45, 69);
+
+        // Kotak Pembatas Akumulasi Finansial
+        doc.line(10, 77, 138, 77);
+        doc.setFillColor(245, 245, 245);
+        doc.rect(10, 82, 128, 12, "F");
+
+        doc.setFontSize(12);
+        doc.setTextColor(204, 0, 0);
+        doc.text("TOTAL ALOKASI BOP", 14, 90);
+        doc.text(`Rp ${formatBop.toLocaleString('id-ID')}`, 95, 90);
+
+        // Tanda Tangan Logistik Kantor
+        doc.setTextColor(80, 80, 80);
+        doc.setFontSize(9);
+        doc.setFont("Helvetica", "italic");
+        doc.text("Dicetak otomatis oleh Sistem BBS Proyek Satoe", 10, 115);
+        doc.text(`Waktu Cetak: ${new Date().toLocaleString('id-ID')} WIB`, 10, 120);
+
+        doc.setFont("Helvetica", "bold");
+        doc.text("Petugas Logistik PT. BBS", 95, 115);
+        doc.line(95, 135, 135, 135);
+
+        // 🔥 PROSES DOWNLOAD PDF KE LAPTOP ADMIN
+        const namaFile = `BBS_MANIFES_${data.plat_nomor}_${data.nama_sopir}.pdf`;
+        doc.save(namaFile);
+
+        // 🧹 PROSES AUTO-CLEAN: Begitu file didownload, hapus node ID tersebut dari Firebase
+        remove(ref(db, `bbs_tracking/${dbKey}/${data.id_track}`))
+            .then(() => {
+                alert(`🗑️ BERSIH & AMAN!\n\nFile PDF [${namaFile}] berhasil diunduh. Data transaksi milik ${data.plat_nomor} otomatis dihapus dari Firebase agar tabel tetap steril.`);
+            })
+            .catch((err) => {
+                console.error("Gagal membersihkan data otomatis di Firebase:", err);
+                alert("⚠️ PDF Terunduh, namun gagal membersihkan Firebase. Silakan lakukan pembersihan manual.");
+            });
+    }
+
+    function updateStatistik(total, otw, selesai) {
+        document.getElementById('stat-total').innerText = total;
+        document.getElementById('stat-otw').innerText = otw;
+        document.getElementById('stat-selesai').innerText = selesai;
+    }
+
+    // ⏳ RADAR DETEKTIF MANDIRI: Refresh hitung status sinyal per 30 detik
+    setInterval(() => {
+        console.log("🔍 Sidak Sinyal: Mengecek kesehatan koneksi HP sopir...");
+        renderTabelDanRadar();
+    }, 30 * 1000);
+
+    // KODE RESMI PEMANGGIL SERVICE WORKER FISIK (ANTI-BLOKIR CHROME)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js', { scope: './' })
+                .then((reg) => console.log('🚀 PWA Dashboard Resmi Aktif!', reg))
+                .catch((err) => console.error('❌ Eror PWA Dashboard:', err));
+        });
+    }
     </script>
 </body>
 </html>
