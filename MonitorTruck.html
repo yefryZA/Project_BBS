@@ -221,18 +221,23 @@
         }
     }
 
-    // 🧠 FUNGSI HITUNG MUNDUR: Deteksi otomatis apakah HP Sopir mati sinyal / tewas
-    function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan) {
+    // 🧠 FUNGSI HITUNG MUNDUR PINTAR: Menggunakan waktu_update, jika kosong pakai waktu_mulai
+    function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan, waktuMulaiAwal) {
         if (statusPerjalanan === "SELESAI_BONGKAR") {
             return { teks: "🏁 SELESAI", warna: "#8892b0", barisBg: "transparent" };
         }
-        if (!waktuUpdateTerakhir) {
+
+        // 🎯 TIKANAN SAKTI CIMI: Jika waktu_update belum terbuat dari HP sopir, pinjam waktu_mulai sebagai gantinya
+        const waktuPatokan = waktuUpdateTerakhir || waktuMulaiAwal;
+
+        if (!waktuPatokan) {
             return { teks: "⏳ MENCARI GPS", warna: "#ffb74d", barisBg: "transparent" };
         }
 
-        const selisihMilidetik = new Date() - new Date(waktuUpdateTerakhir);
+        const selisihMilidetik = new Date() - new Date(waktuPatokan);
         const selisihMenit = selisihMilidetik / (1000 * 60);
 
+        // ⚠️ AMBANG BATAS 12 MENIT
         if (selisihMenit > 12) {
             return { 
                 teks: "🔴 OFFLINE (HP Mati/Sinyal)", 
@@ -247,7 +252,6 @@
             };
         }
     }
-
     // 🔄 FUNGSI RENDER TABEL: Untuk menggambar tabel secara berulang demi keakuratan status sinyal
     function renderTabelDanRadar() {
         const tbody = document.getElementById('data-tracking-table');
@@ -271,7 +275,7 @@
             const tglUpdate = data.waktu_update ? new Date(data.waktu_update).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : "-";
 
             // Panggil logika sakti deteksi sinyal
-            const infoSinyal = hitungStatusSinyal(data.waktu_update, data.status_perjalanan);
+            const infoSinyal = hitungStatusSinyal(data.waktu_update, data.status_perjalanan, data.waktu_mulai);
 
             let badgeStatus = "";
             let tombolAksiDokumen = "-"; // Wadah tombol cetak khusus yang sudah sampai
