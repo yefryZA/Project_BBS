@@ -121,18 +121,21 @@
     <div class="table-container">
         <h2>📊 Realtime GPS Data Log</h2>
         <table>
-         <thead>
+       <thead>
     <tr>
         <th>Jam Mulai</th>
-        <th>ID Track</th>
+        <th>ID Transaksi</th>
         <th>Plat Nomor</th>
         <th>Nama Sopir</th>
-        <th>Posisi Terakhir</th>
-        <th>Jam Update</th>
-        <th>Surat Jalan</th> <th>Koneksi Sinyal</th>
+        <th>Koordinat</th>
+        <th>Update Terakhir</th>
+        <th>Surat Jalan</th>
+        <th>BOP</th> 
+        <th>Koneksi Sinyal</th>
         <th>Status</th>
+        <th>Aksi Dokumen</th>
     </tr>
-        </thead>
+</thead>
             <tbody id="data-tracking-table">
                 <tr>
                     <td colspan="7" style="text-align: center; color: #8892b0; padding: 30px;">Menghubungkan ke satelit Firebase...</td>
@@ -143,7 +146,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
+
     <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
