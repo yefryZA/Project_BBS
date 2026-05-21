@@ -268,7 +268,7 @@
         let rowsHtml = "";
         const currentActiveIds = [];
 
-        // 🎯 LANGKAH SAKTI 1: Pool Detector (Dipangkas ke 4 angka di belakang koma agar radius ~11 meter terbaca sebagai satu lokasi kembar!)
+        // 🎯 LANGKAH SAKTI 1: Detektor Kembar Super Sensitif (Gunakan 4 angka desimal)
         const hitungPosisi = {};
         rawDataCache.forEach(d => {
             if (d.lat && d.lng && d.status_perjalanan === "MENGIRIM_POSISI") {
@@ -278,6 +278,9 @@
                 hitungPosisi[kuncianKoor] = (hitungPosisi[kuncianKoor] || 0) + 1;
             }
         });
+
+        // Variabel pembantu untuk mengarahkan kamera peta otomatis ke lokasi pool
+        let koordinatSatuLokasi = null;
 
         rawDataCache.forEach((data, index) => {
             totalArmada++;
@@ -320,16 +323,19 @@
                     let finalLat = Number(data.lat);
                     let finalLng = Number(data.lng);
                     
-                    // Gunakan patokan pembulatan 4 angka desimal yang sama
                     const pembulatLat = Math.round(data.lat * 10000) / 10000;
                     const pembulatLng = Math.round(data.lng * 10000) / 10000;
                     const kuncianKoor = `${pembulatLat}_${pembulatLng}`;
                     
-                    // 🎯 LANGKAH SAKTI 2: Jika terdeteksi berada di radius area yang sama, paksa sebar melingkar secara radikal!
+                    // Ambil salah satu koordinat asli untuk titik fokus kamera nanti
+                    if (!koordinatSatuLokasi) {
+                        koordinatSatuLokasi = [finalLat, finalLng];
+                    }
+
+                    // 🎯 LANGKAH SAKTI 2: LEDAKKAN JARAK SEBAR SECARA RADIKAL (Melar ke 0.0015 -> Radius ~150 meter biar kelihatan di zoom jauh!)
                     if (hitungPosisi[kuncianKoor] > 1) {
-                        // Jarak sebar dilebarkan sedikit (~25 meter di peta) agar plat nomor terlihat terpisah jelas
-                        finalLat += Math.sin(index) * 0.00025;
-                        finalLng += Math.cos(index) * 0.00025;
+                        finalLat += Math.sin(index) * 0.0015;
+                        finalLng += Math.cos(index) * 0.0015;
                     }
 
                     // Update atau buat baru ke peta Leaflet
@@ -358,7 +364,7 @@
                 } 
             } else {
                 if (armadaMarkers[data.id_track]) {
-                    map.removeLayer(armadaMarkers[id_track]);
+                    map.removeLayer(armadaMarkers[data.id_track]);
                     delete armadaMarkers[data.id_track];
                 }
             }
@@ -412,8 +418,13 @@
 
         tbody.innerHTML = rowsHtml;
         updateStatistik(totalArmada, totalOtw, totalSelesai);
-    }
 
+        // 🎯 LANGKAH SAKTI 3: PAKSA KAMERA PETA MENDEKAT TAJAM KE LOKASI POOL TRUK (Zoom Level 16)
+        if (koordinatSatuLokasi) {
+            map.setView(koordinatSatuLokasi, 16);
+        }
+    }
+        
     // 2. MONITORING REALTIME DAFTAR LOG TRACKING DRIVER
     onValue(ref(db, `bbs_tracking/${dbKey}`), (snapshot) => {
         rawDataCache = [];
