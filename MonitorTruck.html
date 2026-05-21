@@ -221,7 +221,7 @@
         }
     }
 
-    // 🧠 FUNGSI HITUNG MUNDUR PINTAR: Menggunakan waktu_update, jika kosong pakai waktu_mulai
+// 🧠 FUNGSI HITUNG MUNDUR PINTAR: Menggunakan waktu_update, jika kosong pakai waktu_mulai
     function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan, waktuMulaiAwal) {
         if (statusPerjalanan === "SELESAI_BONGKAR") {
             return { teks: "🏁 SELESAI", warna: "#8892b0", barisBg: "transparent" };
@@ -234,7 +234,9 @@
             return { teks: "⏳ MENCARI GPS", warna: "#ffb74d", barisBg: "transparent" };
         }
 
-        const selisihMilidetik = new Date() - new Date(waktuPatokan);
+        // 🔥 PERBAIKAN TIMEZONE SAKTI: Bandingkan ISO String Driver dengan ISO String Waktu Sekarang biar adil!
+        const waktuSekarangISO = new Date().toISOString();
+        const selisihMilidetik = new Date(waktuSekarangISO) - new Date(waktuPatokan);
         const selisihMenit = selisihMilidetik / (1000 * 60);
 
         // ⚠️ AMBANG BATAS 12 MENIT
