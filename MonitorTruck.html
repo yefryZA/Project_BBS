@@ -268,12 +268,12 @@
         let rowsHtml = "";
         const currentActiveIds = [];
 
-        // 🎯 LANGKAH SAKTI 1: Pool Detector Murni tanpa pandang status perjalanan
+        // 🎯 LANGKAH SAKTI 1: Pool Detector (Dipangkas ke 4 angka di belakang koma agar radius ~11 meter terbaca sebagai satu lokasi kembar!)
         const hitungPosisi = {};
         rawDataCache.forEach(d => {
-            if (d.lat && d.lng) {
-                const pembulatLat = Math.round(d.lat * 100000) / 100000;
-                const pembulatLng = Math.round(d.lng * 100000) / 100000;
+            if (d.lat && d.lng && d.status_perjalanan === "MENGIRIM_POSISI") {
+                const pembulatLat = Math.round(d.lat * 10000) / 10000;
+                const pembulatLng = Math.round(d.lng * 10000) / 10000;
                 const kuncianKoor = `${pembulatLat}_${pembulatLng}`;
                 hitungPosisi[kuncianKoor] = (hitungPosisi[kuncianKoor] || 0) + 1;
             }
@@ -286,7 +286,6 @@
             const tglMulai = data.waktu_mulai ? new Date(data.waktu_mulai).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : "-";
             const tglUpdate = data.waktu_update ? new Date(data.waktu_update).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}) : "-";
 
-            // Panggil logika sakti deteksi sinyal
             const infoSinyal = hitungStatusSinyal(data.waktu_update, data.status_perjalanan, data.waktu_mulai);
 
             let badgeStatus = "";
@@ -316,52 +315,54 @@
             if (data.lat && data.lng) {
                 koordinatTxt = `${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}`;
 
-                // 🎯 REVOLUSI CIMI: Hapus syarat status_perjalanan === "MENGIRIM_POSISI"
-                // Selama koordinat Lat & Lng ada nilainya di Firebase, PAKSA GAMBAR MARKER-NYA!
-                let finalLat = Number(data.lat);
-                let finalLng = Number(data.lng);
-                
-                const pembulatLat = Math.round(data.lat * 100000) / 100000;
-                const pembulatLng = Math.round(data.lng * 100000) / 100000;
-                const kuncianKoor = `${pembulatLat}_${pembulatLng}`;
-                
-                if (hitungPosisi[kuncianKoor] > 1) {
-                    finalLat += Math.sin(index) * 0.00015; // Jarak geser sedikit dilebarkan (~10-15 meter)
-                    finalLng += Math.cos(index) * 0.00015;
-                }
+                if (data.status_perjalanan === "MENGIRIM_POSISI") {
+                    
+                    let finalLat = Number(data.lat);
+                    let finalLng = Number(data.lng);
+                    
+                    // Gunakan patokan pembulatan 4 angka desimal yang sama
+                    const pembulatLat = Math.round(data.lat * 10000) / 10000;
+                    const pembulatLng = Math.round(data.lng * 10000) / 10000;
+                    const kuncianKoor = `${pembulatLat}_${pembulatLng}`;
+                    
+                    // 🎯 LANGKAH SAKTI 2: Jika terdeteksi berada di radius area yang sama, paksa sebar melingkar secara radikal!
+                    if (hitungPosisi[kuncianKoor] > 1) {
+                        // Jarak sebar dilebarkan sedikit (~25 meter di peta) agar plat nomor terlihat terpisah jelas
+                        finalLat += Math.sin(index) * 0.00025;
+                        finalLng += Math.cos(index) * 0.00025;
+                    }
 
-                // Update posisi atau bikin baru
-                if (armadaMarkers[data.id_track]) {
-                    armadaMarkers[data.id_track].setLatLng([finalLat, finalLng]);
-                } else {
-                    armadaMarkers[data.id_track] = L.marker([finalLat, finalLng], {icon: bbsTruckIcon}).addTo(map);
-                }
-                
-                let warnaLabelSinyal = infoSinyal.teks.includes("OFFLINE") ? "#ff4c4c" : "#64ffda";
-                armadaMarkers[data.id_track].bindTooltip(`<b style="color:${warnaLabelSinyal}; font-size:12px;">${data.plat_nomor}</b>`, {
-                    permanent: true,
-                    direction: 'top',
-                    offset: [0, -30],
-                    className: 'map-plat-label'
-                }).openTooltip();
+                    // Update atau buat baru ke peta Leaflet
+                    if (armadaMarkers[data.id_track]) {
+                        armadaMarkers[data.id_track].setLatLng([finalLat, finalLng]);
+                    } else {
+                        armadaMarkers[data.id_track] = L.marker([finalLat, finalLng], {icon: bbsTruckIcon}).addTo(map);
+                    }
+                    
+                    let warnaLabelSinyal = infoSinyal.teks.includes("OFFLINE") ? "#ff4c4c" : "#64ffda";
+                    armadaMarkers[data.id_track].bindTooltip(`<b style="color:${warnaLabelSinyal}; font-size:12px;">${data.plat_nomor}</b>`, {
+                        permanent: true,
+                        direction: 'top',
+                        offset: [0, -30],
+                        className: 'map-plat-label'
+                    }).openTooltip();
 
-                armadaMarkers[data.id_track].bindPopup(`
-                    <div style="color:#fff; font-size:13px;">
-                        Plat Nomor: <b style="color:#64ffda;">${data.plat_nomor}</b><br>
-                        Nama Sopir: <b>${data.nama_sopir}</b><br>
-                        Status: <b>${data.status_perjalanan || 'MENGIRIM_POSISI'}</b><br>
-                        Koneksi: <span style="color:${infoSinyal.warna}; font-weight:bold;">${infoSinyal.teks}</span><br>
-                        Update Terakhir: <span style="color:#8892b0;">${tglUpdate} WIB</span>
-                    </div>
-                `);
+                    armadaMarkers[data.id_track].bindPopup(`
+                        <div style="color:#fff; font-size:13px;">
+                            Plat Nomor: <b style="color:#64ffda;">${data.plat_nomor}</b><br>
+                            Nama Sopir: <b>${data.nama_sopir}</b><br>
+                            Koneksi: <span style="color:${infoSinyal.warna}; font-weight:bold;">${infoSinyal.teks}</span><br>
+                            Update Terakhir: <span style="color:#8892b0;">${tglUpdate} WIB</span>
+                        </div>
+                    `);
+                } 
             } else {
                 if (armadaMarkers[data.id_track]) {
-                    map.removeLayer(armadaMarkers[data.id_track]);
+                    map.removeLayer(armadaMarkers[id_track]);
                     delete armadaMarkers[data.id_track];
                 }
             }
 
-            // 🎯 FITUR 1: LOGIKA INPUTAN SURAT JALAN + BOP OPERASIONAL MANUAL
             let tombolSuratJalan = "-";
             let displayBop = data.nilai_bop ? `Rp ${parseInt(data.nilai_bop).toLocaleString('id-ID')}` : "-";
 
