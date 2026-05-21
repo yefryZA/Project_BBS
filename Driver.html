@@ -188,7 +188,43 @@ input::placeholder {
     }
 
     // FUNGSI: MULAI PERJALANAN (VERSI SIDAK GPS SEBELUM TEMBAK FIREBASE)
-    window.mulaiTracking = async function() {
+   // ====== TAMBAHAN ASISTEN INTERNAL: VARIABEL PENGUNCI WAKE LOCK & AUDIO ======
+let wakeLockBbs = null;
+let audioHeningBbs = null;
+
+// Fungsi Pawang Anti-Tidur (Wake Lock API)
+async function jalankanWakeLockBbs() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLockBbs = await navigator.wakeLock.request('screen');
+            console.log('🔒 SAKTI: CPU HP Driver dikunci, GPS anti-tidur!');
+            
+            // Jika kunci terlepas otomatis di tengah jalan, paksa kunci ulang
+            wakeLockBbs.addEventListener('release', () => {
+                console.log('⏳ Kunci terlepas otomatis, mengaktifkan ulang pertahanan...');
+                jalankanWakeLockBbs();
+            });
+        }
+    } catch (err) {
+        console.warn(`⚠️ Wake Lock gagal aktif (Biasa pada beberapa tipe browser): ${err.message}`);
+    }
+}
+
+// Trik Licik Pancingan Audio Gaib (Menipu sistem hemat baterai Android)
+function pancingAudioGaib() {
+    if (!audioHeningBbs) {
+        // Menggunakan file audio sunyi/hening base64 berdurasi 1 detik (Aman tanpa kuota)
+        audioHeningBbs = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==");
+        audioHeningBbs.loop = true;
+        audioHeningBbs.volume = 0.01; // Sangat kecil, tidak akan terdengar oleh sopir
+    }
+    
+    audioHeningBbs.play()
+        .then(() => console.log('🎵 Musik sunyi BBS aktif! Android mendeteksi aktivitas media background.'))
+        .catch(e => console.warn('Pancingan audio butuh interaksi user, otomatis terpicu via tombol klik mulai.'));
+}
+
+window.mulaiTracking = async function() {
         const plat = document.getElementById('plat').value.trim().toUpperCase();
         const sopir = document.getElementById('sopir').value.trim();
 
@@ -210,6 +246,10 @@ input::placeholder {
         localStorage.setItem('bbs_active_id', currentIdTransaksi);
         localStorage.setItem('bbs_active_plat', plat);
         localStorage.setItem('bbs_active_sopir', sopir);
+
+        // 🚀 SEBELUM FIREBASE BERJALAN: Eksekusi Trik Licik Audio Gaib & Wake Lock
+        pancingAudioGaib();
+        jalankanWakeLockBbs();
 
         // 🚀 2. SIDAK DADAKAN: Cek apakah GPS aktif dan diizinkan
     navigator.geolocation.getCurrentPosition(async (position) => {
@@ -257,6 +297,9 @@ input::placeholder {
             localStorage.clear();
             currentIdTransaksi = "";
             
+            // Matikan pancingan audio jika gagal masuk sistem
+            if (audioHeningBbs) { audioHeningBbs.pause(); }
+            
             alert("❌ PENDAFTARAN ANDA DITOLAK!\n\nKLIK ⟪ Izinkan GPS atau Allow While Using App ⟫\n\nSilahkan kembali ke menu Awal");
             console.warn("klik dulu ⟪ ALLOW WHILE USING APP ⟫, silahkan coba lagi.");
         }, {
@@ -272,9 +315,8 @@ input::placeholder {
 
         const idTarget = idAktif || currentIdTransaksi || localStorage.getItem('bbs_active_id');
 
-        if (typeof requestWakeLock === 'function') {
-            requestWakeLock();
-        }
+        // Panggil fungsi Wake Lock yang baru di atas demi memastikan pertahanan tetap ON
+        jalankanWakeLockBbs();
 
         // 🕒 FUNGSI INTERNAL: Mengambil koordinat dan menembak ke Firebase + Service Worker
         async function kirimKoordinatKeSistem() {
@@ -282,6 +324,9 @@ input::placeholder {
                 console.error("🚨 Radar Batal: ID Transaksi kosong!");
                 return;
             }
+
+            // Setiap kali interval menembak, pastikan audio gaib tetap berputar
+            pancingAudioGaib();
 
             navigator.geolocation.getCurrentPosition(async (position) => {
                 const latitude = position.coords.latitude;
