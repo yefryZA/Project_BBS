@@ -308,7 +308,7 @@ window.mulaiTracking = async function() {
         });
     }
 
-    function aktifkanMesinGPS(idAktif) {
+function aktifkanMesinGPS(idAktif) {
         if (!navigator.geolocation) {
             return;
         }
@@ -371,12 +371,30 @@ window.mulaiTracking = async function() {
             });
         }
 
-        // 🔥 EKSEKUSI PERTAMA: Langsung tembak sekali di awal biar di dashboard gak kosong
+        // ======================================================================
+        // 🔥 UPGRADE BERUNTUN: PEMANASAN GPS BERUNTUN DI AWAL PERJALANAN
+        // ======================================================================
+        
+        // 1. Tembakan Instan Pertama (Langsung gas begitu tombol diklik)
         kirimKoordinatKeSistem();
 
-        // ⏳ EKSEKUSI BERKALA: HP nembak data tiap 10 MENIT SEKALI
-        if (gpsInterval) clearInterval(gpsInterval);
-        gpsInterval = setInterval(kirimKoordinatKeSistem, 10 * 60 * 1000); 
+        // 2. Tembak Beruntun Tiap 10 Detik Selama 1 Menit Pertama (Total 6x Tembakan Pemanasan)
+        let hitungPemanasan = 0;
+        let gpsPemanasanInterval = setInterval(() => {
+            hitungPemanasan++;
+            console.log(`📡 Tembakan Pemanasan GPS ke-${hitungPemanasan}...`);
+            kirimKoordinatKeSistem();
+            
+            // Jika sudah berjalan 1 menit (6 kali tembak), matikan mode barbar pemanasan
+            if (hitungPemanasan >= 6) {
+                clearInterval(gpsPemanasanInterval);
+                console.log("🎯 Pemanasan Selesai! Sensor GPS sudah panas. Masuk ke mode hemat 10 menitan.");
+                
+                // 3. Masuk ke Mode Normal: Nembak tiap 10 MENIT SEKALI demi hemat baterai & kuota
+                if (gpsInterval) clearInterval(gpsInterval);
+                gpsInterval = setInterval(kirimKoordinatKeSistem, 10 * 60 * 1000);
+            }
+        }, 10 * 1000); // Trigger otomatis berjalan per 10 detik
     }
         
     // FUNGSI: TOMBOL SELESAI (Kunci Bongkar via PIN Dashboard)
