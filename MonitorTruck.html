@@ -252,11 +252,12 @@
             };
         }
     }
-    // 🔄 FUNGSI RENDER TABEL: Untuk menggambar tabel secara berulang demi keakuratan status sinyal
+
+// 🔄 FUNGSI RENDER TABEL: Untuk menggambar tabel secara berulang demi keakuratan status sinyal
     function renderTabelDanRadar() {
         const tbody = document.getElementById('data-tracking-table');
         if (rawDataCache.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #8892b0; padding: 20px;">Belum ada armada yang berjalan / Data telah direset.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #8892b0; padding: 20px;">Belum ada armada yang berjalan / Data telah direset.</td></tr>`;
             updateStatistik(0, 0, 0);
             return;
         }
@@ -267,7 +268,18 @@
         let rowsHtml = "";
         const currentActiveIds = [];
 
-        rawDataCache.forEach((data) => {
+        // 🎯 LANGKAH SAKTI 1: Pool Detector Murni tanpa pandang status perjalanan
+        const hitungPosisi = {};
+        rawDataCache.forEach(d => {
+            if (d.lat && d.lng) {
+                const pembulatLat = Math.round(d.lat * 100000) / 100000;
+                const pembulatLng = Math.round(d.lng * 100000) / 100000;
+                const kuncianKoor = `${pembulatLat}_${pembulatLng}`;
+                hitungPosisi[kuncianKoor] = (hitungPosisi[kuncianKoor] || 0) + 1;
+            }
+        });
+
+        rawDataCache.forEach((data, index) => {
             totalArmada++;
             currentActiveIds.push(data.id_track);
             
@@ -278,7 +290,7 @@
             const infoSinyal = hitungStatusSinyal(data.waktu_update, data.status_perjalanan, data.waktu_mulai);
 
             let badgeStatus = "";
-            let tombolAksiDokumen = "-"; // Wadah tombol cetak khusus yang sudah sampai
+            let tombolAksiDokumen = "-"; 
 
             if (data.status_perjalanan === "MENGIRIM_POSISI") {
                 totalOtw++;
@@ -291,8 +303,6 @@
                 totalSelesai++;
                 badgeStatus = `<span class="badge badge-done">✓ SAMPAI</span>`;
                 
-                // 🎯 FITUR 4: Jika status sudah SAMPAI, munculkan tombol "Cetak & Bersihkan"
-                // Kita parsing seluruh string datanya ke format JSON aman agar bisa dibaca fungsi PDF
                 const dataString = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
                 tombolAksiDokumen = `
                     <button onclick="window.unduhPdfDanWipeFirebase('${dataString}')" 
@@ -306,34 +316,48 @@
             if (data.lat && data.lng) {
                 koordinatTxt = `${data.lat.toFixed(5)}, ${data.lng.toFixed(5)}`;
 
-                if (data.status_perjalanan === "MENGIRIM_POSISI") {
-                    if (armadaMarkers[data.id_track]) {
-                        armadaMarkers[data.id_track].setLatLng([data.lat, data.lng]);
-                    } else {
-                        armadaMarkers[data.id_track] = L.marker([data.lat, data.lng], {icon: bbsTruckIcon}).addTo(map);
-                    }
-                    
-                    let warnaLabelSinyal = infoSinyal.teks.includes("OFFLINE") ? "#ff4c4c" : "#64ffda";
-                    armadaMarkers[data.id_track].bindTooltip(`<b style="color:${warnaLabelSinyal}; font-size:12px;">${data.plat_nomor}</b>`, {
-                        permanent: true,
-                        direction: 'top',
-                        offset: [0, -30],
-                        className: 'map-plat-label'
-                    }).openTooltip();
+                // 🎯 REVOLUSI CIMI: Hapus syarat status_perjalanan === "MENGIRIM_POSISI"
+                // Selama koordinat Lat & Lng ada nilainya di Firebase, PAKSA GAMBAR MARKER-NYA!
+                let finalLat = Number(data.lat);
+                let finalLng = Number(data.lng);
+                
+                const pembulatLat = Math.round(data.lat * 100000) / 100000;
+                const pembulatLng = Math.round(data.lng * 100000) / 100000;
+                const kuncianKoor = `${pembulatLat}_${pembulatLng}`;
+                
+                if (hitungPosisi[kuncianKoor] > 1) {
+                    finalLat += Math.sin(index) * 0.00015; // Jarak geser sedikit dilebarkan (~10-15 meter)
+                    finalLng += Math.cos(index) * 0.00015;
+                }
 
-                    armadaMarkers[data.id_track].bindPopup(`
-                        <div style="color:#fff; font-size:13px;">
-                            Plat Nomor: <b style="color:#64ffda;">${data.plat_nomor}</b><br>
-                            Nama Sopir: <b>${data.nama_sopir}</b><br>
-                            Koneksi: <span style="color:${infoSinyal.warna}; font-weight:bold;">${infoSinyal.teks}</span><br>
-                            Update Terakhir: <span style="color:#8892b0;">${tglUpdate} WIB</span>
-                        </div>
-                    `);
+                // Update posisi atau bikin baru
+                if (armadaMarkers[data.id_track]) {
+                    armadaMarkers[data.id_track].setLatLng([finalLat, finalLng]);
                 } else {
-                    if (armadaMarkers[data.id_track]) {
-                        map.removeLayer(armadaMarkers[data.id_track]);
-                        delete armadaMarkers[data.id_track];
-                    }
+                    armadaMarkers[data.id_track] = L.marker([finalLat, finalLng], {icon: bbsTruckIcon}).addTo(map);
+                }
+                
+                let warnaLabelSinyal = infoSinyal.teks.includes("OFFLINE") ? "#ff4c4c" : "#64ffda";
+                armadaMarkers[data.id_track].bindTooltip(`<b style="color:${warnaLabelSinyal}; font-size:12px;">${data.plat_nomor}</b>`, {
+                    permanent: true,
+                    direction: 'top',
+                    offset: [0, -30],
+                    className: 'map-plat-label'
+                }).openTooltip();
+
+                armadaMarkers[data.id_track].bindPopup(`
+                    <div style="color:#fff; font-size:13px;">
+                        Plat Nomor: <b style="color:#64ffda;">${data.plat_nomor}</b><br>
+                        Nama Sopir: <b>${data.nama_sopir}</b><br>
+                        Status: <b>${data.status_perjalanan || 'MENGIRIM_POSISI'}</b><br>
+                        Koneksi: <span style="color:${infoSinyal.warna}; font-weight:bold;">${infoSinyal.teks}</span><br>
+                        Update Terakhir: <span style="color:#8892b0;">${tglUpdate} WIB</span>
+                    </div>
+                `);
+            } else {
+                if (armadaMarkers[data.id_track]) {
+                    map.removeLayer(armadaMarkers[data.id_track]);
+                    delete armadaMarkers[data.id_track];
                 }
             }
 
@@ -361,7 +385,6 @@
                 tombolSuratJalan = data.link_surat_jalan ? `<a href="${data.link_surat_jalan}" target="_blank" style="color: #64ffda; text-decoration: underline; font-size: 12px;">📄 Lihat Arsip</a>` : "🔒 Terkunci";
             }
 
-            // RENDERING TR (Kini ada 10 kolom lengkap dengan Nilai BOP dan Aksi Cetak)
             rowsHtml += `
                 <tr style="background-color: ${infoSinyal.barisBg}; transition: background 0.5s;">
                     <td><b>${tglMulai}</b> WIB</td>
@@ -379,7 +402,6 @@
             `;
         });
 
-        // Bersihkan marker lama
         for (const id_track in armadaMarkers) {
             if (!currentActiveIds.includes(id_track)) {
                 map.removeLayer(armadaMarkers[id_track]);
