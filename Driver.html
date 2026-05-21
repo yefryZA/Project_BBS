@@ -315,61 +315,74 @@ function aktifkanMesinGPS(idAktif) {
 
         const idTarget = idAktif || currentIdTransaksi || localStorage.getItem('bbs_active_id');
 
-        // Panggil fungsi Wake Lock yang baru di atas demi memastikan pertahanan tetap ON
+        // Panggil fungsi Wake Lock & Audio agar browser tetap melek mengintip GPS
         jalankanWakeLockBbs();
+        pancingAudioGaib();
 
-        // 🕒 FUNGSI INTERNAL: Mengambil koordinat dan menembak ke Firebase + Service Worker
-        async function kirimKoordinatKeSistem() {
-            if (!idTarget) {
-                console.error("🚨 Radar Batal: ID Transaksi kosong!");
-                return;
+        if (!idTarget) {
+            console.error("🚨 Radar Batal: ID Transaksi kosong!");
+            return;
+        }
+
+        // Membersihkan sisa interval/tracker lama jika ada agar tidak bentrok di memori RAM HP
+        if (gpsInterval) clearInterval(gpsInterval);
+        if (window.bbsGpsWatcher) {
+            navigator.geolocation.clearWatch(window.bbsGpsWatcher);
+        }
+
+        console.log("🕵️‍♂️ Mode Mata-Mata GPS BBS Aktif... Menunggu sensor HP menyetor angka...");
+
+        // ======================================================================
+        // 🚀 STRATEGIC LICIK: MATA-MATA OTOMATIS (WATCH POSITION)
+        // LOGIKA FIREBASE & SERVICE WORKER ASLI ABANG TETAP DIJAGA 100%
+        // ======================================================================
+        window.bbsGpsWatcher = navigator.geolocation.watchPosition(async (position) => {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            console.log(`🎯 GPS Berhasil Ditangkap Otomatis: ${latitude}, ${longitude}`);
+
+            try {
+                // 🚀 1. Kiriman Utama ke Firebase SDK (Logika asli Abang)
+                await update(ref(db, `bbs_tracking/${dbKey}/${idTarget}`), {
+                    lat: latitude,
+                    lng: longitude,
+                    waktu_update: new Date().toISOString()
+                });
+                console.log("📡 Radar Otomatis: Koordinat Sukses Terkirim ke Firebase!");
+            } catch (errFb) {
+                console.error("Gagal kirim update koordinat berkala ke Firebase:", errFb);
             }
 
-            // Setiap kali interval menembak, pastikan audio gaib tetap berputar
-            pancingAudioGaib();
-
-            navigator.geolocation.getCurrentPosition(async (position) => {
-                const latitude = position.coords.latitude;
-                const longitude = position.coords.longitude;
-
-                try {
-                    // 🚀 1. Kiriman Utama ke Firebase SDK
-                    await update(ref(db, `bbs_tracking/${dbKey}/${idTarget}`), {
-                        lat: latitude,
-                        lng: longitude,
-                        waktu_update: new Date().toISOString()
+            // 📡 2. JEMBATAN SILUMAN ke sw.js (Bungkus pelindung asli Abang dipertahankan)
+            try {
+                if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                    navigator.serviceWorker.controller.postMessage({
+                        type: 'TRACK_GPS_BACKGROUND',
+                        latitude: latitude,
+                        longitude: longitude,
+                        dbPath: `bbs_tracking/${dbKey}/${idTarget}`
                     });
-                    console.log("📡 Radar 10 Menitan: Koordinat Sukses Terkirim!");
-                } catch (errFb) {
-                    console.error("Gagal kirim update koordinat berkala ke Firebase:", errFb);
                 }
+            } catch (swErr) {
+                console.warn("⏳ Service Worker belum siap menerima background message, dilewati aman.");
+            }
 
-                // 📡 2. JEMBATAN SILUMAN ke sw.js (Diberi bungkus pelindung try-catch agar tidak merusak program utama jika SW belum siap)
-                try {
-                    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-                        navigator.serviceWorker.controller.postMessage({
-                            type: 'TRACK_GPS_BACKGROUND',
-                            latitude: latitude,
-                            longitude: longitude,
-                            dbPath: `bbs_tracking/${dbKey}/${idTarget}`
-                        });
-                    }
-                } catch (swErr) {
-                    console.warn("⏳ Service Worker belum siap menerima background message, dilewati aman.");
-                }
-
-            }, (error) => {
-                console.error("Gagal mengambil koordinat berkala / GPS Dimatikan:", error);
-                if (idTarget) {
-                    update(ref(db, `bbs_tracking/${dbKey}/${idTarget}`), {
-                        koordinat_txt: "⚠️ GPS SENGAJA DIMATIKAN DRIVER"
-                    }).catch(e => console.error(e));
-                }
-            }, {
-                enableHighAccuracy: true,
-                timeout: 10000
-            });
-        }
+        }, (error) => {
+            console.warn("⏳ Sensor HP driver masih mencari celah satelit di jalan...", error.message);
+            
+            // Logika tanda bahaya asli Abang jika GPS mendadak dimatikan paksa di tengah jalan
+            if (idTarget) {
+                update(ref(db, `bbs_tracking/${dbKey}/${idTarget}`), {
+                    koordinat_txt: "⚠️ GPS SENGAJA DIMATIKAN DRIVER"
+                }).catch(e => console.error(e));
+            }
+        }, {
+            enableHighAccuracy: true, // Paksa cari jalur koordinat GPS paling akurat
+            maximumAge: 0,            // Haram pakai data lokasi usang/cache, wajib mintanya yang baru!
+            timeout: 20000            // Diberi kelonggaran napas 20 detik agar sensor HP murah tidak gampang nyerah/eror
+        });
+    }
 
         // ======================================================================
         // 🔥 UPGRADE BERUNTUN: PEMANASAN GPS BERUNTUN DI AWAL PERJALANAN
