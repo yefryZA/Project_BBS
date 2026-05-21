@@ -221,26 +221,27 @@
         }
     }
 
-// 🧠 FUNGSI HITUNG MUNDUR PINTAR: Menggunakan waktu_update, jika kosong pakai waktu_mulai
+// 🧠 FUNGSI HITUNG MUNDUR PINTAR (VERSI DEBUG SAKTI)
     function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan, waktuMulaiAwal) {
         if (statusPerjalanan === "SELESAI_BONGKAR") {
             return { teks: "🏁 SELESAI", warna: "#8892b0", barisBg: "transparent" };
         }
 
-        // 🎯 TIKANAN SAKTI CIMI: Jika waktu_update belum terbuat dari HP sopir, pinjam waktu_mulai sebagai gantinya
         const waktuPatokan = waktuUpdateTerakhir || waktuMulaiAwal;
 
         if (!waktuPatokan) {
             return { teks: "⏳ MENCARI GPS", warna: "#ffb74d", barisBg: "transparent" };
         }
 
-        // 🔥 PERBAIKAN TIMEZONE SAKTI: Bandingkan ISO String Driver dengan ISO String Waktu Sekarang biar adil!
         const waktuSekarangISO = new Date().toISOString();
         const selisihMilidetik = new Date(waktuSekarangISO) - new Date(waktuPatokan);
         const selisihMenit = selisihMilidetik / (1000 * 60);
 
-        // ⚠️ AMBANG BATAS 12 MENIT
-        if (selisihMenit > 12) {
+        // 🕵️‍♂️ CETAK LOG DI F12 LAPTOP: Biar ketahuan angka aslinya berapa menit
+        console.log(`[BBS LOG] Selisih waktu driver di sistem: ${selisihMenit.toFixed(2)} Menit.`);
+
+        // ⚠️ TOLERANSI KITA LONGGARKAN JADI 15 MENIT KARENA DRIVER NEMBAK TIAP 10 MENIT
+        if (selisihMenit > 15) {
             return { 
                 teks: "🔴 OFFLINE (HP Mati/Sinyal)", 
                 warna: "#ff4c4c", 
@@ -411,7 +412,7 @@
             `;
         });
 
-        for (const id_track in armadaMarkers) {
+    for (const id_track in armadaMarkers) {
             if (!currentActiveIds.includes(id_track)) {
                 map.removeLayer(armadaMarkers[id_track]);
                 delete armadaMarkers[id_track];
@@ -421,11 +422,12 @@
         tbody.innerHTML = rowsHtml;
         updateStatistik(totalArmada, totalOtw, totalSelesai);
 
-        // 🎯 LANGKAH SAKTI 3: PAKSA KAMERA PETA MENDEKAT TAJAM KE LOKASI POOL TRUK (Zoom Level 16)
-        if (koordinatSatuLokasi) {
-            map.setView(koordinatSatuLokasi, 16);
+        // 🎯 PERBAIKAN: Jangan paksa setView setiap kali render ulang biar browser tidak freeze
+        if (koordinatSatuLokasi && !window.petaSudahFokus) {
+            map.setView(koordinatSatuLokasi, 14);
+            window.petaSudahFokus = true; // Kunci agar cuma fokus sekali di awal saja
         }
-    }
+    } 
         
     // 2. MONITORING REALTIME DAFTAR LOG TRACKING DRIVER
     onValue(ref(db, `bbs_tracking/${dbKey}`), (snapshot) => {
