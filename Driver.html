@@ -343,11 +343,12 @@ input::placeholder {
 
                 try {
                     // 🚀 1. Kiriman Utama ke Firebase SDK dengan idTarget yang sudah pasti aman
-                    await update(ref(db, `bbs_tracking/${dbKey}/${idTarget}`), {
-                        lat: latitude,
-                        lng: longitude,
-                        waktu_update: new Date().toISOString()
-                    });
+                await update(ref(db, `bbs_tracking/${dbKey}/${idTarget}`), {
+                            lat: latitude,
+                            lng: longitude,
+                            waktu_update: Date.now() // 🔥 Ganti jadi ini! Hasilnya nanti angka murni (contoh: 1716300000000)
+                        });
+                        
                     console.log("📡 Radar Otomatis: Koordinat Sukses Terkirim ke Firebase!");
                 } catch (errFb) {
                     console.error("Gagal kirim update koordinat berkala ke Firebase:", errFb);
