@@ -314,6 +314,7 @@ input::placeholder {
             return;
         }
 
+        // Kunci idTarget di tingkat paling atas fungsi agar bisa dibaca oleh watchPosition di bawahnya
         const idTarget = idAktif || currentIdTransaksi || localStorage.getItem('bbs_active_id');
 
         // Panggil fungsi Wake Lock & Audio agar browser tetap melek mengintip GPS
@@ -341,7 +342,7 @@ input::placeholder {
                 console.log(`🎯 GPS Berhasil Ditangkap Otomatis: ${latitude}, ${longitude}`);
 
                 try {
-                    // 🚀 1. Kiriman Utama ke Firebase SDK (Logika asli Abang)
+                    // 🚀 1. Kiriman Utama ke Firebase SDK dengan idTarget yang sudah pasti aman
                     await update(ref(db, `bbs_tracking/${dbKey}/${idTarget}`), {
                         lat: latitude,
                         lng: longitude,
@@ -352,7 +353,7 @@ input::placeholder {
                     console.error("Gagal kirim update koordinat berkala ke Firebase:", errFb);
                 }
 
-                // 📡 2. JEMBATAN SILUMAN ke sw.js (Bungkus pelindung asli Abang dipertahankan)
+                // 📡 2. JEMBATAN SILUMAN ke sw.js
                 try {
                     if (navigator.serviceWorker && navigator.serviceWorker.controller) {
                         navigator.serviceWorker.controller.postMessage({
@@ -369,16 +370,15 @@ input::placeholder {
             }, (error) => {
                 console.warn("⏳ Sensor HP driver masih mencari celah satelit di jalan...", error.message);
                 
-                // Logika tanda bahaya asli Abang jika GPS mendadak dimatikan paksa di tengah jalan
                 if (idTarget) {
                     update(ref(db, `bbs_tracking/${dbKey}/${idTarget}`), {
                         koordinat_txt: "⚠️ GPS SENGAJA DIMATIKAN DRIVER"
                     }).catch(e => console.error(e));
                 }
             }, {
-                enableHighAccuracy: true, // Paksa cari jalur koordinat GPS paling akurat
-                maximumAge: 0,            // Haram pakai data lokasi usang/cache, wajib mintanya yang baru!
-                timeout: 20000            // Diberi kelonggaran napas 20 detik agar sensor HP murah tidak gampang nyerah/eror
+                enableHighAccuracy: true,
+                maximumAge: 0,
+                timeout: 20000
             });
         }
 
@@ -386,28 +386,27 @@ input::placeholder {
         // 🔥 UPGRADE BERUNTUN: PEMANASAN GPS BERUNTUN DI AWAL PERJALANAN
         // ======================================================================
         
-        // 1. Tembakan Instan Pertama (Langsung gas begitu tombol diklik)
+        if (gpsInterval) clearInterval(gpsInterval);
+
+        // 1. Tembakan Instan Pertama (Langsung panggil watchPosition)
         kirimKoordinatKeSistem();
 
-        // 2. Tembak Beruntun Tiap 10 Detik Selama 1 Menit Pertama (Total 6x Tembakan Pemanasan)
+        // 2. Tembak Beruntun Tiap 10 Detik Selama 1 Menit Pertama
         let hitungPemanasan = 0;
         let gpsPemanasanInterval = setInterval(() => {
             hitungPemanasan++;
             console.log(`📡 Tembakan Pemanasan GPS ke-${hitungPemanasan}...`);
             kirimKoordinatKeSistem();
             
-            // Jika sudah berjalan 1 menit (6 kali tembak), matikan mode barbar pemanasan
             if (hitungPemanasan >= 6) {
                 clearInterval(gpsPemanasanInterval);
-                console.log("🎯 Pemanasan Selesai! Sensor GPS sudah panas. Masuk ke mode hemat 10 menitan.");
+                console.log("🎯 Pemanasan Selesai! Sensor GPS masuk ke mode hemat 10 menitan.");
                 
-                // 3. Masuk ke Mode Normal: Nembak tiap 10 MENIT SEKALI demi hemat baterai & kuota
-                if (gpsInterval) clearInterval(gpsInterval);
+                // 3. Masuk ke Mode Normal per 10 menit
                 gpsInterval = setInterval(kirimKoordinatKeSistem, 10 * 60 * 1000);
             }
-        }, 10 * 1000); // Trigger otomatis berjalan per 10 detik
+        }, 10 * 1000);
     }
-
     // FUNGSI: TOMBOL SELESAI (Kunci Bongkar via PIN Dashboard)
     window.stopTracking = async function() {
         const inputPin = document.getElementById('pin-input').value.trim();
