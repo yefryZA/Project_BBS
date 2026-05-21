@@ -222,7 +222,7 @@
     }
 
 // 🧠 FUNGSI HITUNG MUNDUR PINTAR (VERSI DEBUG SAKTI)
-    function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan, waktuMulaiAwal) {
+function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan, waktuMulaiAwal) {
         if (statusPerjalanan === "SELESAI_BONGKAR") {
             return { teks: "🏁 SELESAI", warna: "#8892b0", barisBg: "transparent" };
         }
@@ -233,15 +233,18 @@
             return { teks: "⏳ MENCARI GPS", warna: "#ffb74d", barisBg: "transparent" };
         }
 
-        const waktuSekarangISO = new Date().toISOString();
-        const selisihMilidetik = new Date(waktuSekarangISO) - new Date(waktuPatokan);
+        // 🔥 HITUNGAN BARBAR: Waktu laptop sekarang (milidetik) dikurang waktu Firebase (milidetik)
+        // Jika waktuPatokan berbentuk teks ISO, kita paksa ubah ke milidetik lewat .getTime()
+        const waktuSekarangMili = Date.now();
+        const waktuDriverMili = typeof waktuPatokan === "number" ? waktuPatokan : new Date(waktuPatokan).getTime();
+        
+        const selisihMilidetik = waktuSekarangMili - waktuDriverMili;
         const selisihMenit = selisihMilidetik / (1000 * 60);
 
-        // 🕵️‍♂️ CETAK LOG DI F12 LAPTOP: Biar ketahuan angka aslinya berapa menit
-        console.log(`[BBS LOG] Selisih waktu driver di sistem: ${selisihMenit.toFixed(2)} Menit.`);
+        console.log(`[BBS LOG BARBAR] Selisih murni asli: ${selisihMenit.toFixed(2)} Menit.`);
 
-        // ⚠️ TOLERANSI KITA LONGGARKAN JADI 15 MENIT KARENA DRIVER NEMBAK TIAP 10 MENIT
-        if (selisihMenit > 15) {
+        // Toleransi balikkan ke 12 menit normal
+        if (selisihMenit > 12 || selisihMenit < -5) { 
             return { 
                 teks: "🔴 OFFLINE (HP Mati/Sinyal)", 
                 warna: "#ff4c4c", 
