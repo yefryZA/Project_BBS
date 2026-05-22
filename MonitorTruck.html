@@ -383,8 +383,17 @@ function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan, waktuMulaiAwa
                 }
             }
 
-            let tombolSuratJalan = "-";
-            let displayBop = data.nilai_bop ? `Rp ${parseInt(data.nilai_bop).toLocaleString('id-ID')}` : "-";
+      let tombolSuratJalan = "-";
+
+            // 💰 1. HITUNG LOGIKA TOTAL BOP (ONGKOS TRUCK + HARGA MATERIAL)
+            let ongkosTruckNominal = data.nilai_bop ? parseInt(data.nilai_bop) : 0;
+            let hargaMaterialNominal = data.harga_material ? parseInt(data.harga_material) : 0;
+            let totalBopGabungan = ongkosTruckNominal + hargaMaterialNominal;
+
+            // 💵 2. FORMAT RUPIAH MASING-MASING VARIABEL
+            let displayBop = totalBopGabungan ? `Rp ${totalBopGabungan.toLocaleString('id-ID')}` : "-";
+            let displayMaterial = data.harga_material ? `Rp ${hargaMaterialNominal.toLocaleString('id-ID')}` : "-";
+            let displayHargaTruck = data.nilai_bop ? `Rp ${ongkosTruckNominal.toLocaleString('id-ID')}` : "-";
 
             if (data.status_perjalanan === "MENGIRIM_POSISI") {
                 if (data.link_surat_jalan) {
@@ -406,6 +415,7 @@ function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan, waktuMulaiAwa
                 tombolSuratJalan = data.link_surat_jalan ? `<a href="${data.link_surat_jalan}" target="_blank" style="color: #64ffda; text-decoration: underline; font-size: 12px;">📄 Lihat Arsip</a>` : "🔒 Terkunci";
             }
 
+            // 🎯 3. PENGGABUNGAN DATA KE DALAM SATU KOLOM BIAYA SECARA SEMPURNA
             rowsHtml += `
                 <tr style="background-color: ${infoSinyal.barisBg}; transition: background 0.5s;">
                     <td><b>${tglMulai}</b> WIB</td>
@@ -415,7 +425,11 @@ function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan, waktuMulaiAwa
                     <td style="font-family: monospace; color:#64ffda;">${koordinatTxt}</td>
                     <td>${tglUpdate} WIB</td>
                     <td>${tombolSuratJalan}</td>
-                    <td style="color: #64ffda; font-weight: bold;">${displayBop}</td>
+                    <td>
+                        <b style="color: #64ffda;">BOP: ${displayBop}</b><br>
+                        <span style="color: #26a69a; font-size: 11px;">📦 Mat: ${displayMaterial}</span><br>
+                        <span style="color: #ffb300; font-size: 11px;">🚛 Truck: ${displayHargaTruck}</span>
+                    </td>
                     <td style="color: ${infoSinyal.warna}; font-weight: bold; font-size: 13px;">${infoSinyal.teks}</td>
                     <td>${badgeStatus}</td>
                     <td>${tombolAksiDokumen}</td>
@@ -423,7 +437,7 @@ function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan, waktuMulaiAwa
             `;
         });
 
-    for (const id_track in armadaMarkers) {
+        for (const id_track in armadaMarkers) {
             if (!currentActiveIds.includes(id_track)) {
                 map.removeLayer(armadaMarkers[id_track]);
                 delete armadaMarkers[id_track];
@@ -438,7 +452,7 @@ function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan, waktuMulaiAwa
             map.setView(koordinatSatuLokasi, 14);
             window.petaSudahFokus = true; // Kunci agar cuma fokus sekali di awal saja
         }
-    } 
+    }
         
     // 2. MONITORING REALTIME DAFTAR LOG TRACKING DRIVER
     onValue(ref(db, `bbs_tracking/${dbKey}`), (snapshot) => {
@@ -457,37 +471,48 @@ function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan, waktuMulaiAwa
         renderTabelDanRadar();
     });
 
-    // 🎯 FITUR 1 MODIFIKASI: PROMPT BERUNTUN INPUT MANUAL SURAT JALAN + BOP SEKALIGUS
+   // 🎯 FITUR 1 MODIFIKASI: PROMPT INPUT MANUAL SURAT JALAN + BOP + HARGA MATERIAL
     window.tempelSuratJalan = async function(idTrack, platNomor) {
         // Langkah 1: Minta link surat jalan
-        const linkDrive = prompt(`[1/2] Masukkan / Paste Link Google Drive Surat Jalan untuk Armada [${platNomor}]:`);
+        const linkDrive = prompt(`[1/3] Masukkan / Paste Link Google Drive Surat Jalan untuk Armada [${platNomor}]:`);
         if (linkDrive === null) return; // Klik Batal
 
         // Langkah 2: Minta input BOP
-        const bopManual = prompt(`[2/2] Masukkan Nominal BOP Manual untuk Armada [${platNomor}] (Hanya angka, contoh: 550000):`);
+        const bopManual = prompt(`[2/3] Masukkan Nominal BOP Manual untuk Armada [${platNomor}] (Hanya angka, contoh: 550000):`);
         if (bopManual === null) return; // Klik Batal
 
-        const bopBersih = bopManual.replace(/[^0-9]/g, ''); // Ambil angkanya saja jika driver ketik pakai titik/Rp
+        const bopBersih = bopManual.replace(/[^0-9]/g, ''); 
         if (!bopBersih) {
             alert("❌ Nominal BOP harus diisi dengan angka valid!");
             return;
         }
+
+        // 🔥 Langkah 3: Minta input HARGA MATERIAL
+        const hargaMaterialManual = prompt(`[3/3] Masukkan Total Harga Material untuk Armada [${platNomor}] (Hanya angka, contoh: 4500000):`);
+        if (hargaMaterialManual === null) return; // Klik Batal
+
+        const hargaMaterialBersih = hargaMaterialManual.replace(/[^0-9]/g, ''); 
+        if (!hargaMaterialBersih) {
+            alert("❌ Harga Material harus diisi dengan angka valid!");
+            return;
+        }
         
         try {
-            // Tembak kedua data sekaligus ke node transaksi berjalan di Firebase
+            // Tembak ketiga data sekaligus ke node transaksi berjalan di Firebase
             await update(ref(db, `bbs_tracking/${dbKey}/${idTrack}`), {
                 link_surat_jalan: linkDrive.trim(),
-                nilai_bop: parseInt(bopBersih)
+                nilai_bop: parseInt(bopBersih),
+                harga_material: parseInt(hargaMaterialBersih) // 🔥 Tersimpan ke Firebase
             });
-            alert(`🚀 SUKSES: Dokumen Surat Jalan & BOP senilai Rp ${parseInt(bopBersih).toLocaleString('id-ID')} untuk ${platNomor} berhasil dipasang!`);
+            alert(`🚀 SUKSES: Data Surat Jalan, BOP, dan Harga Material untuk ${platNomor} berhasil dipasang!`);
         } catch (err) {
             alert("❌ Gagal menyimpan data operasional: " + err.message);
         }
     }
 
-    // 🎯 FITUR 2 & 3: GENERATE PDF OTOMATIS DAN BERSIHKAN NODE FIREBASE
+    // 🎯 FITUR 2 & 3: GENERATE PDF OTOMATIS DENGAN RINCIAN + TOTAL PENGELUARAN
     window.unduhPdfDanWipeFirebase = function(base64Data) {
-        // Decode data aman yang tadi di-passing dari tabel
+        // Decode data aman yang di-passing dari tabel
         const data = JSON.parse(decodeURIComponent(escape(atob(base64Data))));
         
         const konfirmasi = confirm(`Apakah Anda ingin mencetak PDF Manifes untuk Sopir ${data.nama_sopir} (${data.plat_nomor})?\n\nSetelah PDF sukses di-download, data armada ini akan otomatis dihapus permanen dari Firebase.`);
@@ -495,9 +520,12 @@ function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan, waktuMulaiAwa
 
         // Tarik objek jsPDF global dari browser
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a5" }); // Kita cetak format struk A5 ringkas kantoran
+        const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a5" }); 
 
         const formatBop = data.nilai_bop ? parseInt(data.nilai_bop) : 0;
+        const formatMaterial = data.harga_material ? parseInt(data.harga_material) : 0; // 🔥 Ambil data Harga Material
+        const totalAkumulasi = formatBop + formatMaterial; // 🧮 Hitung Total pengeluaran
+
         const tglBongkar = data.waktu_selesai ? new Date(data.waktu_selesai).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : "-";
         const jamBongkar = data.waktu_selesai ? new Date(data.waktu_selesai).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : "-";
 
@@ -516,54 +544,60 @@ function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan, waktuMulaiAwa
         doc.text("KUITANSI MANIFES BONGKAR LOGISTIK", 10, 26);
         doc.text(`ID Transaksi: ${data.id_track}`, 10, 31);
         
-        // Garis batas tipis
         doc.setLineWidth(0.3);
         doc.line(10, 35, 138, 35);
 
         // Isi Data Ringkasan Konten PDF
-        doc.setFontSize(11);
-        doc.text("Plat Kendaraan", 10, 45);
+        doc.setFontSize(10);
+        doc.text("Plat Kendaraan", 10, 44);
         doc.setFont("Helvetica", "bold");
-        doc.text(`:  ${data.plat_nomor}`, 45, 45);
+        doc.text(`:   ${data.plat_nomor}`, 45, 44);
 
         doc.setFont("Helvetica", "normal");
-        doc.text("Nama Sopir", 10, 53);
+        doc.text("Nama Sopir", 10, 51);
         doc.setFont("Helvetica", "bold");
-        doc.text(`:  ${data.nama_sopir}`, 45, 53);
+        doc.text(`:   ${data.nama_sopir}`, 45, 51);
 
         doc.setFont("Helvetica", "normal");
-        doc.text("Waktu Bongkar", 10, 61);
-        doc.text(`:  ${tglBongkar} @ ${jamBongkar} WIB`, 45, 61);
+        doc.text("Waktu Bongkar", 10, 58);
+        doc.text(`:   ${tglBongkar} @ ${jamBongkar} WIB`, 45, 58);
 
-        doc.text("Biaya BOP Unit", 10, 69);
-        doc.text(`:  Rp ${formatBop.toLocaleString('id-ID')}`, 45, 69);
+        // --- RINCIAN BIAYA DI PDF ---
+        doc.line(10, 63, 138, 63);
+        
+        doc.text("1. Biaya BOP Unit", 10, 69);
+        doc.text(`:   Rp ${formatBop.toLocaleString('id-ID')}`, 45, 69);
+
+        doc.text("2. Harga Material", 10, 76);
+        doc.text(`:   Rp ${formatMaterial.toLocaleString('id-ID')}`, 45, 76); // 🔥 Menampilkan harga material
 
         // Kotak Pembatas Akumulasi Finansial
-        doc.line(10, 77, 138, 77);
+        doc.line(10, 82, 138, 82);
         doc.setFillColor(245, 245, 245);
-        doc.rect(10, 82, 128, 12, "F");
+        doc.rect(10, 86, 128, 12, "F");
 
-        doc.setFontSize(12);
-        doc.setTextColor(204, 0, 0);
-        doc.text("TOTAL ALOKASI BOP", 14, 90);
-        doc.text(`Rp ${formatBop.toLocaleString('id-ID')}`, 95, 90);
+        doc.setFontSize(11);
+        doc.setTextColor(204, 0, 0); 
+        doc.setFont("Helvetica", "bold");
+        doc.text("TOTAL PENGELUARAN", 14, 94);
+        doc.text(`Rp ${totalAkumulasi.toLocaleString('id-ID')}`, 95, 94); // 🔥 Total Otomatis Gabungan
 
         // Tanda Tangan Logistik Kantor
         doc.setTextColor(80, 80, 80);
         doc.setFontSize(9);
         doc.setFont("Helvetica", "italic");
-        doc.text("Dicetak otomatis oleh Sistem BBS Proyek Satoe", 10, 115);
-        doc.text(`Waktu Cetak: ${new Date().toLocaleString('id-ID')} WIB`, 10, 120);
+        doc.text("Dicetak otomatis oleh Sistem BBS Proyek Satoe", 10, 118);
+        doc.text(`Waktu Cetak: ${new Date().toLocaleString('id-ID')} WIB`, 10, 123);
 
         doc.setFont("Helvetica", "bold");
-        doc.text("Petugas Logistik PT. BBS", 95, 115);
-        doc.line(95, 135, 135, 135);
+        doc.text("Petugas Logistik PT. BBS", 95, 118);
+        doc.line(95, 138, 135, 138);
 
-        // 🔥 PROSES DOWNLOAD PDF KE LAPTOP ADMIN
+        // 🔥 PROSES DOWNLOAD PDF
         const namaFile = `BBS_MANIFES_${data.plat_nomor}_${data.nama_sopir}.pdf`;
         doc.save(namaFile);
 
-        // 🧹 PROSES AUTO-CLEAN: Begitu file didownload, hapus node ID tersebut dari Firebase
+        // 🧹 PROSES AUTO-CLEAN
         remove(ref(db, `bbs_tracking/${dbKey}/${data.id_track}`))
             .then(() => {
                 alert(`🗑️ BERSIH & AMAN!\n\nFile PDF [${namaFile}] berhasil diunduh. Data transaksi milik ${data.plat_nomor} otomatis dihapus dari Firebase agar tabel tetap steril.`);
