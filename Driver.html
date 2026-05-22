@@ -171,39 +171,56 @@ input::placeholder {
         });
     }
 
-    // 🔥 ANTI-AMNESIA (CEK DATA LAMA)
-    window.onload = function() {
-        const savedId = localStorage.getItem('bbs_active_id');
-        const savedPlat = localStorage.getItem('bbs_active_plat');
-        const savedSopir = localStorage.getItem('bbs_active_sopir');
+    
+   // 🚀 ANTI-AMNESIA (CEK DATA LAMA) + AUTO START
+window.onload = function() {
+    const savedId = localStorage.getItem('bbs_active_id');
+    const savedPlat = localStorage.getItem('bbs_active_plat');
+    const savedSopir = localStorage.getItem('bbs_active_sopir');
+    
+    console.log('🔍 Cek memori lama:', savedId);
+    
+    if (savedId && savedPlat) {
+        window.currentIdTransaksi = savedId;
+        currentIdTransaksi = savedId;
         
-        console.log('🔍 Cek memori lama:', savedId);
+        const platInput = document.getElementById('plat');
+        const sopirInput = document.getElementById('sopir');
+        const formArea = document.getElementById('form-area');
+        const lockArea = document.getElementById('lock-area');
+        const statusBox = document.getElementById('status-box');
         
-        if (savedId && savedPlat) {
-            window.currentIdTransaksi = savedId;
-            currentIdTransaksi = savedId;
-            
-            document.getElementById('plat').value = savedPlat;
-            document.getElementById('sopir').value = savedSopir;
-            
-            document.getElementById('form-area').style.display = 'none';
-            document.getElementById('lock-area').style.display = 'block';
-            
-            console.log('⚡ Melanjutkan tracking:', savedId);
-            
-            // Update status langsung
-            if (db) {
-                update(ref(db, `bbs_tracking/${dbKey}/${savedId}`), {
-                    waktu_update: Date.now(),
-                    status_perjalanan: "MENGIRIM_POSISI"
-                }).then(() => console.log('🟢 Status update!'));
-            }
-            
-            // Aktifkan mesin GPS
-            aktifkanMesinGPS(savedId);
+        // ✅ Isi input kalo ada
+        if (platInput) platInput.value = savedPlat;
+        if (sopirInput) sopirInput.value = savedSopir;
+        
+        // ✅ Hide/Show dengan null check
+        if (formArea) formArea.style.display = 'none';
+        if (lockArea) {
+            lockArea.style.display = 'block';
+        } else if (statusBox) {
+            // Kalau Lock Area tidak ada, show status box aja
+            statusBox.style.display = 'block';
         }
-    };
-
+        
+        console.log('⚡ Melanjutkan tracking:', savedId);
+        
+        // ✅ Langsung aktifkan GPS!
+        aktifkanMesinGPS(savedId);
+    }
+    
+    // 🔥 JANGAN LUPA: Aktifkan GPS juga saat pertama kali load (belum ada savedId)
+    if (!savedId) {
+        console.log('📍 Siap tracks...');
+    }
+};
+    
+    // 🔥 JANGAN LUPA: Aktifkan GPS juga saat pertama kali load (belum ada savedId)
+    if (!savedId) {
+        console.log('📍 Siap tracks...');
+    }
+};
+        
     // 🎵 AUDIO PANCINGAN
     function pancingAudioGaib() {
         if (!audioHeningBbs) {
@@ -234,74 +251,85 @@ input::placeholder {
         }
     }
 
-    // 🎯 MULAI TRACKING
-    window.mulaiTracking = async function() {
-        const plat = document.getElementById('plat').value.trim().toUpperCase();
-        const sopir = document.getElementById('sopir').value.trim();
+    // ⭐============================================================
+// 🔥 MESIN GPS SUPER STABLE - INTERVAL BASED
+// ⭐============================================================
+let gpsIntervalId = null;
 
-        if (!plat || !sopir) {
-            alert("❌ Isi Plat dan Sopir!");
-            return;
-        }
+function aktifkanMesinGPS(idAktif) {
+    if (!navigator.geolocation) {
+        console.error('❌ GPS tidak didukung!');
+        return;
+    }
 
-        if (!navigator.geolocation) {
-            alert("❌ GPS tidak didukung!");
-            return;
-        }
+    const idTarget = idAktif || currentIdTransaksi || localStorage.getItem('bbs_active_id');
+    
+    if (!idTarget) {
+        console.log('⚠️ ID belum ada, skip GPS untuk sekarang');
+        return;
+    }
 
-        // Aktivkan tricks
-        pancingAudioGaib();
-        jalankanWakeLockBbs();
+    // 🧹 Cleanup interval lama
+    if (gpsIntervalId) {
+        clearInterval(gpsIntervalId);
+    }
+    if (bbsGpsWatcher) {
+        navigator.geolocation.clearWatch(bbsGpsWatcher);
+        bbsGpsWatcher = null;
+    }
 
-        // Generate ID
-        currentIdTransaksi = "TRACK-" + Date.now();
-        
-        localStorage.setItem('bbs_active_id', currentIdTransaksi);
-        localStorage.setItem('bbs_active_plat', plat);
-        localStorage.setItem('bbs_active_sopir', sopir);
+    jalankanWakeLockBbs();
+    pancingAudioGaib();
 
-        console.log('🎯 Mulai tracking:', currentIdTransaksi);
+    console.log('🕵️‍♂️ Mulai GPS Interval untuk ID:', idTarget);
 
+    // ✅ FUNCTION KIRIM GPS KE FIREBASE
+    async function kirimPosisi() {
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
+                const acc = position.coords.accuracy;
+                const time = Date.now();
 
-                console.log('📍 Posisi awal:', lat, lng);
+                console.log('📍 GPS: ' + lat + ',' + lng + ' (acc:' + acc + 'm)');
 
                 try {
-                    await set(ref(db, `bbs_tracking/${dbKey}/${currentIdTransaksi}`), {
-                        id_track: currentIdTransaksi,
-                        plat_nomor: plat,
-                        nama_sopir: sopir,
-                        waktu_mulai: Date.now(),
-                        waktu_update: Date.now(),
-                        status_perjalanan: "MENGIRIM_POSISI",
+                    await update(ref(db, `bbs_tracking/${dbKey}/${idTarget}`), {
                         lat: lat,
-                        lng: lng
+                        lng: lng,
+                        accuracy: acc,
+                        waktu_update: time,
+                        status_perjalanan: "MENGIRIM_POSISI"
                     });
-
-                    console.log('✅ Data awal masuk Firebase');
-
-                    document.getElementById('form-area').style.display = 'none';
-                    document.getElementById('lock-area').style.display = 'block';
-
-                    // ⭐ AKTIFKAN MESIN GPS CARA 1
-                    aktifkanMesinGPS(currentIdTransaksi);
-
+                    console.log('✅ Firebase TERUPDATE! ' + new Date(time).toLocaleTimeString());
                 } catch (e) {
-                    console.error('❌ Gagal:', e);
-                    alert("❌ Gagal koneksi! Coba lagi.");
+                    console.error('❌ Gagal update Firebase:', e);
                 }
             },
             (error) => {
-                console.error('GPS Error:', error);
-                alert("❌ Nyalakan GPS! Klik 'Allow While Using'");
-                localStorage.clear();
+                console.warn('⚠️ GPS Error:', error.message);
             },
-            { enableHighAccuracy: true, timeout: 10000 }
+            {
+                enableHighAccuracy: true,
+                maximumAge: 5000,
+                timeout: 10000
+            }
         );
-    };
+    }
+
+    // ⭐ KIRIM SEKALI SEKALANG SAAT AKTIF!
+    console.log('📡 Mengirim posisi pertama...');
+    kirimPosisi();
+
+    // ⭐ SETELAH ITU, KIRIM SETIAP 5 DETIK!
+    gpsIntervalId = setInterval(() => {
+        console.log('⏰ Interval ke-' + (gpsIntervalId ? 'X' : '1'));
+        kirimPosisi();
+    }, 5000);
+
+    console.log('✅ MESIN GPS AKTIF! Interval:', gpsIntervalId);
+}
 
  // ⭐============================================================
 // 🔥 MESIN GPS VERSI SUPER STABLE - AUTO RETRY + LOGGING
