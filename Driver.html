@@ -303,8 +303,8 @@ input::placeholder {
         );
     };
 
-  // ⭐============================================================
-// 🔥 FUNGSI MESIN GPS CARA 1: WATCHPOSITION SEKALI SAJA
+ // ⭐============================================================
+// 🔥 MESIN GPS VERSI SUPER STABLE - AUTO RETRY + LOGGING
 // ⭐============================================================
 function aktifkanMesinGPS(idAktif) {
     if (!navigator.geolocation) {
@@ -319,69 +319,78 @@ function aktifkanMesinGPS(idAktif) {
         return;
     }
 
-    // 🧹 Bersihkan watcher lama (hanya sekali)
+    // 🧹 Cleanup watcher lama
     if (bbsGpsWatcher) {
-        console.log('🧹 Membersihkan watcher lama...');
         navigator.geolocation.clearWatch(bbsGpsWatcher);
         bbsGpsWatcher = null;
     }
 
-    // Aktivkan tricks
     jalankanWakeLockBbs();
     pancingAudioGaib();
 
-    console.log('🕵️‍♂️ Mulai watch GPS sekali aja untuk ID:', idTarget);
+    let gpsRetryCount = 0;
+    const maxRetry = 5;
 
-    // ⭐ WATCHPOSITION CUKUP SEKALI, OTTOMATIS NGIRIM SETIAP ADA PERGERAKAN
-    bbsGpsWatcher = navigator.geolocation.watchPosition(
-        async (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            const acc = position.coords.accuracy;
+    console.log('🕵️‍♂️ Mulai watch GPS untuk ID:', idTarget);
 
-            console.log(`📍 GPS Ditangkap: ${lat}, ${lng} (akurasi: ${acc}m)`);
+    function mulaiWatch() {
+        console.log('📡 Menyalakan GPS... (attempt: ' + (gpsRetryCount + 1) + ')');
 
-            // ✅ PERBAIKAN: Jangan skip karena akurasi, tetap kirim ke Firebase!
-            // Karena tracking kendaraan butuh data terus-menerus
-            
-            try {
-                await update(ref(db, `bbs_tracking/${dbKey}/${idTarget}`), {
-                    lat: lat,
-                    lng: lng,
-                    accuracy: acc,
-                    waktu_update: Date.now(),
-                    status_perjalanan: "MENGIRIM_POSISI"
-                });
-                console.log('✅ Firebase SUDAH DIUPDATE!');
-            } catch (e) {
-                console.error('❌ Gagal update:', e);
-            }
+        bbsGpsWatcher = navigator.geolocation.watchPosition(
+            async (position) => {
+                gpsRetryCount = 0; // Reset retry kalo berhasil
+                
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const acc = position.coords.accuracy;
+                const time = Date.now();
 
-            // Kirim ke Service Worker
-            try {
-                if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-                    navigator.serviceWorker.controller.postMessage({
-                        type: 'TRACK_GPS_UPDATE',
+                console.log('📍 GPS DAPAT!: ' + lat + ', ' + lng + ' (acc:' + acc + 'm)');
+
+                try {
+                    await update(ref(db, `bbs_tracking/${dbKey}/${idTarget}`), {
                         lat: lat,
                         lng: lng,
-                        id: idTarget
+                        accuracy: acc,
+                        waktu_update: time,
+                        status_perjalanan: "MENGIRIM_POSISI"
                     });
+                    console.log('✅ Firebase TERUPDATE! waktu_update: ' + time);
+                    
+                    // Kirim notifikasi ke Service Worker
+                    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                        navigator.serviceWorker.controller.postMessage({
+                            type: 'TRACK_GPS_UPDATE',
+                            lat: lat,
+                            lng: lng,
+                            id: idTarget
+                        });
+                    }
+                } catch (e) {
+                    console.error('❌ Gagal update Firebase:', e);
                 }
-            } catch (swErr) {
-                // Abaikan kalau SW belum siap
+            },
+            (error) => {
+                console.warn('⚠️ GPS Error: ' + error.message + ' (code: ' + error.code + ')');
+                
+                // Auto retry kalo GPS error
+                if (gpsRetryCount < maxRetry) {
+                    gpsRetryCount++;
+                    console.log('🔄 Retry ke-' + gpsRetryCount + ' dalam 3 detik...');
+                    setTimeout(mulaiWatch, 3000);
+                } else {
+                    console.error('🚫 GPS Gagal total setelah ' + maxRetry + 'x mencoba');
+                }
+            },
+            {
+                enableHighAccuracy: true,
+                maximumAge: 0,
+                timeout: 10000
             }
+        );
+    }
 
-        },
-        (error) => {
-            console.warn('⚠️ GPS Error:', error.code, error.message);
-        },
-        {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 10000
-        }
-    );
-
+    mulaiWatch();
     console.log('✅ MESIN GPS AKTIF! Watcher ID:', bbsGpsWatcher);
 }
         
