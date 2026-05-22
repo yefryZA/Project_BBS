@@ -169,7 +169,7 @@ input::placeholder {
         });
     }
 
-   // 🧠 Cek status lokal saat aplikasi dibuka (VERSI ANTI-CRASH!)
+   // 🔥 PERBAIKAN SAKTI: Kunci Anti Amnesia Level Global Murni Laptop & HP
     window.onload = function() {
         const savedId = localStorage.getItem('bbs_active_id');
         const savedPlat = localStorage.getItem('bbs_active_plat');
@@ -178,37 +178,34 @@ input::placeholder {
         console.log(`🔍 [BBS SYSTEM] Memeriksa memori lokal... Ditemukan ID: ${savedId}`);
         
         if (savedId && savedPlat) {
+            // 🚀 GEBOD GLOBAL: Paksa simpan langsung ke root browser (window.) 
+            // agar bisa ditembus oleh modul Firebase import di bawah!
             window.currentIdTransaksi = savedId;
-            currentIdTransaksi = savedId;
+            currentIdTransaksi = savedId; // Amankan dua-duanya biar tidak bentrok
             
-            // 🎯 PENGAMAN 1: Isi input data hanya jika elemennya ada
-            const elPlat = document.getElementById('plat');
-            const elSopir = document.getElementById('sopir');
-            if (elPlat) elPlat.value = savedPlat;
-            if (elSopir) elSopir.value = savedSopir;
+            document.getElementById('plat').value = savedPlat;
+            document.getElementById('sopir').value = savedSopir;
             
-            // 🎯 PENGAMAN 2: Menyembunyikan form & memunculkan area lock (ANTI-CRASH)
-            const elForm = document.getElementById('form-area');
-            const elLock = document.getElementById('lock-area');
+            document.getElementById('form-area').style.display = 'none';
+            document.getElementById('lock-area').style.display = 'block';
             
-            if (elForm) { 
-                elForm.style.display = 'none'; 
-            } else {
-                console.warn("⚠️ Peringatan: ID 'form-area' tidak ditemukan di HTML Abang.");
+            console.log("⚡ [BBS SYSTEM] Rute aktif terdeteksi! Mengirim tanda kehidupan ke Dashboard...");
+            
+            // 🔥 TEMBAKAN INSTAN: Detik ini juga, paksa update waktu ke Firebase 
+            // biar Dashboard LANGSUNG BERUBAH HIJAU tanpa nunggu satelit GPS lock!
+            const { getDatabase, ref, update } = window.BbsFirebaseDatabase || {}; 
+            // Amankan jika db sudah siap
+            if (db) {
+                update(ref(db, `bbs_tracking/${dbKey}/${savedId}`), {
+                    waktu_update: Date.now(), // Setor milidetik komputer sekarang
+                    status_perjalanan: "MENGIRIM_POSISI"
+                }).then(() => console.log("🟢 Status di Dashboard otomatis menyala HIJAU!"));
             }
-            
-            if (elLock) { 
-                elLock.style.display = 'block'; 
-            } else {
-                console.warn("⚠️ Peringatan: ID 'lock-area' tidak ditemukan di HTML Abang.");
-            }
-            
-            console.log("⚡ [BBS SYSTEM] Melompati eror HTML, memaksa radar GPS tetap menyala!");
-            
-            // 🚀 MAJU TERUS: Jalankan mesin GPS, jangan biarkan eror HTML menyumbat pipa data!
+
+            // Nyalakan mesin radar berkala
             aktifkanMesinGPS(savedId);
         } else {
-            console.log("🟢 [BBS SYSTEM] Memori bersih. Siap menerima rute baru.");
+            console.log("🟢 [BBS SYSTEM] Memori kosong. Siap menerima input perjalanan baru.");
         }
     }
 
