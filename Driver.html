@@ -331,74 +331,99 @@ input::placeholder {
         });
     };
 
-    // 🔥 PERBAIKAN TOTAL: MESIN RADAR REALTIME TUNGGAL (ANTI-TABRAKAN & ANTI-MEMBONEKA)
-    function aktifkanMesinGPS(idAktif) {
-        if (!navigator.geolocation) return;
+  // 🔥 VERSI PERBAIKAN: Mesin Radar Realtime Anti-Rusak
+function aktifkanMesinGPS(idTarget) {
+    console.log("🎯 [RADAR] Memulai mesin GPS untuk ID:", idTarget);
 
-        const idTarget = idAktif || currentIdTransaksi || localStorage.getItem('bbs_active_id');
+    // 1. Validasi awal
+    if (!idTarget) {
+        console.error("🚨 [RADAR] ID Target kosong!");
+        return;
+    }
 
-        // Panggil pertahanan anti-tidur bawaan sistem
-        jalankanWakeLockBbs();
-        pancingAudioGaib();
+    if (!navigator.geolocation) {
+        console.error("🚨 [RADAR] GPS tidak didukung browser ini!");
+        return;
+    }
 
-        if (!idTarget) {
-            console.error("🚨 Radar Batal: ID Transaksi kosong!");
-            return;
-        }
+    // 2. Bersihkan watcher lama (kalau ada yang menggantung)
+    if (window.bbsGpsWatcher) {
+        console.log("🧹 [RADAR] Membersihkan watcher lama...");
+        navigator.geolocation.clearWatch(window.bbsGpsWatcher);
+        window.bbsGpsWatcher = null;
+    }
 
-        // 🧹 BERSIHKAN TOTAL: Matikan watcher lama jika ada sisa memori menggantung agar RAM steril
-        if (window.bbsGpsWatcher) {
-            navigator.geolocation.clearWatch(window.bbsGpsWatcher);
-        }
+    // 3. Aktifkan tricks anti-tidur
+    jalankanWakeLockBbs();
+    pancingAudioGaib();
 
-        console.log("🕵️‍♂️ Mode Mata-Mata GPS BBS Aktif: Jalur Tunggal Realtime Siaga Penuh...");
+    // 4. Jalankan watchPosition
+    console.log("🛰️ [RADAR] Mulai menonton posisi...");
+    
+    window.bbsGpsWatcher = navigator.geolocation.watchPosition(
+        // ✅ SUKSES DAPAT POSISI
+        async (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const akurasi = position.coords.accuracy;
 
-        // 🚀 JALUR TUNGGAL: Serahkan sepenuhnya ke watchPosition bawaan browser tanpa campur tangan setInterval
-        window.bbsGpsWatcher = navigator.geolocation.watchPosition(async (position) => {
-            const latitude = position.coords.latitude;
-            const longitude = position.coords.longitude;
+            console.log(`📍 [RADAR] Posisi baru terdeteksi: ${lat}, ${lng} (akurasi: ${akurasi}m)`);
 
-            console.log(`🎯 Pergerakan Terdeteksi: ${latitude}, ${longitude}`);
-
-            try {
-                // Tembak data langsung ke Firebase setiap kali ada pergeseran posisi sekecil apa pun
-                await update(ref(db, `bbs_tracking/${dbKey}/${idTarget}`), {
-                    lat: latitude,
-                    lng: longitude,
-                    waktu_update: Date.now() // 🔥 Angka milidetik berjalan realtime, dashboard admin langsung hijau!
-                });
-                console.log("📡 Firebase Terupdate Secara Realtime!");
-            } catch (errFb) {
-                console.error("Gagal kirim update koordinat ke Firebase:", errFb);
+            // Abaikan kalau akurasi jelek (>50m)
+            if (akurasi > 50) {
+                console.warn("⏭️ [RADAR] Akurasi jelek, dilewati...");
+                return;
             }
 
-            // Jembatan Service Worker untuk background process
+            try {
+                // 🔥 KIRIM KE FIREBASE
+                await update(ref(db, `bbs_tracking/${dbKey}/${idTarget}`), {
+                    lat: lat,
+                    lng: lng,
+                    waktu_update: Date.now(),
+                    status_perjalanan: "MENGIRIM_POSISI",
+                    akurasi_gps: akurasi
+                });
+                
+                console.log("✅ [RADAR] Firebase updated!");
+
+            } catch (errFb) {
+                console.error("❌ [RADAR] Gagal update Firebase:", errFb);
+            }
+
+            // 📨 KE SERVICE WORKER (kalau sudah ready)
             try {
                 if (navigator.serviceWorker && navigator.serviceWorker.controller) {
                     navigator.serviceWorker.controller.postMessage({
-                        type: 'TRACK_GPS_BACKGROUND',
-                        latitude: latitude,
-                        longitude: longitude,
-                        dbPath: `bbs_tracking/${dbKey}/${idTarget}`
+                        type: 'TRACK_GPS_UPDATE',
+                        lat: lat,
+                        lng: lng,
+                        id: idTarget,
+                        timestamp: Date.now()
                     });
                 }
             } catch (swErr) {
-                console.warn("⏳ Service Worker belum siap, dilewati aman.");
+                // Abaikan kalau SW belum siap
             }
 
-        }, (error) => {
-            console.warn("⏳ Sensor HP driver mencari sinyal satelit...", error.message);
-            if (idTarget) {
-                update(ref(db, `bbs_tracking/${dbKey}/${idTarget}`), {
-                    koordinat_txt: "⚠️ SENSOR GPS MENCARI SINYAL"
-                }).catch(e => console.error(e));
+        },
+        // ❌ ERROR GPS
+        (error) => {
+            console.error("📡 [RADAR] Error GPS:", error.message);
+            if (error.code === error.TIMEOUT) {
+                console.warn("⏱️ [RADAR] Timeout menunggu sinyal, coba lagi...");
             }
-        }, {
-            enableHighAccuracy: true, // Wajib gunakan GPS kasta tertinggi (Satelit murni, bertenaga tinggi)
-            maximumAge: 0,            // Tolak data posisi cache/lama, wajib minta posisi yang baru dari satelit
-            timeout: 15000            // Beri kelonggaran sensor membaca sinyal selama 15 detik
-        });
-    }
+        },
+        // ⚙️ KONFIGURASI GPS
+        {
+            enableHighAccuracy: true,   // GPS satelit
+            maximumAge: 5000,        // Boleh pakai cache max 5 detik kalau sinyal buruk
+            timeout: 30000           // Timeout 30 detik
+        }
+    );
+
+    console.log("✅ [RADAR] Mesint aktif! Watcher ID:", window.bbsGpsWatcher);
+}
 
     // FUNGSI: TOMBOL SELESAI (Kunci Bongkar via PIN Dashboard)
     window.stopTracking = async function() {
@@ -480,6 +505,14 @@ input::placeholder {
         }
     })();
     
+    // 🕵️‍♂️ DEBUGGING: Cek apakah mesin radar jalan
+setInterval(() => {
+    if (window.bbsGpsWatcher) {
+        console.log(`🟢 [DEBUG] Radar AKTIF - ID: ${window.bbsGpsWatcher}, Waktu: ${new Date().toLocaleTimeString()}`);
+    } else {
+        console.log(`🔴 [DEBUG] radar NONAKTIF`);
+    }
+}, 10000); // Cek setiap 10 detik
 </script>
 </body>
 </html>
