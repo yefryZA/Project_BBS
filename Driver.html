@@ -122,10 +122,11 @@ input::placeholder {
 </div>
 
 <script type="module">
+    // ====== IMPORT FIREBASE ======
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // Konfigurasi Firebase PT. BBS
+    // ====== KONFIGURASI ======
     const firebaseConfig = { 
         apiKey: "AIzaSyAfeLTKRQ66tjZjAt7tg6KcrWhtmv0y3fo", 
         databaseURL: "https://berkah-baja-steel-default-rtdb.asia-southeast1.firebasedatabase.app", 
@@ -134,385 +135,212 @@ input::placeholder {
     
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const dbKey = "BBS_PROYEK_SATOE"; // Node Utama Database Proyek Losarang
+    const dbKey = "BBS_PROYEK_SATOE";
 
-    let gpsInterval = null;
+    // ====== VARIABEL GLOBAL ======
     let currentIdTransaksi = "";
-    let wakeLock = null;
-
-    // 🔒 FUNGSI AWAL: Memaksa sistem HP tetap melek biar GPS tidak tidur
-    async function requestWakeLock() {
-        try {
-            if ('wakeLock' in navigator) {
-                wakeLock = await navigator.wakeLock.request('screen');
-                console.log('🔒 HP Dipaksa Melek, GPS Anti-Mati!');
-            }
-        } catch (err) {
-            console.error('❌ Gagal mengunci sistem melek:', err);
-        }
-    }
-
-    // Jalankan sistem anti-tidur saat halaman dimuat atau dibuka kembali
-    window.addEventListener('load', requestWakeLock);
-    document.addEventListener('visibilitychange', () => {
-        if (wakeLock !== null && document.visibilityState === 'visible') {
-            requestWakeLock();
-        }
-    });
-
-    // 🚀 DAFTARKAN SERVICE WORKER FISIK
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js', { scope: './' })
-                .then((reg) => console.log('🚀 PWA Driver Resmi Aktif!', reg))
-                .catch((err) => console.error('❌ Eror PWA Driver:', err));
-        });
-    }
-
-   // 🔥 PERBAIKAN SAKTI: Kunci Anti Amnesia Level Global Murni Laptop & HP
-    window.onload = function() {
-        const savedId = localStorage.getItem('bbs_active_id');
-        const savedPlat = localStorage.getItem('bbs_active_plat');
-        const savedSopir = localStorage.getItem('bbs_active_sopir');
-        
-        console.log(`🔍 [BBS SYSTEM] Memeriksa memori lokal... Ditemukan ID: ${savedId}`);
-        
-        if (savedId && savedPlat) {
-            // 🚀 GEBOD GLOBAL: Paksa simpan langsung ke root browser (window.) 
-            // agar bisa ditembus oleh modul Firebase import di bawah!
-            window.currentIdTransaksi = savedId;
-            currentIdTransaksi = savedId; // Amankan dua-duanya biar tidak bentrok
-            
-            document.getElementById('plat').value = savedPlat;
-            document.getElementById('sopir').value = savedSopir;
-            
-            document.getElementById('form-area').style.display = 'none';
-            document.getElementById('lock-area').style.display = 'block';
-            
-            console.log("⚡ [BBS SYSTEM] Rute aktif terdeteksi! Mengirim tanda kehidupan ke Dashboard...");
-            
-            // 🔥 TEMBAKAN INSTAN: Detik ini juga, paksa update waktu ke Firebase 
-            // biar Dashboard LANGSUNG BERUBAH HIJAU tanpa nunggu satelit GPS lock!
-            const { getDatabase, ref, update } = window.BbsFirebaseDatabase || {}; 
-            // Amankan jika db sudah siap
-            if (db) {
-                update(ref(db, `bbs_tracking/${dbKey}/${savedId}`), {
-                    waktu_update: Date.now(), // Setor milidetik komputer sekarang
-                    status_perjalanan: "MENGIRIM_POSISI"
-                }).then(() => console.log("🟢 Status di Dashboard otomatis menyala HIJAU!"));
-            }
-
-            // Nyalakan mesin radar berkala
-            aktifkanMesinGPS(savedId);
-        } else {
-            console.log("🟢 [BBS SYSTEM] Memori kosong. Siap menerima input perjalanan baru.");
-        }
-    }
-
-    // ====== TAMBAHAN ASISTEN INTERNAL: VARIABEL PENGUNCI WAKE LOCK & AUDIO ======
     let wakeLockBbs = null;
     let audioHeningBbs = null;
+    let gpsWatcher = null;
 
-    // Fungsi Pawang Anti-Tidur (Wake Lock API)
+    // ====== WAKE LOCK ======
     async function jalankanWakeLockBbs() {
         try {
             if ('wakeLock' in navigator) {
                 wakeLockBbs = await navigator.wakeLock.request('screen');
-                console.log('🔒 SAKTI: CPU HP Driver dikunci, GPS anti-tidur!');
-                
-                // Jika kunci terlepas otomatis di tengah jalan, paksa kunci ulang
-                wakeLockBbs.addEventListener('release', () => {
-                    console.log('⏳ Kunci terlepas otomatis, mengaktifkan ulang pertahanan...');
-                    jalankanWakeLockBbs();
-                });
+                console.log('🔒 Wake Lock AKTIF');
             }
         } catch (err) {
-            console.warn(`⚠️ Wake Lock gagal aktif (Biasa pada beberapa tipe browser): ${err.message}`);
+            console.warn('⚠️ Wake Lock gagal:', err);
         }
     }
 
-    // Trik Licik Pancingan Audio Gaib (Menipu sistem hemat baterai Android)
+    // ====== AUDIO PANCINGAN ======
     function pancingAudioGaib() {
-        if (!audioHeningBbs) {
-            // Menggunakan file audio sunyi/hening base64 berdurasi 1 detik (Aman tanpa kuota)
-            audioHeningBbs = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==");
-            audioHeningBbs.loop = true;
-            audioHeningBbs.volume = 0.01; // Sangat kecil, tidak akan terdengar oleh sopir
-        }
-        
-        audioHeningBbs.play()
-            .then(() => console.log('🎵 Musik sunyi BBS aktif! Android mendeteksi aktivitas media background.'))
-            .catch(e => console.warn('Pancingan audio butuh interaksi user, otomatis terpicu via tombol klik mulai.'));
+        try {
+            if (!audioHingenBbs) {
+                audioHeningBbs = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==");
+                audioHeningBbs.loop = true;
+                audioHeningBbs.volume = 0.01;
+            }
+            audioHeningBbs.play().then(() => console.log('🎵 Audio aktif')).catch(e => console.warn('Audio error:', e));
+        } catch(e) {}
     }
 
-    // FUNGSI: MULAI PERJALANAN (VERSI SIDAK GPS SEBELUM TEMBAK FIREBASE)
+    // ====== ANTI-AMNESIA (CEK DATA LAMA) ======
+    window.addEventListener('load', () => {
+        const savedId = localStorage.getItem('bbs_active_id');
+        const savedPlat = localStorage.getItem('bbs_active_plat');
+        
+        console.log('🔍 Cek memori lama:', savedId);
+
+        if (savedId && savedPlat) {
+            currentIdTransaksi = savedId;
+            document.getElementById('plat').value = savedPlat;
+            document.getElementById('sopir').value = localStorage.getItem('bbs_active_sopir');
+            document.getElementById('form-area').style.display = 'none';
+            document.getElementById('lock-area').style.display = 'block';
+            
+            console.log('⚡ Melanjutkan tracking:', savedId);
+            aktifkanMesinGPS(savedId);
+        }
+    });
+
+    // ====== MULAI TRACKING ======
     window.mulaiTracking = async function() {
         const plat = document.getElementById('plat').value.trim().toUpperCase();
         const sopir = document.getElementById('sopir').value.trim();
 
-        // 1. Validasi Inputan Form (Harus diisi)
         if (!plat || !sopir) {
-            alert("❌ Harap isi Plat Nomor dan Nama Sopir lebih dulu!");
+            alert("❌ Isi plat dan sopir!");
             return;
         }
 
-        if (!navigator.geolocation) {
-            alert("❌ HP ini tidak mendukung sensor GPS!");
-            return;
-        }
+        // Aktifkan tricks
+        pancingAudioGaib();
+        jalankanWakeLockBbs();
 
-        // 🎯 KUNCI UTAMA: LANGSUNG GENERATE ID DI SINI (SEBELUM GEOLOCATION BERJALAN)
+        // Generate ID
         currentIdTransaksi = "TRACK-" + Date.now();
-
-        // Kunci status di localStorage (Anti Amnesia)
         localStorage.setItem('bbs_active_id', currentIdTransaksi);
         localStorage.setItem('bbs_active_plat', plat);
         localStorage.setItem('bbs_active_sopir', sopir);
 
-        // 🚀 SEBELUM FIREBASE BERJALAN: Eksekusi Trik Licik Audio Gaib & Wake Lock
-        pancingAudioGaib();
-        jalankanWakeLockBbs();
+        console.log('🎯 Mulai tracking:', currentIdTransaksi);
 
-        // 🚀 2. SIDAK DADAKAN: Cek apakah GPS aktif dan diizinkan
-        navigator.geolocation.getCurrentPosition(async (position) => {
-            // === JIKA GPS AKTIF DAN DIIZINKAN ===
-            
-            let firebaseSukses = false;
+        // Coba dapat GPS
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
 
-            // 🎯 PENYELARAS RUMUS BARBAR: Gunakan Date.now() agar sinkron dengan Dashboard Admin
-            try {
-                await set(ref(db, `bbs_tracking/${dbKey}/${currentIdTransaksi}`), {
-                    id_track: currentIdTransaksi,
-                    plat_nomor: plat,
-                    nama_sopir: sopir,
-                    waktu_mulai: Date.now(), // 🔥 Berubah jadi angka murni (Contoh: 1716300000000)
-                    waktu_update: Date.now(), // 🔥 Langsung buat waktu_update di awal biar Dashboard tidak membaca data usang!
-                    status_perjalanan: "MENGIRIM_POSISI",
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                });
-                
-                console.log("🚀 Data awal BERHASIL masuk Firebase!");
-                firebaseSukses = true;
+                console.log('📍 Posisi awal:', lat, lng);
 
-            } catch (fbError) {
-                console.error("Gagal mengirim data awal ke Firebase:", fbError);
-                alert("❌ GAGAL MASUK SISTEM: Koneksi internet Anda tidak stabil/lelet. Silakan klik MULAI lagi!");
-                return; // Stop proses jika Firebase benar-benar gagal
-            }
-
-            // 🎯 ISOLASI 2: Jika Firebase terbukti sukses, baru eksekusi perubahan layar & radar berkala
-            if (firebaseSukses) {
-                // Ubah tampilan web, langsung sembunyikan form input
-                document.getElementById('form-area').style.display = 'none';
-                document.getElementById('lock-area').style.display = 'block';
-
-                // Hidupkan radar GPS berkala dengan pelindung internal agar tidak memicu alert atas
                 try {
-                    aktifkanMesinGPS(currentIdTransaksi);
-                } catch (radarError) {
-                    console.error("Radar berkala ada kendala minor, tapi data awal aman:", radarError);
-                }
-            }
+                    // KIRIM DATA AWAL
+                    await set(ref(db, `bbs_tracking/${dbKey}/${currentIdTransaksi}`), {
+                        id_track: currentIdTransaksi,
+                        plat_nomor: plat,
+                        nama_sopir: sopir,
+                        waktu_mulai: Date.now(),
+                        waktu_update: Date.now(),
+                        status_perjalanan: "MENGIRIM_POSISI",
+                        lat: lat,
+                        lng: lng
+                    });
 
-        }, (error) => {
-            // === JIKA GPS MATI ATAU SOPIR KLIK TOLAK ===
-            localStorage.clear();
-            currentIdTransaksi = "";
-            
-            // Matikan pancingan audio jika gagal masuk sistem
-            if (audioHeningBbs) { audioHeningBbs.pause(); }
-            
-            alert("❌ PENDAFTARAN ANDA DITOLAK!\n\nKLIK ⟪ Izinkan GPS atau Allow While Using App ⟫\n\nSilahkan kembali ke menu Awal");
-            console.warn("klik dulu ⟪ ALLOW WHILE USING APP ⟫, silahkan coba lagi.");
-        }, {
-            enableHighAccuracy: true,
-            timeout: 7000
-        });
+                    console.log('✅ Data awal masuk Firebase');
+
+                    // Ganti tampilan
+                    document.getElementById('form-area').style.display = 'none';
+                    document.getElementById('lock-area').style.display = 'block';
+
+                    // ⭐ MASALAH DI SINI -aktifkanMesinGPSdipanggil setelah sukses!
+                    aktifkanMesinGPS(currentIdTransaksi);
+
+                } catch (e) {
+                    console.error('❌ Gagal kirim awal:', e);
+                    alert("❌ Gagal koneksi! Coba lagi.");
+                }
+            },
+            (error) => {
+                console.error('GPS Error:', error);
+                alert("❌ Nyalakan GPS dulu! Klik 'Allow While Using'");
+                localStorage.clear();
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
     };
 
-  // 🔥 VERSI PERBAIKAN: Mesin Radar Realtime Anti-Rusak
-function aktifkanMesinGPS(idTarget) {
-    console.log("🎯 [RADAR] Memulai mesin GPS untuk ID:", idTarget);
+    // ====== MESIN GPS REALTIME ======
+    function aktifkanMesinGPS(idTarget) {
+        console.log('🛰️ Aktifkan mesin GPS untuk:', idTarget);
 
-    // 1. Validasi awal
-    if (!idTarget) {
-        console.error("🚨 [RADAR] ID Target kosong!");
-        return;
-    }
+        if (gpsWatcher) {
+            navigator.geolocation.clearWatch(gpsWatcher);
+            console.log('🧹 Watcher lama dihapus');
+        }
 
-    if (!navigator.geolocation) {
-        console.error("🚨 [RADAR] GPS tidak didukung browser ini!");
-        return;
-    }
+        // Aktifkan tricks lagi
+        jalankanWakeLockBbs();
+        pancingAudioGaib();
 
-    // 2. Bersihkan watcher lama (kalau ada yang menggantung)
-    if (window.bbsGpsWatcher) {
-        console.log("🧹 [RADAR] Membersihkan watcher lama...");
-        navigator.geolocation.clearWatch(window.bbsGpsWatcher);
-        window.bbsGpsWatcher = null;
-    }
+        gpsWatcher = navigator.geolocation.watchPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const akurasi = position.coords.accuracy;
 
-    // 3. Aktifkan tricks anti-tidur
-    jalankanWakeLockBbs();
-    pancingAudioGaib();
+                console.log('📡 Posisi baru:', lat, lng, `(akurasi: ${akurasi}m)`);
 
-    // 4. Jalankan watchPosition
-    console.log("🛰️ [RADAR] Mulai menonton posisi...");
-    
-    window.bbsGpsWatcher = navigator.geolocation.watchPosition(
-        // ✅ SUKSES DAPAT POSISI
-        async (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            const akurasi = position.coords.accuracy;
+                // Skip kalau akurasi buruk (>100m)
+                if (akurasi > 100) {
+                    console.warn('⏭️ Akurasi jelek, skip');
+                    return;
+                }
 
-            console.log(`📍 [RADAR] Posisi baru terdeteksi: ${lat}, ${lng} (akurasi: ${akurasi}m)`);
-
-            // Abaikan kalau akurasi jelek (>50m)
-            if (akurasi > 50) {
-                console.warn("⏭️ [RADAR] Akurasi jelek, dilewati...");
-                return;
-            }
-
-            try {
-                // 🔥 KIRIM KE FIREBASE
-                await update(ref(db, `bbs_tracking/${dbKey}/${idTarget}`), {
-                    lat: lat,
-                    lng: lng,
-                    waktu_update: Date.now(),
-                    status_perjalanan: "MENGIRIM_POSISI",
-                    akurasi_gps: akurasi
-                });
-                
-                console.log("✅ [RADAR] Firebase updated!");
-
-            } catch (errFb) {
-                console.error("❌ [RADAR] Gagal update Firebase:", errFb);
-            }
-
-            // 📨 KE SERVICE WORKER (kalau sudah ready)
-            try {
-                if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-                    navigator.serviceWorker.controller.postMessage({
-                        type: 'TRACK_GPS_UPDATE',
+                try {
+                    // ⭐ UPDATE KE FIREBASE - PAKE VARIABLE 'db' LANGSUNG!
+                    const dbPath = `bbs_tracking/${dbKey}/${idTarget}`;
+                    console.log('📤 Mengupdate:', dbPath);
+                    
+                    await update(ref(db, dbPath), {
                         lat: lat,
                         lng: lng,
-                        id: idTarget,
-                        timestamp: Date.now()
+                        waktu_update: Date.now(),
+                        status_perjalanan: "MENGIRIM_POSISI",
+                        akurasi_gps: akurasi
                     });
+
+                    console.log('✅ Firebase SUDAH DIUPDATE!');
+
+                } catch (e) {
+                    console.error('❌ Gagal update:', e);
                 }
-            } catch (swErr) {
-                // Abaikan kalau SW belum siap
+            },
+            (error) => {
+                console.warn('⚠️ GPS Error:', error.message);
+            },
+            {
+                enableHighAccuracy: true,
+                maximumAge: 5000,
+                timeout: 30000
             }
+        );
 
-        },
-        // ❌ ERROR GPS
-        (error) => {
-            console.error("📡 [RADAR] Error GPS:", error.message);
-            if (error.code === error.TIMEOUT) {
-                console.warn("⏱️ [RADAR] Timeout menunggu sinyal, coba lagi...");
-            }
-        },
-        // ⚙️ KONFIGURASI GPS
-        {
-            enableHighAccuracy: true,   // GPS satelit
-            maximumAge: 5000,        // Boleh pakai cache max 5 detik kalau sinyal buruk
-            timeout: 30000           // Timeout 30 detik
-        }
-    );
+        console.log('✅ Mesin GPS AKTIF! Watcher ID:', gpsWatcher);
+    }
 
-    console.log("✅ [RADAR] Mesint aktif! Watcher ID:", window.bbsGpsWatcher);
-}
-
-    // FUNGSI: TOMBOL SELESAI (Kunci Bongkar via PIN Dashboard)
+    // ====== STOP TRACKING ======
     window.stopTracking = async function() {
-        const inputPin = document.getElementById('pin-input').value.trim();
-
-        if (!inputPin) {
-            alert("❌ Masukkan PIN Kunci Bongkar terlebih dahulu!");
+        const pin = document.getElementById('pin-input').value.trim();
+        
+        if (pin !== "2026") {
+            alert("❌ PIN salah!");
             return;
         }
 
+        // Matikan GPS
+        if (gpsWatcher) {
+            navigator.geolocation.clearWatch(gpsWatcher);
+        }
+
         try {
-            const snapshot = await get(ref(db, `bbs_config/${dbKey}/pin_bongkar`));
-            const pinSistem = snapshot.exists() ? snapshot.val().toString().trim() : "2026";
-
-            if (inputPin !== pinSistem) {
-                alert("❌ PIN SALAH! Koordinat Anda tetap dipantau. Silakan minta PIN ke Petugas Pos Bongkar.");
-                document.getElementById('pin-input').value = "";
-                return;
-            }
-
-            // Bersihkan watchPosition pelacak GPS agar berhenti total
-            if (window.bbsGpsWatcher) {
-                navigator.geolocation.clearWatch(window.bbsGpsWatcher);
-            }
-
-            if (gpsInterval) {
-                clearInterval(gpsInterval); 
-            }
-
             await update(ref(db, `bbs_tracking/${dbKey}/${currentIdTransaksi}`), {
                 status_perjalanan: "SELESAI_BONGKAR",
-                waktu_selesai: new Date().toISOString()
+                waktu_selesai: Date.now()
             });
 
             localStorage.clear();
-
-            alert("✅ PERJALANAN SELESAI! Terima kasih Pak Sopir, amanah sudah sampai tujuan.");
+            alert("✅ Selesai!");
             location.reload();
 
-        } catch (error) {
-            console.error("Gagal membaca PIN dari server:", error);
-            alert("❌ KONEKSI ERROR: Gagal memvalidasi PIN ke server. Coba lagi!");
-        }
-    };
-        
-    // 📁 FUNGSI GLOBAL: MEMBUKA SURAT JALAN DARI KANTOR (PSIKOLOGI KAMUFLASE)
-    window.bukaSuratJalanDigital = async function() {
-        if (!currentIdTransaksi) {
-            alert("❌ ID Pelacakan tidak ditemukan!");
-            return;
-        }
-
-        try {
-            const snapshot = await get(ref(db, `bbs_tracking/${dbKey}/${currentIdTransaksi}`));
-            
-            if (snapshot.exists()) {
-                const dataPerjalanan = snapshot.val();
-                if (dataPerjalanan.link_surat_jalan && dataPerjalanan.link_surat_jalan.startsWith("http")) {
-                    window.open(dataPerjalanan.link_surat_jalan, '_blank');
-                } else {
-                    alert("⏳ SURAT JALAN BELUM SIAP!\n\nPetugas kantor sedang menyiapkan dokumen JPG Surat Jalan Anda. Silakan coba klik tombol ini beberapa saat lagi!");
-                }
-            } else {
-                alert("❌ Surat Jalan Belum diterbitkan..");
-            }
-        } catch (err) {
-            console.error("Gagal memuat surat jalan:", err);
-            alert("❌ Koneksi internet lelet. Gagal membuka dokumen, coba lagi!");
+        } catch (e) {
+            console.error('Error:', e);
         }
     };
 
-    (function pancingIzinGPS() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (pos) => { console.log("🎣 Pancingan Sukses: Izin GPS aman aktif!"); },
-                (err) => { console.warn("🎣 Pancingan Siap: Menunggu user mengaktifkan izin."); },
-                { enableHighAccuracy: false, timeout: 3000 }
-            );
-        }
-    })();
-    
-    // 🕵️‍♂️ DEBUGGING: Cek apakah mesin radar jalan
-setInterval(() => {
-    if (window.bbsGpsWatcher) {
-        console.log(`🟢 [DEBUG] Radar AKTIF - ID: ${window.bbsGpsWatcher}, Waktu: ${new Date().toLocaleTimeString()}`);
-    } else {
-        console.log(`🔴 [DEBUG] radar NONAKTIF`);
-    }
-}, 10000); // Cek setiap 10 detik
+    console.log('🚀 Script loaded!');
 </script>
 </body>
 </html>
