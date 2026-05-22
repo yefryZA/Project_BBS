@@ -1,3 +1,126 @@
+        
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBS DRIVER</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #0a192f; color: #fff; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+        .card { background: #112240; padding: 25px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center; border: 1px solid #233554; }
+        .logo { width: 100px; height: auto; margin-bottom: 15px; }
+        h2 { margin: 0 0 5px 0; font-size: 20px; color: #64ffda; }
+        p { margin: 0 0 20px 0; font-size: 12px; color: #8892b0; }
+        .form-group { text-align: left; margin-bottom: 15px; }
+        label { display: block; font-size: 12px; margin-bottom: 5px; color: #64ffda; font-weight: bold; }
+       input { 
+    width: 100%; 
+    padding: 15px; /* Ditambah biar box input lebih tebal & empuk ditekan */
+    background: #0a192f; 
+    border: 2px solid #233554; /* Garis border dipertebal */
+    border-radius: 8px; 
+    color: #fff; 
+    outline: none;
+    
+    /* 🎯 LOGIKA AGAR FONT ARIAL BLACK GEDE & OTOMATIS KAPITAL */
+    font-family: 'Arial Black', 'Arial Bold', sans-serif;
+    font-size: 22px; /* Ukuran text diperbesar drastis */
+    text-transform: uppercase; /* Paksa visual input jadi HURUF BESAR SEMUA */
+    letter-spacing: 1px; /* Jarak antar huruf diperlebar sedikit biar mudah dibaca */
+    text-align: center; /* Text rata tengah biar makin rapi seperti plat nomor asli */
+}
+input:focus { 
+    border-color: #64ffda; 
+    background: #112240; /* Berubah agak terang pas diklik biar sopir tahu kolom mana yg aktif */
+}
+/* Mengubah warna teks contoh (placeholder) agar tetap proporsional */
+input::placeholder {
+    font-family: 'Segoe UI', sans-serif; /* Teks contoh pakai font biasa biar gak kepenuhan */
+    font-size: 14px; 
+    color: #4c5773;
+    letter-spacing: 0px;
+}
+        button { width: 100%; padding: 14px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn-start { background: #64ffda; color: #0a192f; }
+        .btn-start:hover { background: #52d1b2; }
+        .btn-stop { background: #ff4d4d; color: #fff; }
+        .status-box { background: #233554; padding: 15px; border-radius: 8px; margin-top: 15px; font-size: 13px; border-left: 4px solid #64ffda; text-align: left; display: none; }
+        .pulse { display: inline-block; width: 10px; height: 10px; background: #64ffda; border-radius: 50%; margin-right: 5px; animation: blink 1s infinite; }
+        @keyframes blink { 0% { opacity: 0.2; } 50% { opacity: 1; } 100% { opacity: 0.2; } }
+    
+    /* 🟢 ANIMASI KEDAP-KEDIP HIJAU NEON JOSS */
+.pulse {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background-color: #00e676; /* Warna Hijau Terang */
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+    position: relative;
+    box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.7);
+    animation: efekKedapKedipHijau 1.6s infinite cubic-bezier(0.66, 0, 0, 1);
+}
+
+@keyframes efekKedapKedipHijau {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(0, 230, 118, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 230, 118, 0);
+    }
+}
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <img src="https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png" class="logo" alt="Logo BBS">
+    <h2>PT. BERKAH BAJA STEEL</h2>
+    <p>Project Pengiriman Pasir C.04 Losarang</p>
+
+    <div id="form-area">
+        <div class="form-group">
+            <label>PLAT NOMOR ARMADA</label>
+            <input type="text" id="plat" placeholder="Contoh: E 1234 XF" autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label>NAMA SOPIR</label>
+            <input type="text" id="sopir" placeholder="Nama Lengkap Sopir" autocomplete="off">
+        </div>
+        <button class="btn-start" onclick="mulaiTracking()">DAFTAR ONLINE</button>
+    </div>
+
+   <div class="status-box" id="status-box" style="display: block; text-align: left; padding: 15px;">
+    <div style="display: flex; align-items: flex-start; gap: 4px;">
+        <span class="pulse" style="margin-top: 6px; flex-shrink: 0;"></span> 
+        
+        <div>
+            <b style="font-size: 15px; color: #fff; display: block; line-height: 1.4;">SELAMAT BEKERJA HARI INI</b>
+            <span style="color:#8892b0; font-size:11px; display: block; margin-top: 2px;">HATI HATI DIJALAN KESELAMATAN YANG UTAMA</span>
+        </div>
+    </div>
+</div>
+    
+    <div style="background: #112240; padding: 15px; border-radius: 8px; margin-top: 15px; margin-bottom: 5px; border: 1px dashed #64ffda; text-align: center;">
+        <p style="color: #8892b0; margin: 0 0 10px 0; font-size: 13px;">Dokumen Muatan Driver:</p>
+        <button id="btn-surat-jalan" onclick="window.bukaSuratJalanDigital()" style="background: #ffb74d; color: #000; font-weight: bold; width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+            📁 LIHAT SURAT JALAN DIGITAL (JPG)
+        </button>
+    </div>
+
+    <div class="form-group" style="margin-top: 20px;">
+        <label>PIN ADMIN BBS</label>
+        <input type="password" id="pin-input" placeholder="Masukkan PIN" pattern="\d*" inputmode="numeric" style="text-align: center; font-size: 18px; letter-spacing: 5px;">
+    </div>
+    <button class="btn-stop" onclick="stopTracking()">SELESAI BONGKAR</button>
+</div>
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
