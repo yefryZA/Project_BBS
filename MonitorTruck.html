@@ -474,11 +474,11 @@ function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan, waktuMulaiAwa
    // 🎯 FITUR 1 MODIFIKASI: PROMPT INPUT MANUAL SURAT JALAN + BOP + HARGA MATERIAL
     window.tempelSuratJalan = async function(idTrack, platNomor) {
         // Langkah 1: Minta link surat jalan
-        const linkDrive = prompt(`[1/3] Masukkan / Paste Link Google Drive Surat Jalan untuk Armada [${platNomor}]:`);
+        const linkDrive = prompt(`[1/3] SURAT JALAN [${platNomor}]:`);
         if (linkDrive === null) return; // Klik Batal
 
         // Langkah 2: Minta input BOP
-        const bopManual = prompt(`[2/3] Masukkan Nominal BOP Manual untuk Armada [${platNomor}] (Hanya angka, contoh: 550000):`);
+        const bopManual = prompt(`[2/3] ONGKOS GENDONG TRUCK [${platNomor}] (Hanya angka, contoh: 550000):`);
         if (bopManual === null) return; // Klik Batal
 
         const bopBersih = bopManual.replace(/[^0-9]/g, ''); 
@@ -488,7 +488,7 @@ function hitungStatusSinyal(waktuUpdateTerakhir, statusPerjalanan, waktuMulaiAwa
         }
 
         // 🔥 Langkah 3: Minta input HARGA MATERIAL
-        const hargaMaterialManual = prompt(`[3/3] Masukkan Total Harga Material untuk Armada [${platNomor}] (Hanya angka, contoh: 4500000):`);
+        const hargaMaterialManual = prompt(`[3/3] HARGA PASIR [${platNomor}] (Hanya angka, contoh: 4500000):`);
         if (hargaMaterialManual === null) return; // Klik Batal
 
         const hargaMaterialBersih = hargaMaterialManual.replace(/[^0-9]/g, ''); 
