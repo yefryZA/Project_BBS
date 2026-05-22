@@ -169,22 +169,46 @@ input::placeholder {
         });
     }
 
-    // Cek status lokal saat aplikasi dibuka (Kunci Anti Amnesia)
+   // 🧠 Cek status lokal saat aplikasi dibuka (VERSI ANTI-CRASH!)
     window.onload = function() {
         const savedId = localStorage.getItem('bbs_active_id');
         const savedPlat = localStorage.getItem('bbs_active_plat');
         const savedSopir = localStorage.getItem('bbs_active_sopir');
         
+        console.log(`🔍 [BBS SYSTEM] Memeriksa memori lokal... Ditemukan ID: ${savedId}`);
+        
         if (savedId && savedPlat) {
+            window.currentIdTransaksi = savedId;
             currentIdTransaksi = savedId;
-            document.getElementById('plat').value = savedPlat;
-            document.getElementById('sopir').value = savedSopir;
             
-            document.getElementById('form-area').style.display = 'none';
-            document.getElementById('lock-area').style.display = 'block';
+            // 🎯 PENGAMAN 1: Isi input data hanya jika elemennya ada
+            const elPlat = document.getElementById('plat');
+            const elSopir = document.getElementById('sopir');
+            if (elPlat) elPlat.value = savedPlat;
+            if (elSopir) elSopir.value = savedSopir;
             
-            // 🔥 PERBAIKAN 1: Berikan umpan savedId saat restore amnesia agar jalurnya tidak pecah
+            // 🎯 PENGAMAN 2: Menyembunyikan form & memunculkan area lock (ANTI-CRASH)
+            const elForm = document.getElementById('form-area');
+            const elLock = document.getElementById('lock-area');
+            
+            if (elForm) { 
+                elForm.style.display = 'none'; 
+            } else {
+                console.warn("⚠️ Peringatan: ID 'form-area' tidak ditemukan di HTML Abang.");
+            }
+            
+            if (elLock) { 
+                elLock.style.display = 'block'; 
+            } else {
+                console.warn("⚠️ Peringatan: ID 'lock-area' tidak ditemukan di HTML Abang.");
+            }
+            
+            console.log("⚡ [BBS SYSTEM] Melompati eror HTML, memaksa radar GPS tetap menyala!");
+            
+            // 🚀 MAJU TERUS: Jalankan mesin GPS, jangan biarkan eror HTML menyumbat pipa data!
             aktifkanMesinGPS(savedId);
+        } else {
+            console.log("🟢 [BBS SYSTEM] Memori bersih. Siap menerima rute baru.");
         }
     }
 
@@ -258,20 +282,21 @@ input::placeholder {
             
             let firebaseSukses = false;
 
-            // 🎯 ISOLASI 1: Khusus kirim data awal ke Firebase
+            // 🎯 PENYELARAS RUMUS BARBAR: Gunakan Date.now() agar sinkron dengan Dashboard Admin
             try {
                 await set(ref(db, `bbs_tracking/${dbKey}/${currentIdTransaksi}`), {
                     id_track: currentIdTransaksi,
                     plat_nomor: plat,
                     nama_sopir: sopir,
-                    waktu_mulai: new Date().toISOString(),
+                    waktu_mulai: Date.now(), // 🔥 Berubah jadi angka murni (Contoh: 1716300000000)
+                    waktu_update: Date.now(), // 🔥 Langsung buat waktu_update di awal biar Dashboard tidak membaca data usang!
                     status_perjalanan: "MENGIRIM_POSISI",
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
                 });
                 
                 console.log("🚀 Data awal BERHASIL masuk Firebase!");
-                firebaseSukses = true; // Kunci status sukses Firebase
+                firebaseSukses = true;
 
             } catch (fbError) {
                 console.error("Gagal mengirim data awal ke Firebase:", fbError);
