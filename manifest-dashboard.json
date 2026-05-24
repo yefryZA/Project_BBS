@@ -2,7 +2,7 @@
   "id": "/Project_BBS/MonitorTruck.html",
   "name": "PT. Berkah Baja Steel - Monitoring Dashboard",
   "short_name": "BBS Dashboard",
-  "start_url": "MonitorTruck.html",
+  "start_url": "Monitortruck.html",
   "display": "standalone",
   "background_color": "#0a192f",
   "theme_color": "#0a192f",
