@@ -1,0 +1,20 @@
+{
+  "id": "https://yefryza.github.io/Project_BBS/ProjectLosarang.html?mode=jakarta",
+  "name": "BBS Bongkar",
+  "short_name": "BBS BONGKAR",
+  "description": "Dashboard Monitoring & Ceker PT. BBS",
+  "start_url": "ProjectLosarang.html?mode=jakarta",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a192f",
+  "theme_color": "#ffb74d",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
