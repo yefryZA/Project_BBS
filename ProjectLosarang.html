@@ -902,6 +902,15 @@ function jalankanJam() {
 }
 setInterval(jalankanJam, 1000);
 jalankanJam();
+
+    if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      // Kita panggil sw.js bawaan kemarin agar dibaca oleh Chrome
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('PWA BBS BONGKAR: Service Worker Aktif!'))
+        .catch(err => console.error('PWA Error:', err));
+    });
+  }
     
 </script>
 <style> @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } </style>
