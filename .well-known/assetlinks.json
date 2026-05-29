@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "io.github.yefryza.twa",
+    "sha256_cert_fingerprints": ["22:CD:66:FF:4D:47:7E:79:64:4A:B7:C2:0F:30:38:8C:20:9C:70:BF:C0:0A:15:6F:9D:1E:45:6B:A3:8F:4A:AC"]
+  }
+}]
