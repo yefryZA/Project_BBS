@@ -89,10 +89,16 @@ input::placeholder {
             <label>PLAT NOMOR ARMADA</label>
             <input type="text" id="plat" placeholder="Contoh: E 1234 XF" autocomplete="off">
         </div>
+
         <div class="form-group">
             <label>NAMA SOPIR</label>
             <input type="text" id="sopir" placeholder="Nama Lengkap Sopir" autocomplete="off">
         </div>
+      
+    <div class="form-group">
+    <label>NAMA PROYEK</label>
+    <input type="text" id="proyek" placeholder="Contoh: C.04 Losarang" autocomplete="off">
+</div>
         <button class="btn-start" onclick="mulaiTracking()">DAFTAR ONLINE</button>
     </div>
 
@@ -310,7 +316,8 @@ input::placeholder {
     window.mulaiTracking = async function() {
         const plat = document.getElementById('plat').value.trim().toUpperCase();
         const sopir = document.getElementById('sopir').value.trim();
-
+        const proyek = document.getElementById('proyek').value.trim().toUpperCase();
+        
         if (!plat || !sopir) {
             alert("❌ Isi Plat dan Sopir!");
             return;
@@ -346,6 +353,7 @@ input::placeholder {
                         id_track: currentIdTransaksi,
                         plat_nomor: plat,
                         nama_sopir: sopir,
+                        nama_proyek: proyek,
                         waktu_mulai: Date.now(),
                         waktu_update: Date.now(),
                         status_perjalanan: "MENGIRIM_POSISI",
