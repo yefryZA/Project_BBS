@@ -127,19 +127,24 @@ input::placeholder {
     <button class="btn-stop" onclick="stopTracking()">SELESAI BONGKAR</button>
 </div>
 
-<script type="module">
+<script type="module"> 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, set, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-    // Konfigurasi Firebase PT. BBS
-    const firebaseConfig = { 
-        apiKey: "AIzaSyAfeLTKRQ66tjZjAt7tg6KcrWhtmv0y3fo", 
-        databaseURL: "https://berkah-baja-steel-default-rtdb.asia-southeast1.firebasedatabase.app", 
-        projectId: "berkah-baja-steel" 
+ 
+    const firebaseConfig = {
+        apiKey: "AIzaSyCh4uGmhxKbj7yHxFuZ7yCplGQEqTGSMfQ",
+        authDomain: "tracking-truck-42a7a.firebaseapp.com",
+      
+        databaseURL: "https://tracking-truck-42a7a-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "tracking-truck-42a7a",
+        storageBucket: "tracking-truck-42a7a.firebasestorage.app",
+        messagingSenderId: "325437989299",
+        appId: "1:325437989299:web:9cd37db669f4bc44932bc6"
     };
-    
+  
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+     
     const dbKey = "BBS_PROYEK_SATOE";
 
     let gpsIntervalId = null;
