@@ -1,0 +1,35 @@
+{
+  "id": "https://yefryza.github.io/Surat_Jalan_BBS/index.html",
+  "name": "Surat Jalan BBS",
+  "short_name": "SJL BBS",
+  "description": "Sistem Manajemen Surat Jalan & Biaya BOP PT. Berkah Baja Steel",
+  "start_url": "index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a192f",
+  "theme_color": "#0a192f",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Tampilan Desktop Surat Jalan BBS"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Tampilan Mobile Surat Jalan BBS"
+    }
+  ]
+}
