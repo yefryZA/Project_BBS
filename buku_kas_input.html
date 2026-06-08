@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ADMIN - INPUT KAS BBS</title>
+    
+    <link rel="manifest" href="manifest_inputKAS.json">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -76,11 +79,9 @@
     <div class="modal-content" style="padding: 15px; margin-top: 20px;">
         <h3 id="modal-title" style="color:#ffffff; margin: 0 0 15px 0; text-align: center;">INPUT DATA</h3> 
         
-        <!-- Input Keterangan: Gaya Arial Black Tebal Lapangan -->
         <input type="text" id="kas-ket" placeholder="Keterangan Transaksi" 
                style="font-family: 'Arial Black', Gadget, sans-serif; font-weight: 900; font-size: 16px; color: #ffffff; height: 45px; margin: 5px 0; letter-spacing: 1px;">
         
-        <!-- Input Nominal: Gaya Arial Black Tebal Lapangan -->
         <input type="text" id="kas-nom" placeholder="0" oninput="formatRupiah(this)" 
                style="font-family: 'Arial Black', Gadget, sans-serif; font-weight: 900; font-size: 18px; color: #ffffff; height: 50px; margin: 5px 0; letter-spacing: 1px;">
 
@@ -187,7 +188,6 @@
         }
     }
 
-    // --- PERBAIKAN TOTAL SALDO DI SINI (Dipaksa Format 'id-ID') ---
     window.generatePDF = async () => {
         const snap = await get(ref(db, pathKas));
         if(!snap.exists()) return alert("Data sudah kosong, Bang!");
@@ -208,7 +208,7 @@
                 v.keterangan, 
                 v.tipe==='IN' ? v.nominal.toLocaleString('id-ID') : '-', 
                 v.tipe==='OUT' ? v.nominal.toLocaleString('id-ID') : '-', 
-                s.toLocaleString('id-ID') // Mengunci kalkulasi s agar tercetak rapi format rupiah
+                s.toLocaleString('id-ID')
             ];
         });
 
