@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADMIN KAS BBS</title>
+    <title>ADMIN - INPUT KAS BBS</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -56,10 +56,10 @@
 </head>
 <body>
 <div class="container">
-    <h2 style="text-align:center; color:var(--gold);">BBS ADMIN PANEL</h2>
-    <button class="btn bg-green" onclick="openModal('IN')">➕ TAMBAH SALDO</button>
-    <button class="btn bg-red" onclick="openModal('OUT')">💸 INPUT PENGELUARAN</button>
-    <button class="btn btn-pdf" onclick="generatePDF()">📄 DOWNLOAD LAPORAN PDF</button>
+    <h2 style="text-align:center; color:var(--gold);">TIM LAPANGAN BBS</h2>
+    <button class="btn bg-green" onclick="openModal('IN')">➕ UANG MASUK</button>
+    <button class="btn bg-red" onclick="openModal('OUT')">💸 PENGELUARAN</button>
+    <button class="btn btn-pdf" onclick="generatePDF()">📄 DOWNLOAD PDF</button>
 
     <div class="dropdown-header" onclick="toggleDropdown()">
         <span>⚙️ PENGATURAN / KOREKSI DATA</span>
@@ -73,26 +73,23 @@
 </div>
 
 <div id="modal-kas" class="modal">
-    <div class="modal-content">
-        <h3 id="modal-title" style="color:#ffffff">INPUT DATA</h3> 
+    <div class="modal-content" style="padding: 15px; margin-top: 20px;">
+        <h3 id="modal-title" style="color:#ffffff; margin: 0 0 15px 0; text-align: center;">INPUT DATA</h3> 
         
+        <!-- Input Keterangan: Gaya Arial Black Tebal Lapangan -->
         <input type="text" id="kas-ket" placeholder="Keterangan Transaksi" 
-               style="font-size: 20px; font-weight: bold; color: #ffffff; height: 50px;">
+               style="font-family: 'Arial Black', Gadget, sans-serif; font-weight: 900; font-size: 16px; color: #ffffff; height: 45px; margin: 5px 0; letter-spacing: 1px;">
         
-        <label style="font-size: 11px; color: var(--slate);">Nominal (Harga Rekanan)</label>
+        <!-- Input Nominal: Gaya Arial Black Tebal Lapangan -->
         <input type="text" id="kas-nom" placeholder="0" oninput="formatRupiah(this)" 
-               style="font-size: 24px; font-weight: bold; color: #ffffff; height: 60px;">
+               style="font-family: 'Arial Black', Gadget, sans-serif; font-weight: 900; font-size: 18px; color: #ffffff; height: 50px; margin: 5px 0; letter-spacing: 1px;">
 
-        <div id="area-margin" style="display:none; margin-top: 10px; border: 1px dashed var(--gold); padding: 10px; border-radius: 10px;">
-            <label style="font-size: 11px; color: var(--gold);">Potongan Margin BBS (Selisih Harga)</label>
-            <input type="text" id="kas-margin" placeholder="0" oninput="formatRupiah(this)" 
-                   style="font-size: 20px; font-weight: bold; color: var(--gold); height: 50px; background: transparent;">
-            <p style="font-size: 9px; color: var(--slate); margin: 0;">*Nominal ini akan mengurangi beban saldo di dashboard internal BBS.</p>
-        </div>
-        
         <input type="hidden" id="kas-tipe">
-        <button class="btn bg-green" onclick="simpan()" style="margin-top: 15px;">SIMPAN DATA</button>
-        <button class="btn" onclick="closeModal()" style="color: black !important; background-color: #f1f1f1;">BATAL</button>
+
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button class="btn bg-green" onclick="simpan()" style="margin: 0; flex: 1; padding: 15px;">SIMPAN</button>
+            <button class="btn" onclick="closeModal()" style="margin: 0; flex: 1; padding: 15px; color: black !important; background-color: #f1f1f1;">BATAL</button>
+        </div>
     </div>
 </div>
 
@@ -112,6 +109,7 @@
     const db = getDatabase(app);
     const pathKas = `BUKU_KAS`;
 
+    // --- FUNGSI TOGGLE DROPDOWN ---
     window.toggleDropdown = () => {
         const content = document.getElementById('dropdown-area');
         const arrow = document.getElementById('arrow-icon');
@@ -122,18 +120,12 @@
     window.openModal = (t) => {
         document.getElementById('kas-tipe').value = t;
         document.getElementById('modal-title').innerText = t === 'IN' ? "TAMBAH SALDO" : "PENGELUARAN";
-        
-        // Tampilkan area margin rahasia hanya jika OUT (Pengeluaran)
-        document.getElementById('area-margin').style.display = t === 'OUT' ? 'block' : 'none';
-        
         document.getElementById('modal-kas').style.display = 'block';
     }
-
     window.closeModal = () => {
         document.getElementById('modal-kas').style.display = 'none';
         document.getElementById('kas-ket').value = "";
         document.getElementById('kas-nom').value = "";
-        document.getElementById('kas-margin').value = "";
     }
 
     window.formatRupiah = (objek) => {
@@ -153,33 +145,22 @@
     window.simpan = async () => {
         const k = document.getElementById('kas-ket').value;
         const nRaw = document.getElementById('kas-nom').value;
-        const mRaw = document.getElementById('kas-margin').value || "0";
         const t = document.getElementById('kas-tipe').value;
-        
-        const nRekanan = Number(nRaw.replace(/\./g, ''));
-        const mBBS = Number(mRaw.replace(/\./g, ''));
-        
-        // nAsli adalah harga dasar (Rekanan - Margin)
-        const nAsliBBS = nRekanan - mBBS;
-
-        if(!k || !nRekanan) return alert("Isi Data Dulu Bang!");
-        
+        const n = Number(nRaw.replace(/\./g, ''));
+        if(!k || !n) return alert("Isi Data Dulu Bang!");
         try {
             await push(ref(db, pathKas), {
                 tgl: new Date().toLocaleDateString('id-ID'),
                 jam: new Date().toLocaleTimeString('id-ID'),
                 keterangan: k.toUpperCase(),
-                nominal: nRekanan,    // Tetap simpan ini untuk kompatibilitas lama
-                nominal_rekanan: nRekanan,
-                nominal_bbs: nAsliBBS, 
-                margin_rahasia: mBBS,
+                nominal: n,
                 tipe: t,
                 ts: serverTimestamp()
             });
             alert("Tersimpan!"); closeModal();
         } catch (e) { alert("Error: " + e.message); }
     }
-    
+
     onValue(ref(db, pathKas), (snapshot) => {
         let html = "";
         const data = snapshot.val();
@@ -206,49 +187,54 @@
         }
     }
 
-     window.generatePDF = async () => {
-    const snap = await get(ref(db, pathKas));
-    if(!snap.exists()) return alert("Data sudah kosong, Bang!");
-    
-    // Konfirmasi dulu biar gak sengaja kehapus
-    if(!confirm("Laporan akan dibuat dan DATA AKAN DI-RESET (DIHAPUS). Lanjut?")) return;
+    // --- PERBAIKAN TOTAL SALDO DI SINI (Dipaksa Format 'id-ID') ---
+    window.generatePDF = async () => {
+        const snap = await get(ref(db, pathKas));
+        if(!snap.exists()) return alert("Data sudah kosong, Bang!");
+        
+        if(!confirm("Laporan akan dibuat dan DATA AKAN DI-RESET (DIHAPUS). Lanjut?")) return;
 
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("LAPORAN KAS PT. BBS", 105, 15, { align: "center" });
-    
-    let s = 0;
-    const body = Object.values(snap.val()).map((v, i) => {
-        s += v.tipe === 'IN' ? v.nominal : -v.nominal;
-        return [i+1, v.tgl, v.keterangan, v.tipe==='IN'?v.nominal.toLocaleString():'-', v.tipe==='OUT'?v.nominal.toLocaleString():'-', s.toLocaleString()];
-    });
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(16);
+        doc.text("LAPORAN KAS PT. BBS", 105, 15, { align: "center" });
+        
+        let s = 0;
+        const body = Object.values(snap.val()).map((v, i) => {
+            s += v.tipe === 'IN' ? v.nominal : -v.nominal;
+            return [
+                i+1, 
+                v.tgl, 
+                v.keterangan, 
+                v.tipe==='IN' ? v.nominal.toLocaleString('id-ID') : '-', 
+                v.tipe==='OUT' ? v.nominal.toLocaleString('id-ID') : '-', 
+                s.toLocaleString('id-ID') // Mengunci kalkulasi s agar tercetak rapi format rupiah
+            ];
+        });
 
-    doc.autoTable({ head: [['NO', 'TGL', 'KET', 'IN', 'OUT', 'SALDO']], body, startY: 28, theme: 'grid' });
-    
-    const fY = doc.lastAutoTable.finalY + 20;
-    const pW = doc.internal.pageSize.getWidth();
-    const pH = doc.internal.pageSize.getHeight();
-    doc.text("Dibuat oleh,", pW-60, fY);
-    doc.setFont("helvetica", "bold");
-    doc.text("Yefry ZA.", pW-60, fY+25);
-    doc.line(pW-60, fY+26, pW-60+doc.getTextWidth("Yefry ZA."), fY+26);
-    doc.setFont("helvetica", "normal");
-    doc.text("Manager", pW-60, fY+31);
-    doc.setFontSize(8); doc.setTextColor(150); doc.setFont("helvetica", "italic");
-    doc.text("Laporan ini dibuat secara otomatis oleh system digital PT. BBS", pW/2, pH-10, {align:"center"});
-    
-    // 1. Simpan PDF-nya dulu
-    doc.save(`Laporan_Kas_BBS.pdf`);
+        doc.autoTable({ head: [['NO', 'TGL', 'KET', 'IN', 'OUT', 'SALDO']], body, startY: 28, theme: 'grid' });
+        
+        const fY = doc.lastAutoTable.finalY + 20;
+        const pW = doc.internal.pageSize.getWidth();
+        const pH = doc.internal.pageSize.getHeight();
+        doc.text("Dibuat oleh,", pW-60, fY);
+        doc.setFont("helvetica", "bold");
+        doc.text("Yefry ZA.", pW-60, fY+25);
+        doc.line(pW-60, fY+26, pW-60+doc.getTextWidth("Yefry ZA."), fY+26);
+        doc.setFont("helvetica", "normal");
+        doc.text("Manager", pW-60, fY+31);
+        doc.setFontSize(8); doc.setTextColor(150); doc.setFont("helvetica", "italic");
+        doc.text("Laporan ini dibuat secara otomatis oleh system digital PT. BBS", pW/2, pH-10, {align:"center"});
+        
+        doc.save(`Laporan_Kas_BBS.pdf`);
 
-    // 2. PROSES RESET (Hapus data di Firebase)
-    try {
-        await remove(ref(db, pathKas));
-        alert("Laporan Berhasil di-download & Data Kas telah DI-RESET!");
-    } catch (e) {
-        alert("Gagal meriset data: " + e.message);
+        try {
+            await remove(ref(db, pathKas));
+            alert("Laporan Berhasil di-download & Data Kas telah DI-RESET!");
+        } catch (e) {
+            alert("Gagal meriset data: " + e.message);
+        }
     }
-}
 </script>
 </body>
 </html>
