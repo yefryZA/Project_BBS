@@ -13,7 +13,7 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": "./admin.html",
+  "start_url": "./buku_kas_input.html",
   "background_color": "#0a192f",
   "theme_color": "#2ecc71",
   "display": "standalone",
