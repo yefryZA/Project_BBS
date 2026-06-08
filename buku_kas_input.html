@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADMIN - INPUT KAS BBS</title>
     
     <link rel="manifest" href="manifest_inputKAS.json">
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <title>ADMIN - INPUT KAS BBS</title>
+    
     <style>
         :root { --dark: #0a192f; --light-dark: #112240; --gold: #ffb400; --green: #2ecc71; --red: #e74c3c; --text: #ccd6f6; --slate: #8892b0; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--dark); color: var(--text); padding: 20px; display: flex; justify-content: center; }
@@ -93,7 +92,8 @@
         </div>
     </div>
 </div>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
     import { getDatabase, ref, push, get, onValue, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-database.js";
