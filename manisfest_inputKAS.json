@@ -1,0 +1,21 @@
+{
+  "short_name": "INPUT KAS",
+  "name": "INPUT KAS PT BBS (TIM LAPANGAN)",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./admin.html",
+  "background_color": "#0a192f",
+  "theme_color": "#2ecc71",
+  "display": "standalone",
+  "orientation": "portrait"
+}
