@@ -175,13 +175,14 @@
                             <div style="font-weight: bold; font-size: 13px; color: ${warna}">${item.keterangan}</div>
                             <div style="color: var(--slate); font-size: 10px;">${item.tgl} | Rp ${item.nominal.toLocaleString('id-ID')}</div>
                         </div>
-                        <button class="btn-hapus" onclick="hapusData('${key}', '${item.keterangan}')">HAPUS</button>
+                        <button class="btn-hapus" onclick="hapusData('${key}', '${item.keterangan.replace(/'/g, "\\'")}')">HAPUS</button>
                     </div>`;
             });
         }
         document.getElementById('list-koreksi').innerHTML = html || "<p style='padding:20px;text-align:center;font-size:12px;'>Belum ada data</p>";
     });
 
+    // AMAN: Sudah terhubung dengan module Firebase 'remove'
     window.hapusData = (id, ket) => {
         if(confirm(`Hapus transaksi: "${ket}"?`)) {
             remove(ref(db, `${pathKas}/${id}`)).then(() => alert("Terhapus!"));
