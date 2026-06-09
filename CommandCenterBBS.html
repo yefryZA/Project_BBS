@@ -110,13 +110,13 @@
             100% { transform: translateX(-100%); }
         }
 
-        /* --- GRID 1 BARIS (4 MONITOR SEJAJAR) --- */
+        /* --- GRID PERUBAHAN BARU (3 MONITOR SEJAJAR PROPORSIONAL) --- */
         .grid-cc {
             display: grid;
-            grid-template-columns: repeat(4, 1fr); /* 4 Kolom Berjejer */
+            grid-template-columns: repeat(3, 1fr); /* DIUBAH JADI 3 KOLOM: Supaya otomatis membagi lebar seimbang */
             gap: 12px;
-            flex-grow: 1; /* Ambil sisa ruang ke bawah */
-            height: 0;    /* Maksa isi buat stretch */
+            flex-grow: 1;
+            height: 0;   
         }
 
         .monitor-box {
@@ -141,24 +141,24 @@
 
         .monitor-content {
             flex-grow: 1;
-            background: #fff; /* Background putih agar dashboard proyek terlihat jelas */
+            background: #fff;
         }
 
         iframe { width: 100%; height: 100%; border: none; }
 
        .dot-blink {
-            width: 10px;           /* Ukuran digedein dikit biar jelas */
+            width: 10px;          
             height: 10px;
-            background: #00ff00;   /* Hijau Murni (Lime) */
+            background: #00ff00;   
             border-radius: 50%;
             display: inline-block;
-            box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00; /* Efek Sinar LED */
+            box-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00; 
             animation: blinker 1s infinite;
         }
 
         @keyframes blinker {
             0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.1); } /* Jangan sampai nol biar gak hilang total */
+            50% { opacity: 0.5; transform: scale(1.1); } 
             100% { opacity: 1; transform: scale(1); }
         }
     </style>
@@ -168,7 +168,7 @@
     <div id="welcome-screen" onclick="masukCommandCenter()">
         <img src="https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png" alt="Logo PT BBS">
         <h1>COMMAND CENTER PT. BBS</h1>
-        <p>[ KLIK UNTUK AKTIFKAN 4 MONITORING ]</p>
+        <p>[ KLIK UNTUK AKTIFKAN 3 MONITORING ]</p>
     </div>
 
     <div id="main-dashboard">
@@ -185,28 +185,28 @@
 
         <div class="running-text-container">
             <div class="running-text">
-                ⚠️ MONITORING SYSTEM ACTIVE ‖ PROJECT PT. NAS - LOSARANG ‖ PROJECT PT. NAS - TOLL JAPEK II ‖ PROJECT PT. NAS - VINFAST ‖ SYSTEM BY_YEFRY ZA.
+                ⚠️ MONITORING SYSTEM ACTIVE ‖ PROJECT Bp. RIZAL : ONLINE ‖ PROJECT ADIMIX CIBITUNG : ONLINE ‖ PROJECT . . . . . . . : ONLINE ‖ SYSTEM BY_YEFRY ZA.
             </div>
         </div>
 
         <div class="grid-cc">
             <div class="monitor-box">
                 <div class="monitor-header">
-                    <span class="monitor-title">NAS - VINFAST</span>
+                    <span class="monitor-title">PROJECT Bp. RIZAL</span>
                     <span class="dot-blink"></span>
                 </div>
                 <div class="monitor-content">
-                    <iframe src="https://yefryza.github.io/Project_BBS/ProjectJapek.html"></iframe>
+                    <iframe src="https://yefryza.github.io/Project_BBS/buku_kas.html"></iframe>
                 </div>
             </div>
 
             <div class="monitor-box">
                 <div class="monitor-header">
-                    <span class="monitor-title">RT SAHRIL</span>
+                    <span class="monitor-title">PROJECT ADHIMIX</span>
                     <span class="dot-blink"></span>
                 </div>
                 <div class="monitor-content">
-                    <iframe src="https://yefryza.github.io/Project_BBS/ProjectLosarang.html"></iframe>
+                    <iframe src="https://yefryza.github.io/Project_BBS/01.Kas_Baru.html"></iframe>
                 </div>
             </div>
 
@@ -216,17 +216,7 @@
                     <span class="dot-blink"></span>
                 </div>
                 <div class="monitor-content">
-                    <iframe src="https://yefryza.github.io/Project_BBS/tongkang1.html"></iframe>
-                </div>
-            </div>
-
-            <div class="monitor-box">
-                <div class="monitor-header">
-                    <span class="monitor-title">NAS - H K</span>
-                    <span class="dot-blink"></span>
-                </div>
-                <div class="monitor-content">
-                    <iframe src="https://yefryza.github.io/Project_BBS/tongkang2.html"></iframe>
+                    <iframe src="https://yefryza.github.io/PT.BBS/dashboard.html"></iframe>
                 </div>
             </div>
         </div>
@@ -237,7 +227,7 @@
             const sekarang = new Date();
             document.getElementById('jam').innerText = sekarang.toLocaleTimeString('en-GB');
             const opsi = { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' };
-            document.getElementById('tgl').innerText = sekarang.toLocaleDateString('id-ID', opsi).toUpperCase();
+            document.getElementById('tgl').innerText = Clinical = sekarang.toLocaleDateString('id-ID', opsi).toUpperCase();
         }
         setInterval(updateJam, 1000);
         updateJam();
