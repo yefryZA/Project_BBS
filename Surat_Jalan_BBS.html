@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SURAT JALAN PT. BBS</title>
-    <link rel="manifest" href="manifest_sjbbs.json">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Poppins:wght@400;600&family=Orbitron:wght@700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
@@ -93,57 +92,64 @@
         </div>
     </div>
 
-    <!-- POP UP / MODAL INPUT BIAYA OPERASIONAL (BOP) -->
+   <!-- POP UP / MODAL 1: INPUT TOTAL BOP 1 UNIT (SEBELUM OTW) -->
     <div id="modal-ops" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:2000; padding:20px;">
-        <div class="card" style="max-width:400px; margin:auto;">
-            <h3 style="color:var(--gold)">BIAYA OPERASIONAL</h3>
-            <div id="ops-list" style="max-height:200px; overflow-y:auto; margin-bottom:10px;"></div>
-            <input type="text" id="ops-ket" placeholder="KETERANGAN">
-            <input type="number" id="ops-nom" placeholder="NOMINAL (RP)">
-            <button class="btn btn-green" onclick="addOps()">TAMBAH DATA</button>
-            <button class="btn" style="background:none; color:#8892B0" onclick="closeOps()">TUTUP</button>
+        <div class="card" style="max-width:400px; margin:auto; margin-top: 50px;">
+            <h3 style="color:var(--gold); text-align:center; font-size:16px; border-bottom:1px solid var(--glass); padding-bottom:10px;">⚙️ SET BOP (1 UNIT)</h3>
+            <div id="ops-list" style="margin-bottom:10px; font-size: 11px; color: var(--silver); text-align: center;">
+                <!-- Keterangan Truk yang dipilih akan muncul di sini via JS -->
+            </div>
+            
+            <label class="lbl">HARGA MATERIAL (RP)</label>
+            <input type="text" id="ops-material" placeholder="CONTOH: 700.000" oninput="formatRupiahOtomatis(this)">
+            
+            <label class="lbl">ONGKOS MOBIL / TRUK (RP)</label>
+            <input type="text" id="ops-mobil" placeholder="CONTOH: 300.000" oninput="formatRupiahOtomatis(this)">
+            
+            <button class="btn btn-green" onclick="simpanBopUnit()">🔒 KUNCI & SIMPAN BOP</button>
+            <button class="btn" style="background:none; color:#8892B0; margin-top: 5px;" onclick="closeOps()">BATAL</button>
         </div>
     </div>
 
-   <!-- POP UP / MODAL MANAGEMENT STATUS OTW (INPUT VOLUME BONGKAR & BOP PER TRUK) -->
-<div id="modal-otw-manager" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:2000; padding:20px; overflow-y:auto;">
-    <div class="card" style="max-width:400px; margin:20px auto;">
-        <h3 id="otw-title" style="color:var(--gold); font-size:14px; text-align:center; border-bottom:1px solid var(--glass); padding-bottom:10px;">PROSES SELESAI UNIT</h3>
-        
-        <div style="margin-top:15px;">
-            <label class="lbl">TOTAL VOLUME BONGKAR (M3)</label>
-            <input type="number" id="input-vol-bongkar" step="0.01" placeholder="CONTOH: 22.50" style="margin-bottom:15px;">
+   <!-- POP UP / MODAL 2: MANAGEMENT STATUS OTW (INPUT HARGA JUAL & VOLUME BONGKAR) -->
+    <div id="modal-otw-manager" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:2000; padding:20px; overflow-y:auto;">
+        <div class="card" style="max-width:400px; margin:20px auto;">
+            <h3 id="otw-title" style="color:var(--gold); font-size:14px; text-align:center; border-bottom:1px solid var(--glass); padding-bottom:10px;">PROSES KEBERANGKATAN UNIT (OTW)</h3>
+            
+            <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 11px; text-align: center;" id="otw-bop-info">
+                <!-- Info BOP yang sudah diinput sebelumnya akan ditampilkan di sini -->
+            </div>
+
+            <div style="margin-top:15px;">
+                <label class="lbl">TOTAL VOLUME BONGKAR (M3)</label>
+                <input type="number" id="input-vol-bongkar" step="0.01" placeholder="CONTOH: 22.50" style="margin-bottom:15px;">
+            </div>
+
+            <div>
+                <label class="lbl">HARGA JUAL KE KONSUMEN (RP)</label>
+                <input type="text" id="input-harga-jual" placeholder="CONTOH: 1.100.000" style="margin-bottom:20px;" oninput="formatRupiahOtomatis(this)">
+            </div>
+
+            <button class="btn btn-green" style="margin-bottom:10px;" onclick="prosesTugasSelesai()">🚀 PROSES OTW & CETAK LAPORAN</button>
+            <button class="btn" style="background:none; color:#8892B0" onclick="closeOtwManager()">BATAL</button>
         </div>
-
-        <div>
-   <div>
-            <label class="lbl">TOTAL BIAYA BOP TRUK (RP)</label>
-            <input type="text" id="input-bop-unit" placeholder="HARGA MATERIAL + ONGKOS TRUK" style="margin-bottom:20px;" oninput="formatRupiahOtomatis(this)">
-        </div></div>
-
-        <button class="btn btn-green" style="margin-bottom:10px;" onclick="prosesTugasSelesai()">PROSES & CETAK SURAT JALAN</button>
-        <button class="btn" style="background:none; color:#8892B0" onclick="closeOtwManager()">BATAL</button>
     </div>
-</div>
 
     <!-- MODE INPUT CEKER (DENGAN INPUT TAMBAHAN PROJECT) -->
     <div id="view-cilegon" class="container">
         <div class="card">
             <h2 style="color:var(--green)">INPUT MUAT</h2>
             
-         <label class="lbl">DATA KENDARAAN & DRIVER</label>
-<!-- Input Plat Nomor: Teks besar, tebal berisi pakai Arial Black -->
-<input type="text" id="m-plat" placeholder="PLAT NOMOR (Cth: A 1234 BB)" style="font-family: 'Arial Black', Gadget, sans-serif; font-weight: 900; font-size: 16px; color: #FFFFFF; letter-spacing: 1px;">
-
-<!-- Input Nama Sopir: Teks besar, tebal berisi pakai Arial Black -->
-<input type="text" id="m-sopir" placeholder="NAMA SOPIR" style="font-family: 'Arial Black', Gadget, sans-serif; font-weight: 900; font-size: 16px; color: #FFFFFF; letter-spacing: 1px;">
-    
-<!-- Penambahan Input Nama Project Sesuai Perintah -->
-<label class="lbl">PROJECT TUJUAN</label>
-<input type="text" id="m-project" placeholder="NAMA PROJECT TUJUAN" style="font-family: 'Arial Black', Gadget, sans-serif; font-weight: 900; font-size: 16px; color: #FFFFFF; letter-spacing: 1px;">
-    
-<label class="lbl">DETAIL MUATAN</label>
-<input type="text" id="m-barang" placeholder="NAMA MATERIAL" style="font-family: 'Arial Black', Gadget, sans-serif; font-weight: 900; font-size: 16px; color: #FFFFFF; letter-spacing: 1px;">
+            <label class="lbl">DATA KENDARAAN & DRIVER</label>
+            <input type="text" id="m-plat" placeholder="PLAT NOMOR (Cth: A 1234 BB)">
+            <input type="text" id="m-sopir" placeholder="NAMA SOPIR">
+            
+            <!-- Penambahan Input Nama Project Sesuai Perintah -->
+            <label class="lbl">PROJECT TUJUAN</label>
+            <input type="text" id="m-project" placeholder="NAMA PROJECT TUJUAN">
+            
+            <label class="lbl">DETAIL MUATAN</label>
+            <input type="text" id="m-barang" placeholder="NAMA BARANG (Cth: PASIR RANGKAS)">
 
             <div style="display:flex; gap:5px; margin-bottom:10px;">
                 <input type="number" id="m-p" placeholder="P (m)" step="0.01" style="flex:1; padding:12px; border-radius:8px; border:1px solid #444; background:#1a1a1a; color:white;">
@@ -383,7 +389,8 @@
             plat: p, sopir: s, barang: b, 
             project: proj, // Menyimpan parameter nama project ke firebase
             p: Number(p_dim), l: Number(l_dim), t: Number(t_dim),
-            volM: Number(v), volB: 0, status: 'OTW', 
+            volM: Number(v), volB: 0, 
+            status: 'MUAT', // LOGIKA BARU: Status awal di-set 'MUAT' agar admin bisa input BOP terlebih dahulu
             fotoM: uS, fotoKTP: uK, 
             tgl: new Date().toLocaleDateString('id-ID'),
             jamM: new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit', hour12: false}) 
@@ -392,13 +399,13 @@
         printSuratJalan({ ...logData, id: newRef.key });
     }
     
-    // Alur fungsi initScanner, onScanSuccess, dan prosesBongkar dihapus total dari sini sesuai perintah
-
     let rawData = [];
     let totalOps = 0;
 
     function getBadgeSelisih(i) {
-        if (i.status === 'DONE') {
+        const statusMobil = (i.status || "").toUpperCase();
+        // Badge selisih disesuaikan agar muncul ketika statusnya sudah OTW atau DONE
+        if (statusMobil === 'DONE' || statusMobil === 'OTW') {
             const diff = (i.volB || 0) - (i.volM || 0);
             const warna = diff < 0 ? '#ff4d4d' : '#2ecc71'; 
             const tanda = diff > 0 ? '+' : '';
@@ -410,7 +417,7 @@
         return "";
     }
 
-    // --- RENDER DASHBOARD ---
+  // --- RENDER DASHBOARD ---
    onValue(ref(db, `bbs_logs/${dbKey}`), (snap) => {
     const data = snap.val();
     let tm = 0, tb = 0, otw = 0; 
@@ -421,26 +428,46 @@
     if(data) {
         Object.keys(data).forEach(k => {
             const i = data[k];
-            if(i.status === 'ARCHIVED') return;
+            
+            // Konversi status ke huruf besar semua agar aman dari error pengetikan ceker
+            const statusMobil = (i.status || "").toUpperCase();
+            
+            if(statusMobil === 'ARCHIVED') return;
 
             tm += i.volM; tb += i.volB; 
             
             // Menyisipkan id unik firebase ke data objek lokal
             rawData.push({ ...i, firebaseKey: k });
             
-            // Siapkan element untuk status / tombol aksi
+            // Siapkan element untuk status / tombol aksi sesuai LOGIKA BARU PT.BBS
             let statusElement = "";
 
-            if(i.status === 'OTW') {
+            if(statusMobil === 'OTW') {
                 otw++;
             
                 statusElement = `
                     <button onclick="openOtwManager('${k}', '${i.plat}')" style="background:#FF9800; color:white; border:none; padding:6px 12px; border-radius:6px; font-size:10px; font-weight:bold; cursor:pointer; font-family:'Orbitron';">
-                        ${i.status} (PROSES)
+                        ${statusMobil} (PROSES)
                     </button>
                 `;
+            } else if(statusMobil === 'MUAT' || statusMobil === '' || !i.status) {
+                // JIKA STATUS BARU MUAT ATAU KOSONG: Tombol SET BOP Wajib Muncul!
+                statusElement = `
+                    <button onclick="window.openOps('${k}', '${i.plat}')" style="background:var(--gold); color:#0A192F; border:none; padding:6px 12px; border-radius:6px; font-size:10px; font-weight:bold; cursor:pointer; font-family:'Orbitron'; min-width:95px; display:inline-block;">
+                        ⚙️ SET BOP
+                    </button>
+                `;
+                
+                // JIKA BOP SUDAH DIKUNCI ADMIN, OTOMATIS BERIKAN AKSES TOMBOL PROSES OTW DI BAWAHNYA
+                if(i.bop_unit) {
+                    statusElement += `
+                        <button onclick="window.openOtwManager('${k}', '${i.plat}')" style="background:var(--green); color:#0A192F; border:none; padding:6px 12px; border-radius:6px; font-size:10px; font-weight:bold; cursor:pointer; font-family:'Orbitron'; margin-top:5px; min-width:95px; display:inline-block;">
+                            🚀 PROSES OTW
+                        </button>
+                    `;
+                }
             } else {
-            
+                // Status lainnya (misal DONE dll)
                 statusElement = `
                     <span class="badge" style="background:#4CAF50; padding:5px 10px; border-radius:4px; font-size:10px; font-weight:bold;">
                         ${i.status}
@@ -448,19 +475,25 @@
                 `;
             }
             
-            // Render Baris Truck ke dalam dashboard utama admin
+            // Render Baris Truck ke dalam dashboard utama admin dengan info BOP & MARGIN dinamis
             list.innerHTML += `<div class="truck-item" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 8px 0;">
                 <div>
                     <b>${i.plat}</b> [${i.project || 'LOSARANG'}]<br>
                     <small style="color: #bbb;">SOPIR: ${i.sopir} | MUAT: ${i.volM} M3</small><br>
-                    <small>
+                    <small style="display:block; margin-top:2px; font-size:10px;">
+                        ${i.bop_unit ? `<span style="color:var(--gold)">💰 BOP: RP ${i.bop_unit.toLocaleString('id-ID')}</span>` : '<span style="color:var(--red); font-weight:bold;">⚠️ BOP BELUM DISET</span>'}
+                        ${i.margin_per_unit ? ` | <span style="color:var(--green)">📈 MARGIN: RP ${i.margin_per_unit.toLocaleString('id-ID')}</span>` : ''}
+                    </small>
+                    <small style="display:block; margin-top:2px;">
                         <a href="${i.fotoM}" target="_blank" style="color:var(--green)">FOTO MUAT</a> 
                         ${i.fotoB ? `| <a href="${i.fotoB}" target="_blank" style="color:var(--gold)">FOTO BONGKAR</a>` : ''}
                     </small>
                 </div>
-                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width:110px;">
                     ${statusElement}
-                    ${getBadgeSelisih(i)}
+                    <div style="margin-top:3px;">
+                        ${getBadgeSelisih(i)}
+                    </div>
                 </div>
             </div>`;
         });
@@ -472,6 +505,7 @@
         hitungUang(tb);
     }
 });
+
 async function hitungUang(tb, jumlahMobil = 0) {
     const snapOps = await get(ref(db, `bbs_operasional/${dbKey}`));
     totalOps = 0;
@@ -496,18 +530,7 @@ async function hitungUang(tb, jumlahMobil = 0) {
         }
     }
 
-    // --- LOGIKA HITUNGAN UPGRADE ---
-    const potKas = 0.10; // Potongan Kas 10%
-    const marginPerMobil = 0; 
-    const totalMarginUnit = marginPerMobil * jumlahMobil;
-
-    // Perhitungan tiap bagian (Sesuai rumus bawaan Abang)
-    const h5 = (tb * 0) / 3; 
-    const h7 = (((tb * 0) - totalOps) * (1 - potKas)) / 4; 
-    const h1 = ((tb * 0) * (1 - potKas)) / 4; 
-    const hUnit = (totalMarginUnit * (1 - potKas)) / 4; 
-
-    // 2. UPDATE TAMPILAN DASHBOARD (Hanya jika ID nya ditemukan)
+  // 2. UPDATE TAMPILAN DASHBOARD (Hanya jika ID nya ditemukan)
     const elOps = document.getElementById('d-ops-total');
     if(elOps) {
         elOps.innerText = "RP " + totalOps.toLocaleString();
@@ -532,57 +555,85 @@ async function hitungUang(tb, jumlahMobil = 0) {
     }
 }
 
-// --- FUNGSI MODAL & OPS (UTUH DAN STABIL) ---
-window.openOps = () => {
+// --- FUNGSI MODAL SET BOP 1 UNIT (SEBELUM OTW) ---
+window.openOps = (keyFirebase, platMobil) => {
+    window.currentBopKey = keyFirebase;
     const m = document.getElementById('modal-ops');
-    if(m) m.style.display = 'block';
+    if(m) {
+        m.style.display = 'block';
+        document.getElementById('ops-list').innerHTML = `<strong>UNIT TRUK: ${platMobil}</strong><br>SILAKAN ATUR BOP SEBELUM PROSES OTW`;
+    }
 };
+
 window.closeOps = () => {
     const m = document.getElementById('modal-ops');
     if(m) m.style.display = 'none';
+    document.getElementById('ops-material').value = "";
+    document.getElementById('ops-mobil').value = "";
 };
-window.addOps = async () => {
-    const k = document.getElementById('ops-ket').value;
-    const n = document.getElementById('ops-nom').value;
-    if(k && n) { 
-        await push(ref(db, `bbs_operasional/${dbKey}`), { ket: k, nom: Number(n) }); 
+
+window.simpanBopUnit = async () => {
+    const firebaseKey = window.currentBopKey;
+    if(!firebaseKey) return alert("DATA UNIT TIDAK TERDETEKSI!");
+
+    const matRaw = document.getElementById('ops-material').value;
+    const mobRaw = document.getElementById('ops-mobil').value;
+    
+    const matNom = Number(matRaw.replace(/[^0-9]/g, '')) || 0;
+    const mobNom = Number(mobRaw.replace(/[^0-9]/g, '')) || 0;
+    const totalBop = matNom + mobNom;
+
+    if(!matNom || !mobNom) {
+        return alert("HARAP ISI HARGA MATERIAL DAN ONGKOS MOBIL DENGAN BENAR!");
+    }
+
+    try {
+        // Simpan rincian BOP langsung ke dalam node mobil terkait
+        await update(ref(db, `bbs_logs/${dbKey}/${firebaseKey}`), { 
+            bop_material: matNom,
+            bop_mobil: mobNom,
+            bop_unit: totalBop
+        }); 
+        alert("BOP 1 UNIT BERHASIL DIKUNCI!"); 
+        closeOps();
         location.reload(); 
+    } catch (e) {
+        alert("Gagal menyimpan BOP: " + e.message);
     }
 };
-window.delOps = async (id) => { 
-    if(confirm("HAPUS?")) { 
-        await remove(ref(db, `bbs_operasional/${dbKey}/${id}`)); 
-        location.reload(); 
-    } 
-};
 
-// --- FUNGSI BARU: MANAGEMENT POPUP UNIT OTW UNTUK ADMIN TERPUSAT ---
-window.openOtwManager = () => {
-    const m = document.getElementById('modal-otw-manager');
-    if(m) m.style.display = 'block';
-};
-
-window.closeOtwManager = () => {
-    const m = document.getElementById('modal-otw-manager');
-    if(m) m.style.display = 'none';
-};
-
-// --- MANAJEMEN POPUP UNIT OTW UNTUK ADMIN TERPUSAT ---
-window.openOtwManager = (keyFirebase, platMobil) => {
-    // Menyimpan key firebase unit yang sedang dipilih ke dalam window object agar bisa diakses saat submit
+// --- MANAJEMEN POPUP UNIT OTW (INPUT HARGA JUAL & VOLUME BONGKAR) ---
+window.openOtwManager = async (keyFirebase, platMobil) => {
     window.currentActiveKey = keyFirebase;
     
     const m = document.getElementById('modal-otw-manager');
     if(m) {
         m.style.display = 'block';
-        // Mengisi judul pop-up otomatis dengan plat mobil yang dipilih biar admin tidak tertukar
-        document.getElementById('otw-title').innerText = `PROSES SELESAI UNIT: ${platMobil}`;
+        document.getElementById('otw-title').innerText = `PROSES KEBERANGKATAN OTW: ${platMobil}`;
+        
+        // Ambil data BOP unit ini untuk ditampilkan sebagai panduan Admin di modal
+        try {
+            const snap = await get(ref(db, `bbs_logs/${dbKey}/${keyFirebase}`));
+            if(snap.exists() && snap.val().bop_unit) {
+                const data = snap.val();
+                document.getElementById('otw-bop-info').innerHTML = `
+                    <span style="color:var(--gold);">BOP TERKUNCI PER UNIT:</span><br>
+                    Material: Rp ${data.bop_material.toLocaleString('id-ID')} | 
+                    Mobil: Rp ${data.bop_mobil.toLocaleString('id-ID')}<br>
+                    <strong>Total BOP: Rp ${data.bop_unit.toLocaleString('id-ID')}</strong>
+                `;
+            } else {
+                document.getElementById('otw-bop-info').innerHTML = `<span style="color:var(--red);">⚠️ BOP BELUM DISET! SILAKAN CLOSE DAN KLIK 'SET BOP' DAHULU.</span>`;
+            }
+        } catch(e) { console.log(e); }
     }
 };
 
 window.closeOtwManager = () => {
     const m = document.getElementById('modal-otw-manager');
     if(m) m.style.display = 'none';
+    document.getElementById('input-vol-bongkar').value = "";
+    document.getElementById('input-harga-jual').value = "";
 };
 
 window.prosesTugasSelesai = async () => {
@@ -590,42 +641,55 @@ window.prosesTugasSelesai = async () => {
     if(!firebaseKey) return alert("TIDAK ADA DATA UNIT YANG TERPILIH!");
     
     const volBongkarInput = document.getElementById('input-vol-bongkar').value;
-    const bopRawValue = document.getElementById('input-bop-unit').value;
-    const bopUnitInput = Number(bopRawValue.replace(/,/g, '')) || 0;
+    const jualRawValue = document.getElementById('input-harga-jual').value;
+    const hargaJualInput = Number(jualRawValue.replace(/[^0-9]/g, '')) || 0;
     
-    if(!volBongkarInput || !bopUnitInput) {
-        return alert("HARAP ISI VOLUME BONGKAR DAN TOTAL BIAYA BOP UNIT INI!");
+    if(!volBongkarInput || !hargaJualInput) {
+        return alert("HARAP ISI VOLUME BONGKAR DAN HARGA JUAL KONSUMEN!");
     }
     
     try {
-        // 1. Ambil data muat awal si mobil dari database
+        // 1. Ambil data awal si mobil dari database
         const snap = await get(ref(db, `bbs_logs/${dbKey}/${firebaseKey}`));
         if(!snap.exists()) return alert("Data unit tidak ditemukan!");
         
         const dataMobil = snap.val();
+        
+        if(!dataMobil.bop_unit) {
+            return alert("UNIT INI BELUM MEMILIKI DATA BOP. SELESAIKAN SET BOP TERLEBIH DAHULU!");
+        }
+
         const jamBongkarSkr = new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit', hour12: false});
         
-        // Gabungkan data inputan baru ke dalam object mobil untuk dikirim ke fungsi PDF
+        // Hitung margin secara otomatis berdasarkan logika baru
+        const totalBopMobil = dataMobil.bop_unit;
+        const totalMarginPerUnit = hargaJualInput - totalBopMobil;
+
+        // Gabungkan data inputan baru ke dalam objek mobil untuk dikirim ke fungsi PDF
         dataMobil.volB = Number(volBongkarInput);
+        dataMobil.harga_jual = hargaJualInput;
+        dataMobil.margin_per_unit = totalMarginPerUnit;
         
         // 2. Update datanya langsung ke database per mobil itu sendiri
         await update(ref(db, `bbs_logs/${dbKey}/${firebaseKey}`), { 
             volB: dataMobil.volB, 
-            status: 'DONE', 
+            status: 'OTW', 
             jamB: jamBongkarSkr,
-            bop_unit: Number(bopUnitInput)
+            harga_jual: hargaJualInput,
+            margin_per_unit: totalMarginPerUnit
         });
         
-        // 3. PANGGIL KODE GENERATE PDF PER SATU UNIT DI ATAS!
-        await window.generatePDF(dataMobil, bopUnitInput, jamBongkarSkr);
+        // 3. PANGGIL KODE GENERATE PDF UNTUK 1 UNIT INI
+        await window.generatePDF(dataMobil, jamBongkarSkr);
         
         alert("PROSES DATA & CETAK PDF SELESAI!");
         closeOtwManager();
 
-        // 4. GENERATE PILIHAN HAPUS/TIDAK DATA DARI DASHBOARD
-        if (confirm("Apakah Anda ingin langsung MENGHAPUS (Mengarsipkan) data mobil ini dari daftar dashboard utama?")) {
-            await update(ref(db, `bbs_logs/${dbKey}/${firebaseKey}`), { status: 'ARCHIVED' });
-            alert("DATA MOBIL BERHASIL DIHAPUS DARI DASHBOARD!");
+        // 4. LOGIKA BARU: HAPUS PERMANEN DATA DARI DATABASE FIREBASE
+        if (confirm("Apakah Anda ingin langsung MENGHAPUS PERMANEN data mobil ini dari database agar tidak menumpuk?")) {
+            // Menggunakan fungsi remove() bawaan Firebase untuk menghapus data secara total dan permanen
+            await remove(ref(db, `bbs_logs/${dbKey}/${firebaseKey}`));
+            alert("DATA MOBIL BERHASIL DIHAPUS PERMANEN DARI FIREBASE!");
         }
         
         location.reload();
@@ -634,16 +698,20 @@ window.prosesTugasSelesai = async () => {
     }
 };
 
-// --- GENERATE PDF TUNGGAL (MURNI PER SATU UNIT TRUK / BUKAN BATCH KESELURUHAN) ---
-window.generatePDF = async (item, bopUnit, jamBongkarPasti) => {
-    // Parameter 'item' di sini langsung berisi data lengkap dari 1 mobil yang diproses
+// --- GENERATE PDF TUNGGAL DENGAN DETAIL HARGA JUAL & MARGIN ---
+window.generatePDF = async (item, jamBongkarPasti) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
     const vMuat = Number(item.volM) || 0;
     const vBongkar = Number(item.volB) || 0;
     const hitungLossLebih = vBongkar - vMuat;
-    const totalBopMobil = Number(bopUnit) || 0;
+    
+    const bopMat = Number(item.bop_material) || 0;
+    const bopMob = Number(item.bop_mobil) || 0;
+    const totalBopMobil = Number(item.bop_unit) || 0;
+    const hargaJualMobil = Number(item.harga_jual) || 0;
+    const marginMobil = Number(item.margin_per_unit) || 0;
 
     // Header Surat Perusahaan
     doc.setFontSize(14); doc.text("PT. BERKAH BAJA STEEL", 105, 12, { align: "center" });
@@ -651,11 +719,11 @@ window.generatePDF = async (item, bopUnit, jamBongkarPasti) => {
     
     const tglJamBongkar = `${item.tgl} || ${jamBongkarPasti || '--:--'}`; 
 
-    // Isi tabel HANYA 1 baris untuk mobil ini saja
+    // Tabel Atas
     const bodySingle = [[
         1, 
         tglJamBongkar, 
-        hitungDurasi(item.jamM, jamBongkarPasti), 
+        typeof hitungDurasi === 'function' ? hitungDurasi(item.jamM, jamBongkarPasti) : item.jamM, 
         item.plat, 
         vMuat.toFixed(2), 
         vBongkar.toFixed(2), 
@@ -692,56 +760,59 @@ window.generatePDF = async (item, bopUnit, jamBongkarPasti) => {
         }
     });
      
-    // Mengatur posisi awal teks rincian setelah tabel
-    let textY = doc.lastAutoTable.finalY + 8;
-    const xVal = 80; 
+   // Mengatur posisi awal teks rincian setelah tabel
+    let textY = doc.lastAutoTable.finalY + 6;
+    const xVal = 65; // Menyesuaikan jarak titik dua karena font lebih kecil
     
-    doc.setTextColor(0,0,0); 
-    doc.setFont("helvetica", "bold"); 
-    doc.setFontSize(10);
-    
-    // --- RINCIAN BIAYA BOP DAN LOGISTIK KHUSUS MOBIL INI ---
-    doc.text(`TOTAL MUATAN`, 14, textY);
-    doc.text(`: ${vMuat.toFixed(2)} M3`, xVal, textY);
-    
-    textY += 6;
-    doc.text(`TOTAL BONGKARAN`, 14, textY);
-    doc.text(`: ${vBongkar.toFixed(2)} M3`, xVal, textY);
-    
-    textY += 6;
-    doc.text(`SELISIH MUAT / BONGKAR`, 14, textY);
-    doc.text(`: ${(hitungLossLebih > 0 ? "+" : "") + hitungLossLebih.toFixed(2)} M3`, xVal, textY);
+    // --- SETTING HURUF: UKURAN KECIL (8) DAN TIDAK TEBAL (NORMAL) ---
+    doc.setTextColor(0, 0, 0); 
+    doc.setFont("helvetica", "normal"); // Mengubah dari 'bold' ke 'normal'
+    doc.setFontSize(8); // Ukuran diturunkan ke 8 agar tidak dominan
 
-    // Garis pembatas kecil
-    textY += 4;
-    doc.setDrawColor(200, 200, 200);
-    doc.line(14, textY, 150, textY);
+    // --- HANYA MENAMPILKAN RINCIAN KEUANGAN BOP SAMPAI MARGIN ---
+    doc.text(`BOP MATERIAL 1 UNIT`, 14, textY);
+    doc.text(`: Rp. ${bopMat.toLocaleString('id-ID')}`, xVal, textY);
 
-    // Tampilkan Biaya BOP Unit yang diinput Admin secara mencolok
-    textY += 6;
-    doc.setTextColor(41, 128, 185); 
-    doc.text(`TOTAL BIAYA BOP TRUCK INI`, 14, textY);
+    textY += 5;
+    doc.text(`ONGKOS MOBIL / TRUK`, 14, textY);
+    doc.text(`: Rp. ${bopMob.toLocaleString('id-ID')}`, xVal, textY);
+
+    textY += 5;
+    doc.text(`TOTAL BOP KESELURUHAN`, 14, textY);
     doc.text(`: Rp. ${totalBopMobil.toLocaleString('id-ID')}`, xVal, textY);
 
-    // --- TANDA TANGAN (TTD) DIREKTUR UTAMA (SEKARANG RAPAT IKUT POSISI ATAS) ---
+    textY += 5;
+    doc.text(`HARGA JUAL KE KONSUMEN`, 14, textY);
+    doc.text(`: Rp. ${hargaJualMobil.toLocaleString('id-ID')}`, xVal, textY);
+
+    textY += 5;
+    // Pengecekan warna untuk Margin Profit / Sisa (Teks tetap regular/tidak tebal)
+    if(marginMobil >= 0) {
+        doc.setTextColor(0, 128, 0); // Warna Hijau
+        doc.text(`MARGIN KEUNTUNGAN (PROFIT)`, 14, textY);
+        doc.text(`: Rp. ${marginMobil.toLocaleString('id-ID')}`, xVal, textY);
+    } else {
+        doc.setTextColor(255, 0, 0); // Warna Merah
+        doc.text(`MARGIN SISA (RUGI/MINUS)`, 14, textY);
+        doc.text(`: Rp. ${marginMobil.toLocaleString('id-ID')}`, xVal, textY);
+    }
+
+    // --- TANDA TANGAN (TTD) MANAGER ---
     doc.setTextColor(0,0,0);
-    
-    // Geser koordinat Y untuk area tanda tangan agar rapat tepat di bawah info BOP
     let signY = textY + 12; 
 
     doc.setFont("helvetica", "normal"); 
     doc.setFontSize(10);
     doc.text("Hormat Kami,", 160, signY, { align: "center" });
 
-    // Beri jarak space ruang kosong untuk coretan stempel/TTD basah asli
     signY += 16; 
 
     doc.setFont("helvetica", "bold"); 
-    doc.text("H. HENDAR WAHBAGIONO", 160, signY, { align: "center", underline: true });
+    doc.text("YEFRY DESFIRMANZA", 160, signY, { align: "center", underline: true });
 
     signY += 5;
     doc.setFont("helvetica", "normal"); 
-    doc.text("DIREKTUR UTAMA", 160, signY, { align: "center" });
+    doc.text("MANAGER", 160, signY, { align: "center" });
 
     // Catatan kaki sistem digital (Ikut naik ke atas juga biar rapi)
     const sekarang = new Date();
