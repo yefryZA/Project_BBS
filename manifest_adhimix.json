@@ -1,7 +1,9 @@
 {
-  "id": "/Project_BBS/adhimix/",
+  "id": "https://yefryza.github.io/Project_BBS/01.Input_KAS.html?app=adhimix",
+  "scope": "https://yefryza.github.io/Project_BBS/01.Input_KAS.html",
+  "start_url": "https://yefryza.github.io/Project_BBS/01.Input_KAS.html?utm_source=pwa_adhimix",
   "short_name": "KAS ADHIMIX",
-  "name": "INPUT KAS BBS",
+  "name": "INPUT KAS PT. BBS",
   "icons": [
     {
       "src": "https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png",
@@ -14,8 +16,6 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": "https://yefryza.github.io/Project_BBS/01.Input_KAS.html",
-  "scope": "https://yefryza.github.io/Project_BBS/",
   "background_color": "#0a192f",
   "theme_color": "#2ecc71",
   "display": "standalone",
