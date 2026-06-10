@@ -1,7 +1,9 @@
 {
-  "id": "/Project_BBS/rizal/",
+  "id": "https://yefryza.github.io/Project_BBS/buku_kas_input.html?app=rizal",
+  "scope": "https://yefryza.github.io/Project_BBS/buku_kas_input.html",
+  "start_url": "https://yefryza.github.io/Project_BBS/buku_kas_input.html?utm_source=pwa_rizal",
   "short_name": "KAS RIZAL",
-  "name": "INPUT KAS PT BBS (TIM LAPANGAN)",
+  "name": "INPUT KAS BBS",
   "icons": [
     {
       "src": "https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png",
@@ -14,8 +16,6 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": "https://yefryza.github.io/Project_BBS/buku_kas_input.html",
-  "scope": "https://yefryza.github.io/Project_BBS/",
   "background_color": "#0a192f",
   "theme_color": "#2ecc71",
   "display": "standalone",
