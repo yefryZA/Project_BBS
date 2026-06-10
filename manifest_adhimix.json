@@ -1,0 +1,21 @@
+{
+  "short_name": "KAS ADHIMIX",
+  "name": "INPUT KAS BBS",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./01.Input_KAS.html",
+  "background_color": "#0a192f",
+  "theme_color": "#2ecc71",
+  "display": "standalone",
+  "orientation": "portrait"
+}
