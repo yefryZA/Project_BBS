@@ -91,50 +91,84 @@
     onValue(ref(db, pathKas), (snap) => {
         let akumulasiModal = 0;
         let akumulasiProfit = 0;
+        let akumulasiKasbon = 0;
         let html = "";
         const data = snap.val();
 
         if(data) {
-            // Urutan log transaksi diurutkan secara kronologis terlebih dahulu (dari terlama ke terbaru) 
-            // agar perhitungan pengurangan sisa modal berjalan sesuai urutan waktu masuknya.
             const dataUrutWaktu = Object.values(data);
 
-            dataUrutWaktu.forEach((item) => {
+            // Bersihkan flag penanda kecocokan riwayat
+            dataUrutWaktu.forEach(d => { if(d.sudahDipakai) delete d.sudahDipakai; });
+
+            dataUrutWaktu.forEach((item, i) => {
                 const isIn = item.tipe === 'IN';
                 const nomMurni = item.nominal || 0;
                 const ketUpper = (item.keterangan || "").toUpperCase();
 
-                if (isIn) {
-                    // JIKA UANG MASUK (IN)
-                    if (ketUpper.includes("MODAL")) {
-                        // Jika keterangan mengandung kata MODAL, masuk ke kantong Modal
-                        akumulasiModal += nomMurni;
-                    } else {
-                        // Jika tidak ada kata MODAL, otomatis ini Profit hasil penjualan/proyek
-                        akumulasiProfit += nomMurni;
+                const isModalAwal = isIn && ketUpper.includes("MODAL");
+                const isKasbon = !isIn && ketUpper.includes("KASBON");
+                const isUangJalanKiriman = !isIn && ketUpper.includes("KIRIMAN");
+                const isBayarKiriman = isIn && ketUpper.includes("BAYAR") && ketUpper.includes("KIRIMAN");
+
+                if (isModalAwal) {
+                    akumulasiModal += nomMurni;
+                } else if (isKasbon) {
+                    akumulasiKasbon += nomMurni;
+                } else if (isUangJalanKiriman) {
+                    // Truk jalan langsung potong modal utama murni
+                    akumulasiModal -= nomMurni;
+                } else if (isBayarKiriman) {
+                    let modalPasangan = 0;
+                    const matchBayar = ketUpper.match(/(?:BAYAR\s+)?KIRIMAN\s+([A-Z0-9]+)/);
+                    const wilayahBayar = matchBayar ? matchBayar[1] : null;
+
+                    if (wilayahBayar) {
+                        let indeksPasangan = -1;
+
+                        // STRATEGI 1: Cari pengeluaran modal yang nominalnya persis sama (Klop)
+                        for (let j = 0; j < i; j++) {
+                            const itemLama = dataUrutWaktu[j];
+                            const ketLamaUpper = (itemLama.keterangan || "").toUpperCase();
+                            if (itemLama.tipe === 'OUT' && ketLamaUpper.includes("KIRIMAN") && ketLamaUpper.includes(wilayahBayar) && !itemLama.sudahDipakai) {
+                                if (itemLama.nominal === nomMurni) {
+                                    indeksPasangan = j;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // STRATEGI 2: Jika tidak ada nominal yang sama, ambil urutan paling atas yang tersisa
+                        if (indeksPasangan === -1) {
+                            for (let j = 0; j < i; j++) {
+                                const itemLama = dataUrutWaktu[j];
+                                const ketLamaUpper = (itemLama.keterangan || "").toUpperCase();
+                                if (itemLama.tipe === 'OUT' && ketLamaUpper.includes("KIRIMAN") && ketLamaUpper.includes(wilayahBayar) && !itemLama.sudahDipakai) {
+                                    indeksPasangan = j;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Jika ketemu jodoh kirimannya
+                        if (indeksPasangan !== -1) {
+                            modalPasangan = dataUrutWaktu[indeksPasangan].nominal || 0;
+                            dataUrutWaktu[indeksPasangan].sudahDipakai = true;
+                        }
                     }
+
+                    // Kembalikan modal awal ke kotak modal
+                    akumulasiModal += modalPasangan;
+                    // Selisih bersih masuk ke profit
+                    akumulasiProfit += (nomMurni - modalPasangan);
                 } else {
-                    // JIKA UANG KELUAR (OUT / PENGELUARAN)
-                    let sisaPengeluaran = nomMurni;
-
-                    // Langkah 1: Kuras dari kantong Modal terlebih dahulu
-                    if (akumulasiModal >= sisaPengeluaran) {
-                        akumulasiModal -= sisaPengeluaran;
-                        sisaPengeluaran = 0;
-                    } else {
-                        // Jika modal tidak cukup, kuras habis modal sampai 0
-                        sisaPengeluaran -= akumulasiModal;
-                        akumulasiModal = 0;
-                    }
-
-                    // Langkah 2: Jika masih ada sisa pengeluaran yang belum terbayar, potong dari Profit
-                    if (sisaPengeluaran > 0) {
-                        akumulasiProfit -= sisaPengeluaran;
-                    }
+                    if (isIn) { akumulasiProfit += nomMurni; } 
+                    else { akumulasiModal -= nomMurni; }
                 }
             });
 
-            // Setelah perhitungan selesai, buat render list untuk user (Terbaru di atas)
+            akumulasiProfit -= akumulasiKasbon;
+
             [...dataUrutWaktu].reverse().forEach((item) => {
                 const isIn = item.tipe === 'IN';
                 const nomMurni = item.nominal || 0;
@@ -153,22 +187,19 @@
             });
         }
         
-        // RUMUS UTAMA: Saldo Utama adalah gabungan Sisa Modal + Sisa Profit Aktif
         const totalSaldoUtama = akumulasiModal + akumulasiProfit;
 
-        // Tampilkan data ke elemen HTML masing-masing
         document.getElementById('total-rekanan').innerText = "RP " + totalSaldoUtama.toLocaleString('id-ID');
         document.getElementById('total-bbs').innerText = "RP " + totalSaldoUtama.toLocaleString('id-ID');
-        document.getElementById('box-modal-aktif').innerText = "RP " + akumulasiModal.toLocaleString('id-ID');
+        document.getElementById('box-modal-aktif').innerText = "RP " + (akumulasiModal >= 0 ? akumulasiModal.toLocaleString('id-ID') : 0);
+        document.getElementById('box-kasbon-total').innerText = "RP " + akumulasiKasbon.toLocaleString('id-ID');
 
-        // PENGATURAN BADGE WARNA UNTUK PROFIT BERSIH
         const elemenProfitBox = document.getElementById('box-margin-total');
         if (akumulasiProfit >= 0) {
             elemenProfitBox.innerText = "RP " + akumulasiProfit.toLocaleString('id-ID');
             elemenProfitBox.className = "mini-amount txt-untung";
         } else {
-            const nilaiPositifProfit = Math.abs(akumulasiProfit);
-            elemenProfitBox.innerText = "RP -" + nilaiPositifProfit.toLocaleString('id-ID');
+            elemenProfitBox.innerText = "RP -" + Math.abs(akumulasiProfit).toLocaleString('id-ID');
             elemenProfitBox.className = "mini-amount txt-rugi";
         }
 
