@@ -90,7 +90,7 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
-    const pathKas = `BUKU_KAS`;
+    const pathKas = `KAS_RIZAL`;
 
     const urlParams = new URLSearchParams(window.location.search);
     const isAdmin = urlParams.get('mode') === 'admin';
@@ -109,37 +109,76 @@
         if(data) {
             const dataUrutWaktu = Object.values(data);
 
-            dataUrutWaktu.forEach((item) => {
+            // Bersihkan flag penanda kecocokan riwayat
+            dataUrutWaktu.forEach(d => { if(d.sudahDipakai) delete d.sudahDipakai; });
+
+            dataUrutWaktu.forEach((item, i) => {
                 const isIn = item.tipe === 'IN';
                 const nomMurni = item.nominal || 0;
                 const ketUpper = (item.keterangan || "").toUpperCase();
 
-                if (isIn) {
-                    if (ketUpper.includes("MODAL")) {
-                        akumulasiModal += nomMurni;
-                    } else {
-                        akumulasiProfit += nomMurni;
-                    }
-                } else {
-                    if (ketUpper.includes("KASBON")) {
-                        akumulasiKasbon += nomMurni;
-                        akumulasiProfit -= nomMurni; // Memotong Profit Bersih
-                    } else {
-                        let sisaPengeluaran = nomMurni;
-                        if (akumulasiModal >= sisaPengeluaran) {
-                            akumulasiModal -= sisaPengeluaran;
-                            sisaPengeluaran = 0;
-                        } else {
-                            sisaPengeluaran -= akumulasiModal;
-                            akumulasiModal = 0;
+                const isModalAwal = isIn && ketUpper.includes("MODAL");
+                const isKasbon = !isIn && ketUpper.includes("KASBON");
+                const isUangJalanKiriman = !isIn && ketUpper.includes("KIRIMAN");
+                const isBayarKiriman = isIn && ketUpper.includes("BAYAR") && ketUpper.includes("KIRIMAN");
+
+                if (isModalAwal) {
+                    akumulasiModal += nomMurni;
+                } else if (isKasbon) {
+                    akumulasiKasbon += nomMurni;
+                } else if (isUangJalanKiriman) {
+                    // Truk jalan langsung potong modal utama murni
+                    akumulasiModal -= nomMurni;
+                } else if (isBayarKiriman) {
+                    let modalPasangan = 0;
+                    const matchBayar = ketUpper.match(/(?:BAYAR\s+)?KIRIMAN\s+([A-Z0-9]+)/);
+                    const wilayahBayar = matchBayar ? matchBayar[1] : null;
+
+                    if (wilayahBayar) {
+                        let indeksPasangan = -1;
+
+                        // STRATEGI 1: Cari pengeluaran modal yang nominalnya persis sama (Klop)
+                        for (let j = 0; j < i; j++) {
+                            const itemLama = dataUrutWaktu[j];
+                            const ketLamaUpper = (itemLama.keterangan || "").toUpperCase();
+                            if (itemLama.tipe === 'OUT' && ketLamaUpper.includes("KIRIMAN") && ketLamaUpper.includes(wilayahBayar) && !itemLama.sudahDipakai) {
+                                if (itemLama.nominal === nomMurni) {
+                                    indeksPasangan = j;
+                                    break;
+                                }
+                            }
                         }
 
-                        if (sisaPengeluaran > 0) {
-                            akumulasiProfit -= sisaPengeluaran;
+                        // STRATEGI 2: Jika tidak ada nominal yang sama, ambil urutan paling atas yang tersisa
+                        if (indeksPasangan === -1) {
+                            for (let j = 0; j < i; j++) {
+                                const itemLama = dataUrutWaktu[j];
+                                const ketLamaUpper = (itemLama.keterangan || "").toUpperCase();
+                                if (itemLama.tipe === 'OUT' && ketLamaUpper.includes("KIRIMAN") && ketLamaUpper.includes(wilayahBayar) && !itemLama.sudahDipakai) {
+                                    indeksPasangan = j;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Jika ketemu jodoh kirimannya
+                        if (indeksPasangan !== -1) {
+                            modalPasangan = dataUrutWaktu[indeksPasangan].nominal || 0;
+                            dataUrutWaktu[indeksPasangan].sudahDipakai = true;
                         }
                     }
+
+                    // Kembalikan modal awal ke kotak modal
+                    akumulasiModal += modalPasangan;
+                    // Selisih bersih masuk ke profit
+                    akumulasiProfit += (nomMurni - modalPasangan);
+                } else {
+                    if (isIn) { akumulasiProfit += nomMurni; } 
+                    else { akumulasiModal -= nomMurni; }
                 }
             });
+
+            akumulasiProfit -= akumulasiKasbon;
 
             [...dataUrutWaktu].reverse().forEach((item) => {
                 const isIn = item.tipe === 'IN';
@@ -163,7 +202,7 @@
 
         document.getElementById('total-rekanan').innerText = "RP " + totalSaldoUtama.toLocaleString('id-ID');
         document.getElementById('total-bbs').innerText = "RP " + totalSaldoUtama.toLocaleString('id-ID');
-        document.getElementById('box-modal-aktif').innerText = "RP " + akumulasiModal.toLocaleString('id-ID');
+        document.getElementById('box-modal-aktif').innerText = "RP " + (akumulasiModal >= 0 ? akumulasiModal.toLocaleString('id-ID') : 0);
         document.getElementById('box-kasbon-total').innerText = "RP " + akumulasiKasbon.toLocaleString('id-ID');
 
         const elemenProfitBox = document.getElementById('box-margin-total');
@@ -171,8 +210,7 @@
             elemenProfitBox.innerText = "RP " + akumulasiProfit.toLocaleString('id-ID');
             elemenProfitBox.className = "mini-amount txt-untung";
         } else {
-            const nilaiPositifProfit = Math.abs(akumulasiProfit);
-            elemenProfitBox.innerText = "RP -" + nilaiPositifProfit.toLocaleString('id-ID');
+            elemenProfitBox.innerText = "RP -" + Math.abs(akumulasiProfit).toLocaleString('id-ID');
             elemenProfitBox.className = "mini-amount txt-rugi";
         }
 
