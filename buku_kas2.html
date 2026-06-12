@@ -63,51 +63,122 @@
     const pathKas = `SALDO_BERSAMA`;
 
     onValue(ref(db, pathKas), (snap) => {
-    let totalRekanan = 0; 
-    let html = "";
-    const data = snap.val();
+        let akumulasiModal = 0;
+        let akumulasiProfit = 0;
+        let akumulasiKasbon = 0;
+        let html = "";
+        const data = snap.val();
 
-    if(data) {
-        Object.values(data).reverse().forEach(item => {
-            const isIn = item.tipe === 'IN';
-            const nomRekanan = item.nominal_rekanan || item.nominal || 0;
+        if(data) {
+            const dataUrutWaktu = Object.values(data);
 
-            totalRekanan += isIn ? nomRekanan : -nomRekanan;
+            // Bersihkan flag penanda kecocokan riwayat
+            dataUrutWaktu.forEach(d => { if(d.sudahDipakai) delete d.sudahDipakai; });
 
-            // FITUR UTAMA: Logika tombol ikon foto nota otomatis
-            let tombolNotaHtml = "";
-            if (!isIn && item.foto_nota) {
-                tombolNotaHtml = `
-                    <a href="${item.foto_nota}" target="_blank" 
-                       style="display: inline-block; background-color: #34a853; color: white !important; font-size: 10px; font-weight: bold; text-decoration: none; padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle;">
-                       📄 Nota
-                    </a>
-                `;
-            }
+            dataUrutWaktu.forEach((item, i) => {
+                const isIn = item.tipe === 'IN';
+                const nomMurni = item.nominal || 0;
+                const ketUpper = (item.keterangan || "").toUpperCase();
 
-            html += `
-            <div class="item-kas" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #333;">
-                <div>
-                    <div class="item-ket" style="font-weight: bold;">
-                        ${item.keterangan} ${tombolNotaHtml}
+                const isModalAwal = isIn && ketUpper.includes("MODAL");
+                const isKasbon = !isIn && ketUpper.includes("KASBON");
+                const isUangJalanKiriman = !isIn && ketUpper.includes("KIRIMAN");
+                const isBayarKiriman = isIn && ketUpper.includes("BAYAR") && ketUpper.includes("KIRIMAN");
+
+                if (isModalAwal) {
+                    akumulasiModal += nomMurni;
+                } else if (isKasbon) {
+                    akumulasiKasbon += nomMurni;
+                } else if (isUangJalanKiriman) {
+                    // Truk jalan langsung potong modal utama murni
+                    akumulasiModal -= nomMurni;
+                } else if (isBayarKiriman) {
+                    let modalPasangan = 0;
+                    const matchBayar = ketUpper.match(/(?:BAYAR\s+)?KIRIMAN\s+([A-Z0-9]+)/);
+                    const wilayahBayar = matchBayar ? matchBayar[1] : null;
+
+                    if (wilayahBayar) {
+                        let indeksPasangan = -1;
+
+                        // STRATEGI 1: Cari pengeluaran modal yang nominalnya persis sama (Klop)
+                        for (let j = 0; j < i; j++) {
+                            const itemLama = dataUrutWaktu[j];
+                            const ketLamaUpper = (itemLama.keterangan || "").toUpperCase();
+                            if (itemLama.tipe === 'OUT' && ketLamaUpper.includes("KIRIMAN") && ketLamaUpper.includes(wilayahBayar) && !itemLama.sudahDipakai) {
+                                if (itemLama.nominal === nomMurni) {
+                                    indeksPasangan = j;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // STRATEGI 2: Jika tidak ada nominal yang sama, ambil urutan paling atas yang tersisa
+                        if (indeksPasangan === -1) {
+                            for (let j = 0; j < i; j++) {
+                                const itemLama = dataUrutWaktu[j];
+                                const ketLamaUpper = (itemLama.keterangan || "").toUpperCase();
+                                if (itemLama.tipe === 'OUT' && ketLamaUpper.includes("KIRIMAN") && ketLamaUpper.includes(wilayahBayar) && !itemLama.sudahDipakai) {
+                                    indeksPasangan = j;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Jika ketemu jodoh kirimannya
+                        if (indeksPasangan !== -1) {
+                            modalPasangan = dataUrutWaktu[indeksPasangan].nominal || 0;
+                            dataUrutWaktu[indeksPasangan].sudahDipakai = true;
+                        }
+                    }
+
+                    // Kembalikan modal awal ke kotak modal
+                    akumulasiModal += modalPasangan;
+                    // Selisih bersih masuk ke profit
+                    akumulasiProfit += (nomMurni - modalPasangan);
+                } else {
+                    if (isIn) { akumulasiProfit += nomMurni; } 
+                    else { akumulasiModal -= nomMurni; }
+                }
+            });
+
+            akumulasiProfit -= akumulasiKasbon;
+
+            [...dataUrutWaktu].reverse().forEach((item) => {
+                const isIn = item.tipe === 'IN';
+                const nomMurni = item.nominal || 0;
+                html += `
+                <div class="item-kas">
+                    <div>
+                        <div class="item-ket">${item.keterangan}</div>
+                        <div class="item-tgl">${item.tgl} | ${item.jam}</div>
                     </div>
-                    <div class="item-tgl" style="font-size: 11px; color: var(--slate); margin-top: 4px;">
-                        ${item.tgl} | ${item.jam}
+                    <div style="text-align:right">
+                        <div style="font-weight:bold" class="${isIn ? 'nom-in' : 'nom-out'}">
+                            ${isIn ? '+' : '-'}${nomMurni.toLocaleString('id-ID')}
+                        </div>
                     </div>
-                </div>
-                <div style="text-align:right">
-                    <div style="font-weight:bold" class="${isIn?'nom-in':'nom-out'}">
-                        ${isIn?'+':'-'}${nomRekanan.toLocaleString('id-ID')}
-                    </div>
-                </div>
-            </div>`;
-        });
-    }
-    
-    // Tampilkan total saldo murni rekanan dan daftar transaksinya
-    document.getElementById('total-rekanan').innerText = "RP " + totalRekanan.toLocaleString('id-ID');
-    document.getElementById('list-transaksi').innerHTML = html || "<p style='text-align:center; color:var(--slate); padding:20px;'>Belum ada riwayat transaksi</p>";
-});
+                </div>`;
+            });
+        }
+        
+        const totalSaldoUtama = akumulasiModal + akumulasiProfit;
+
+        document.getElementById('total-rekanan').innerText = "RP " + totalSaldoUtama.toLocaleString('id-ID');
+        document.getElementById('total-bbs').innerText = "RP " + totalSaldoUtama.toLocaleString('id-ID');
+        document.getElementById('box-modal-aktif').innerText = "RP " + (akumulasiModal >= 0 ? akumulasiModal.toLocaleString('id-ID') : 0);
+        document.getElementById('box-kasbon-total').innerText = "RP " + akumulasiKasbon.toLocaleString('id-ID');
+
+        const elemenProfitBox = document.getElementById('box-margin-total');
+        if (akumulasiProfit >= 0) {
+            elemenProfitBox.innerText = "RP " + akumulasiProfit.toLocaleString('id-ID');
+            elemenProfitBox.className = "mini-amount txt-untung";
+        } else {
+            elemenProfitBox.innerText = "RP -" + Math.abs(akumulasiProfit).toLocaleString('id-ID');
+            elemenProfitBox.className = "mini-amount txt-rugi";
+        }
+
+        document.getElementById('list-transaksi').innerHTML = html || "<p style='text-align:center; color:var(--slate); padding:10px;'>Belum ada riwayat</p>";
+    });
 </script>
 </body>
 </html>
