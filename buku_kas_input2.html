@@ -312,7 +312,6 @@ window.simpan = async () => {
         const snap = await get(ref(db, pathKas));
         if(!snap.exists()) return alert("Data masih kosong, Bang!");
         
-        // --- KONFIRMASI RESET ATAU TIDAK (YES / NO) ---
         const mauReset = confirm("Apakah data di Firebase mau langsung DI-RESET (DIHAPUS)?\n\n• Klik OK (YES) = Download + Hapus Data\n• Klik CANCEL (NO) = Download Saja (Data Aman)");
 
         const { jsPDF } = window.jspdf;
@@ -320,35 +319,78 @@ window.simpan = async () => {
         doc.setFontSize(16);
         doc.text("LAPORAN KAS PT. BBS", 105, 15, { align: "center" });
         
-        // --- LOGIKA HITUNG MATEMATIKA UNTUK RINGKASAN ---
         let akModal = 0;
         let akProfit = 0;
         let akKasbon = 0;
         let runningSaldo = 0;
 
-        const body = Object.values(snap.val()).map((v, i) => {
+        const dataKas = Object.values(snap.val());
+        // Bersihkan flag setiap kali generate
+        dataKas.forEach(d => { if(d.sudahDipakai) delete d.sudahDipakai; });
+
+        const body = dataKas.map((v, i) => {
             const isIn = v.tipe === 'IN';
             const nom = v.nominal || 0;
             const ketUpper = (v.keterangan || "").toUpperCase();
 
-            if (isIn) {
-                if (ketUpper.includes("MODAL")) { akModal += nom; } 
-                else { akProfit += nom; }
-            } else {
-                if (ketUpper.includes("KASBON")) {
-                    akKasbon += nom;
-                    akProfit -= nom;
-                } else {
-                    let sisaOut = nom;
-                    if (akModal >= sisaOut) {
-                        akModal -= sisaOut;
-                        sisaOut = 0;
-                    } else {
-                        sisaOut -= akModal;
-                        akModal = 0;
+            const isModalAwal = isIn && ketUpper.includes("MODAL");
+            const isKasbon = !isIn && ketUpper.includes("KASBON");
+            const isUangJalanKiriman = !isIn && ketUpper.includes("KIRIMAN");
+            const isBayarKiriman = isIn && ketUpper.includes("BAYAR") && ketUpper.includes("KIRIMAN");
+
+            if (isModalAwal) {
+                akModal += nom;
+            } else if (isKasbon) {
+                akKasbon += nom;
+            } else if (isUangJalanKiriman) {
+                // Sesuai request: Ambil dari modal berjalan murni, biarkan modal bisa berkurang
+                akModal -= nom;
+            } else if (isBayarKiriman) {
+                let modalPasangan = 0;
+                const matchBayar = ketUpper.match(/(?:BAYAR\s+)?KIRIMAN\s+([A-Z0-9]+)/);
+                const wilayahBayar = matchBayar ? matchBayar[1] : null;
+
+                if (wilayahBayar) {
+                    let indeksPasangan = -1;
+                    
+                    // STRATEGI 1: Cari yang nominalnya persis sama/terdekat dulu
+                    for (let j = 0; j < i; j++) {
+                        const vLama = dataKas[j];
+                        const ketLamaUpper = (vLama.keterangan || "").toUpperCase();
+                        if (vLama.tipe === 'OUT' && ketLamaUpper.includes("KIRIMAN") && ketLamaUpper.includes(wilayahBayar) && !vLama.sudahDipakai) {
+                            if (vLama.nominal === nom) {
+                                indeksPasangan = j;
+                                break;
+                            }
+                        }
                     }
-                    if (sisaOut > 0) { akProfit -= sisaOut; }
+
+                    // STRATEGI 2: Kalau tidak ada yang sama persis, ambil antrean pertama yang belum dipakai
+                    if (indeksPasangan === -1) {
+                        for (let j = 0; j < i; j++) {
+                            const vLama = dataKas[j];
+                            const ketLamaUpper = (vLama.keterangan || "").toUpperCase();
+                            if (vLama.tipe === 'OUT' && ketLamaUpper.includes("KIRIMAN") && ketLamaUpper.includes(wilayahBayar) && !vLama.sudahDipakai) {
+                                indeksPasangan = j;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Eksekusi pengembalian modal jika pasangan ditemukan
+                    if (indeksPasangan !== -1) {
+                        modalPasangan = dataKas[indeksPasangan].nominal || 0;
+                        dataKas[indeksPasangan].sudahDipakai = true; 
+                    }
                 }
+
+                // Masukkan kembali modalnya ke kas modal utama
+                akModal += modalPasangan;
+                // Selisih keuntungan bersih masuk ke kotak Profit Bersih
+                akProfit += (nom - modalPasangan);
+            } else {
+                if (isIn) { akProfit += nom; } 
+                else { akModal -= nom; }
             }
 
             runningSaldo += isIn ? nom : -nom;
@@ -363,83 +405,59 @@ window.simpan = async () => {
             ];
         });
 
-        // Gambar Tabel Utama
+        akProfit -= akKasbon;
+
         doc.autoTable({ head: [['NO', 'TGL', 'KETERANGAN', 'IN', 'OUT', 'SALDO']], body, startY: 28, theme: 'grid' });
         
-        // --- SEKTOR RINGKASAN & TANDA TANGAN ---
         const fY = doc.lastAutoTable.finalY + 15; 
         const pW = doc.internal.pageSize.getWidth();
         const pH = doc.internal.pageSize.getHeight();
         
-        // 1. Judul Ringkasan
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(10, 25, 47); // Warna gelap standar
+        doc.setFontSize(11); doc.setFont("helvetica", "bold"); doc.setTextColor(10, 25, 47); 
         doc.text("RINGKASAN KEUANGAN PERIODE INI:", 14, fY);
         
-        // Trik Meratakan Titik Dua (:): Kita pisah posisi koordinat X-nya
-        const posXLabel = 14;  // Koordinat teks label awal
-        const posXTitik = 52;  // Koordinat titik dua (Sejajar lurus ke bawah)
-        const posXAngka = 55;  // Koordinat nominal angka keuangan
+        const posXLabel = 14; const posXTitik = 52; const posXAngka = 55;  
         
-        // 2. Baris Modal Berjalan (Normal Hitam)
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(0, 0, 0); 
+        doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0); 
         doc.text("• Modal Berjalan", posXLabel, fY + 8);
         doc.text(":", posXTitik, fY + 8);
         doc.text(`Rp ${akModal.toLocaleString('id-ID')}`, posXAngka, fY + 8);
         
-        // 3. Baris Profit Bersih (Warna HIJAU)
-        doc.setFont("helvetica", "bold"); // Dipertebal agar warna hijaunya tegas
-        doc.setTextColor(46, 204, 113);  // Kode warna #2ecc71 (Hijau)
+        doc.setFont("helvetica", "bold"); 
+        if (akProfit >= 0) doc.setTextColor(46, 204, 113); else doc.setTextColor(231, 76, 60);  
         doc.text("• Profit Bersih", posXLabel, fY + 15);
         doc.text(":", posXTitik, fY + 15);
         const txtProfit = akProfit >= 0 ? `Rp ${akProfit.toLocaleString('id-ID')}` : `Rp -${Math.abs(akProfit).toLocaleString('id-ID')}`;
         doc.text(txtProfit, posXAngka, fY + 15);
         
-        // 4. Baris Total Pengeluaran (Warna MERAH)
-        doc.setTextColor(231, 76, 60);   // Kode warna #e74c3c (Merah)
+        doc.setTextColor(231, 76, 60);   
         doc.text("• Total Pengeluaran", posXLabel, fY + 22);
         doc.text(":", posXTitik, fY + 22);
         doc.text(`Rp ${akKasbon.toLocaleString('id-ID')}`, posXAngka, fY + 22);
         
-        // 5. Garis Pembatas Ringkasan & Total Akhir Saldo
-        doc.setTextColor(0, 0, 0); // Balikkan ke hitam
-        doc.line(14, fY + 25, 90, fY + 25); 
+        doc.setTextColor(0, 0, 0); doc.line(14, fY + 25, 90, fY + 25); 
         doc.setFont("helvetica", "bold");
         doc.text("TOTAL SALDO KAS", posXLabel, fY + 31);
         doc.text(":", posXTitik, fY + 31);
         doc.text(`Rp ${(akModal + akProfit).toLocaleString('id-ID')}`, posXAngka, fY + 31);
         
-        // --- SEKTOR TANDA TANGAN (SISI KANAN) ---
-        doc.setFont("helvetica", "normal");
-        doc.text("Dibuat oleh,", pW-60, fY);
-        doc.setFont("helvetica", "bold");
-        doc.text("Yefry ZA.", pW-60, fY+23);
+        doc.setFont("helvetica", "normal"); doc.text("Dibuat oleh,", pW-60, fY);
+        doc.setFont("helvetica", "bold"); doc.text("Yefry ZA.", pW-60, fY+23);
         doc.line(pW-60, fY+24, pW-60+doc.getTextWidth("Yefry ZA."), fY+24);
-        doc.setFont("helvetica", "normal");
-        doc.text("Manager", pW-60, fY+29);
+        doc.setFont("helvetica", "normal"); doc.text("Manager", pW-60, fY+29);
         
-        // Footer Sistem Paling Bawah Kertas
         doc.setFontSize(8); doc.setTextColor(150); doc.setFont("helvetica", "italic");
         doc.text("Laporan ini dibuat secara otomatis oleh system digital PT. BBS", pW/2, pH-10, {align:"center"});
         
-        // Download File Selalu Jalan
         doc.save(`Laporan_Kas_BBS.pdf`);
 
-        // --- EKSEKUSI RESET BERDASARKAN PILIHAN (YES / NO) ---
         if (mauReset) {
-            try {
-                await remove(ref(db, pathKas));
-                alert("Laporan Berhasil didownload & Data Kas di Firebase telah DI-RESET!");
-            } catch (e) {
-                alert("Gagal meriset data: " + e.message);
-            }
+            try { await remove(ref(db, pathKas)); alert("Laporan Berhasil didownload & Data Kas di Firebase telah DI-RESET!"); } 
+            catch (e) { alert("Gagal meriset data: " + e.message); }
         } else {
-            alert("Laporan Berhasil didownload! Data di Firebase TETAP AMAN (Tidak Dihapus).");
+            alert("Laporan Berhasil didownload! Data di Firebase TETAP AMAN.");
         }
     }
-
 </script>
 </body>
 </html>
