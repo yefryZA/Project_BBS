@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PT. BBS - Fleet Management System V2</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Leaflet Peta GPS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
+
+    <!-- Audio Efek Alarm Bunyi ala WA (Menggunakan Sound API Browser) -->
+    <script>
+        let audioContext;
+        let alarmInterval;
+        function mulaiAlarmBerisik() {
+            if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            if (alarmInterval) return;
+            // Bunyi "Teeet... Teeet..." berulang setiap 1 detik sampai dimatikan supir
+            alarmInterval = setInterval(() => {
+                let osc = audioContext.createOscillator();
+                let gain = audioContext.createGain();
+                osc.type = "sine"; osc.frequency.value = 880; 
+                gain.gain.setValueAtTime(0.5, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+                osc.connect(gain); gain.connect(audioContext.destination);
+                osc.start(); osc.stop(audioContext.currentTime + 0.5);
+            }, 1000);
+        }
+        function matikanAlarm() { clearInterval(alarmInterval); alarmInterval = null; }
+    </script>
+
+    <!-- ==================== LOG IN PAGE (GOOGLE AUTH) ==================== -->
+    <div id="auth-page" class="flex items-center justify-center min-h-screen p-4">
+        <div class="max-w-md w-full bg-slate-800 rounded-2xl shadow-xl border border-slate-700 p-6 text-center space-y-6">
+            <div>
+                <h1 class="text-2xl font-black tracking-wider text-emerald-400">BERKAH BAJA STEEL</h1>
+                <p class="text-xs text-slate-400 font-medium mt-1">FLEET SYSTEM & AUTOMATIC GPS TRACKER</p>
+            </div>
+            
+            <div class="bg-slate-900/50 p-4 rounded-xl text-left text-xs text-slate-400 space-y-2 border border-slate-700">
+                <p class="font-bold text-slate-300">🚨 ATURAN TEGAS PERUSAHAAN PT. BBS:</p>
+                <p>• 1 Akun Google HP supir hanya boleh aktif di 1 HP Lapangan.</p>
+                <p>• GPS wajib selalu menyala selama mengemban Surat Jalan.</p>
+            </div>
+
+            <!-- Tombol Login Google Akses Cepat -->
+            <button onclick="simulasiLoginGoogle()" class="w-full bg-white hover:bg-slate-100 text-slate-800 font-bold py-3 px-4 rounded-xl transition-all shadow-lg flex items-center justify-center space-x-3 text-sm">
+                <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/web-24dp/logo_googleg_color_web_24dp.png" class="w-5 h-5">
+                <span>MASUK DENGAN AKUN GOOGLE</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== PANEL CONTROL ROOM ADMIN (BANG YEFRY) ==================== -->
+    <div id="admin-page" class="hidden max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between bg-slate-800 p-6 rounded-2xl border border-slate-700 gap-4 shadow-lg">
+            <div>
+                <h2 class="text-xl font-extrabold text-slate-100">PANEL CONTROL ROOM PT. BBS</h2>
+                <p class="text-xs text-emerald-400 font-semibold mt-1">Status Login: Owner / Administrator (yefrydesfirmanza@gmail.com)</p>
+            </div>
+            <button onclick="logout()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-xs font-bold rounded-xl transition-all">LOGOUT SYSTEM</button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Form Input Order Berdasarkan PILIHAN PLAT NOMOR -->
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4 shadow-lg h-fit">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-700 pb-2">Kirim Order Per Unit</h3>
+                
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1 font-bold">PILIH PLAT NOMOR ARMADA</label>
+                        <select id="adm-pilih-plat" onchange="gantiPantauanPlatNomor()" class="w-full p-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white font-bold">
+                            <option value="B_1234_BBS">B 1234 BBS (Truk 01)</option>
+                            <option value="A_5678_BBS">A 5678 BBS (Truk 02)</option>
+                            <option value="B_9999_BBS">B 9999 BBS (Truk 03)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Detail Muatan / Rute</label>
+                        <input type="text" id="adm-muatan" placeholder="Contoh: Besi Beton ke Cipondoh" class="w-full p-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">BOP Jalan (Rp)</label>
+                            <input type="number" id="adm-bop" class="w-full p-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Ongkos Angkut (Rp)</label>
+                            <input type="number" id="adm-ongkos" class="w-full p-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white">
+                        </div>
+                    </div>
+                    <button onclick="kirimSuratJalanAdmin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl transition-all shadow-md">
+                        BLAST SURAT JALAN DIGITAL
+                    </button>
+                </div>
+            </div>
+
+            <!-- Monitoring Peta & Status Real-time Alur Supir -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Info Monitor Atas -->
+                <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div class="bg-slate-800 p-2.5 rounded-xl border border-slate-700">
+                        <span class="text-[10px] text-slate-400 block">OMSET UNIT</span>
+                        <b id="rep-omset" class="text-blue-400">Rp 0</b>
+                    </div>
+                    <div class="bg-slate-800 p-2.5 rounded-xl border border-slate-700">
+                        <span class="text-[10px] text-slate-400 block">BOP JALAN</span>
+                        <b id="rep-bop" class="text-red-400">Rp 0</b>
+                    </div>
+                    <div class="bg-slate-800 p-2.5 rounded-xl border border-slate-700">
+                        <span class="text-[10px] text-slate-400 block">PROFIT</span>
+                        <b id="rep-profit" class="text-emerald-400">Rp 0</b>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 shadow-lg">
+                    <div class="flex items-center justify-between mb-3 px-2">
+                        <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">LIVE GPS TRACKING PETA</h3>
+                        <span id="adm-status-truk" class="text-xs bg-yellow-500/20 text-yellow-400 px-2.5 py-1 rounded-full font-bold">STANDBY</span>
+                    </div>
+                    <div id="map" class="w-full h-80 rounded-xl bg-slate-700 border border-slate-600"></div>
+                </div>
+
+                <!-- Info Driver Logged In -->
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 text-xs text-slate-400 flex justify-between items-center">
+                    <div>Supir Pemegang Unit Saat Ini: <strong id="adm-supir-aktif" class="text-slate-200">Belum ada supir login</strong></div>
+                    <div id="adm-last-update" class="font-mono">Sinyal: Off</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== INTERFACE 2: INTERFACE HP SUPIR / DRIVER APP ==================== -->
+    <div id="driver-page" class="hidden max-w-md mx-auto p-4 space-y-6">
+        <!-- Card Identitas Driver -->
+        <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 flex items-center justify-between shadow-lg">
+            <div>
+                <h2 id="drv-display-name" class="text-sm font-bold text-slate-200">NAMA SUPIR</h2>
+                <p id="drv-display-email" class="text-[10px] text-slate-400 font-mono">email.supir@gmail.com</p>
+            </div>
+            <div class="text-right">
+                <span class="text-[10px] block text-slate-400 font-bold uppercase">UNIT KENDARAAN</span>
+                <span id="drv-display-plat" class="text-xs text-amber-400 font-black tracking-wider">B 1234 BBS</span>
+            </div>
+        </div>
+
+        <!-- Box Lembar Kerja Berdasarkan Alur Penurunan Status (Workflow) -->
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4 shadow-lg relative overflow-hidden">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">📋 TUGAS SURAT JALAN</h3>
+                <span id="drv-badge-status" class="text-xs px-2.5 py-0.5 rounded-full font-bold bg-slate-700 text-slate-300">STANDBY</span>
+            </div>
+
+            <!-- Tampilan Instruksi Muatan -->
+            <div class="space-y-4">
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/50 space-y-1">
+                    <span class="text-[10px] text-slate-500 font-bold uppercase block">Perintah Muat & Bongkar:</span>
+                    <div id="drv-txt-muatan" class="font-bold text-slate-200 text-base">Menunggu orderan masuk selanjutnya dari Bang Yefry...</div>
+                </div>
+
+                <div class="bg-slate-700/30 p-3 rounded-lg text-xs flex justify-between items-center">
+                    <span class="text-slate-400">Modal Jalan Lapangan (BOP):</span>
+                    <strong id="drv-txt-bop" class="text-red-400 text-sm font-black">Rp 0</strong>
+                </div>
+
+                <!-- TOMBOL ALUR OPERASIONAL (BERUBAH OTOMATIS) -->
+                <div id="box-tombol-alur" class="pt-2">
+                    <button class="w-full bg-slate-700 text-slate-500 font-bold py-3 rounded-xl cursor-not-allowed text-xs uppercase tracking-wider">Menunggu Order Baru</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Indikator Kunci GPS HP -->
+        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center justify-between text-xs shadow-md">
+            <div class="flex items-center space-x-2">
+                <span class="flex h-2 w-2 relative">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
+                <span id="drv-gps-coord" class="text-slate-400 font-mono">Mengunci Isyarat GPS HP...</span>
+            </div>
+            <span id="drv-device-session" class="text-[9px] text-slate-600 uppercase font-mono">ID Sesi Terkunci</span>
+        </div>
+    </div>
+
+    <!-- ==================== CODE LOGIC UTAMA INTEGRASI FIREBASE ==================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // Konfigurasi Resmi Berkah Baja Steel
+        const firebaseConfig = { 
+            apiKey: "AIzaSyAfeLTKRQ66tjZjAt7tg6KcrWhtmv0y3fo", 
+            databaseURL: "https://berkah-baja-steel-default-rtdb.asia-southeast1.firebasedatabase.app", 
+            projectId: "berkah-baja-steel" 
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        const dbRoot = "Karyawan_BBS";
+        let sessionUser = { email: "", name: "" };
+        let currentPlatSelected = "B_1234_BBS"; 
+        let mapAdmin, markerTruck;
+        let myDeviceToken = ""; 
+
+        // --- SISTEM LOGIN GOOGLE AUTH AUTOMATIC ---
+        window.simulasiLoginGoogle = () => {
+            // Mengambil email Google yang aktif di perangkat HP masing-masing supir/admin
+            const emailPilihan = prompt("SISTEM INTEGRASI GOOGLE AUTH PT. BBS\n\nMasukkan Akun Email Google Anda:", "yefrydesfirmanza@gmail.com");
+            if (!emailPilihan || !emailPilihan.includes('@')) return alert("Wajib pilih email Google aktif Anda!");
+
+            sessionUser.email = emailPilihan.trim().toLowerCase();
+            sessionUser.name = sessionUser.email.split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g, '_');
+            
+            // Membuat Kunci Unik HP untuk mengikat 1 HP = 1 Email secara Mutlak
+            myDeviceToken = "BBS_HP_" + Math.floor(100000 + Math.random() * 900000);
+
+            document.getElementById('auth-page').classList.add('hidden');
+
+            // --- FILTER PENYARINGAN MUTLAK ---
+            if(sessionUser.email === "yefrydesfirmanza@gmail.com") {
+                // KELOMPOK ADMIN (BANG YEFRY): Masuk ke ruang kendali utama
+                document.getElementById('admin-page').classList.remove('hidden');
+                initPetaAdmin();
+                pantauLaporanAdmin();
+            } else {
+                // KELOMPOK SUPIR BEBAS (Semua email selain email Bang Yefry): Wajib isi Plat Truk yang dibawa
+                const penentuanPlat = prompt("KONFIRMASI UNIT TRUCK PT. BBS\n\nPilih & Ketik PLAT NOMOR Truk yang Anda bawa malam ini:\n\nPilihan terdaftar:\n• B 1234 BBS\n• A 5678 BBS\n• B 9999 BBS").replace(/\s+/g, '_').toUpperCase();
+                
+                if(penentuanPlat !== "B_1234_BBS" && penentuanPlat !== "A_5678_BBS" && penentuanPlat !== "B_9999_BBS") {
+                    alert("Plat nomor kendaraan salah atau tidak terdaftar di sistem BBS!");
+                    location.reload();
+                    return;
+                }
+                currentPlatSelected = penentuanPlat;
+                
+                document.getElementById('driver-page').classList.remove('hidden');
+                document.getElementById('drv-display-name').innerText = sessionUser.name.replace(/_/g, ' ');
+                document.getElementById('drv-display-email').innerText = sessionUser.email;
+                document.getElementById('drv-display-plat').innerText = currentPlatSelected.replace(/_/g, ' ');
+                
+                kunciDanProteksiDeviceSupir();
+            }
+        };
+
+        window.logout = () => { location.reload(); };
+
+        // ==================== ENGINE 1 HP = 1 EMAIL (ANTI KECURANGAN) ====================
+        async function kunciDanProteksiDeviceSupir() {
+            // Set token HP supir saat ini ke Firebase Berkah Baja Steel
+            await update(ref(db, `${dbRoot}/Kunci_Sesi_Device/${sessionUser.name}`), {
+                token_aktif: myDeviceToken,
+                last_login: new Date().toLocaleTimeString('id-ID')
+            });
+            document.getElementById('drv-device-session').innerText = "DEVICE ID LOCK: OK";
+
+            // Pasang pemantau: Jika supir login di HP lain, token berubah, HP lama ter-logout!
+            onValue(ref(db, `${dbRoot}/Kunci_Sesi_Device/${sessionUser.name}/token_aktif`), (snap) => {
+                if (snap.exists() && snap.val() !== myDeviceToken) {
+                    alert("⚠️ AKUN DI-KUNCI!\nEmail Google Anda baru saja login di perangkat HP lain. 1 Email supir hanya sah di 1 HP!");
+                    location.reload();
+                }
+            });
+
+            // Daftarkan siapa supir yang memegang plat nomor ini di Firebase
+            await update(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}`), {
+                supir_sekarang: sessionUser.email
+            });
+
+            aktifkanGpsOtomatisSupir();
+            pantauAlurKerjaSupir();
+        }
+
+        // ==================== CONTROL ROOM ADMIN ENGINE ====================
+        function initPetaAdmin() {
+            mapAdmin = L.map('map').setView([-6.2000, 106.6500], 11);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapAdmin);
+            markerTruck = L.marker([-6.2000, 106.6500]).addTo(mapAdmin).bindPopup("<b>Posisi Truk</b>").openPopup();
+        }
+
+        window.gantiPantauanPlatNomor = () => {
+            currentPlatSelected = document.getElementById('adm-pilih-plat').value;
+            pantauLaporanAdmin();
+        };
+
+        window.kirimSuratJalanAdmin = async () => {
+            const muatan = document.getElementById('adm-muatan').value;
+            const bop = parseFloat(document.getElementById('adm-bop').value) || 0;
+            const ongkos = parseFloat(document.getElementById('adm-ongkos').value) || 0;
+
+            if(!muatan) return alert("Silakan ketik detail muatannya dulu, Bang!");
+
+            try {
+                // Mengirim order dengan status awal 'ORDER_MASUK' untuk mentrigger alarm HP supir
+                await update(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/order_aktif`), {
+                    muatan: muatan,
+                    bop: bop,
+                    ongkos: ongkos,
+                    status: "ORDER_MASUK",
+                    waktu: new Date().toLocaleTimeString('id-ID')
+                });
+                alert("Surat Jalan Sukses Di-Blast! Alarm supir tujuan akan langsung berdering.");
+                document.getElementById('adm-muatan').value = "";
+            } catch(e) { alert("Gagal kirim: " + e.message); }
+        };
+
+        function pantauLaporanAdmin() {
+            // Live Stream GPS Koordinat berdasarkan Plat Nomor Pilihan Admin
+            onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/gps`), (snap) => {
+                const gps = snap.val();
+                if(gps && gps.lat && gps.lng) {
+                    document.getElementById('adm-last-update').innerText = `Live: ${gps.jam} (${gps.email_driver})`;
+                    const koordinat = [gps.lat, gps.lng];
+                    markerTruck.setLatLng(koordinat).getPopup().setContent(`<b>Unit: ${currentPlatSelected.replace(/_/g, ' ')}</b><br>Driver: ${gps.email_driver}`);
+                    mapAdmin.panTo(koordinat);
+                } else {
+                    document.getElementById('adm-last-update').innerText = "Sinyal: Offline (Supir belum aktif)";
+                }
+            });
+
+            // Live Stream Status & Keuangan Finansial Per Plat Nomor
+            onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}`), (snap) => {
+                const data = snap.val();
+                document.getElementById('adm-supir-aktif').innerText = data?.supir_sekarang || "Tidak ada supir aktif";
+                
+                const order = data?.order_aktif;
+                const statusSekarang = order?.status || "STANDBY";
+                document.getElementById('adm-status-truk').innerText = statusSekarang.replace(/_/g, ' ');
+
+                const bop = order?.bop || 0;
+                const ongkos = order?.ongkos || 0;
+                document.getElementById('rep-omset').innerText = "Rp " + ongkos.toLocaleString('id-ID');
+                document.getElementById('rep-bop').innerText = "Rp " + bop.toLocaleString('id-ID');
+                document.getElementById('rep-profit').innerText = "Rp " + (ongkos - bop).toLocaleString('id-ID');
+            });
+        }
+
+        // ==================== DRIVER WORKFLOW ENGINE (ALUR ALARM BERISIK) ====================
+        function pantauAlurKerjaSupir() {
+            onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/order_aktif`), (snap) => {
+                const order = snap.val();
+                const wadahTombol = document.getElementById('box-tombol-alur');
+                
+                if (!order || order.status === "STANDBY") {
+                    matikanAlarm();
+                    document.getElementById('drv-badge-status').innerText = "STANDBY";
+                    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-slate-700 text-slate-300";
+                    document.getElementById('drv-txt-muatan').innerText = "Menunggu orderan masuk selanjutnya dari Bang Yefry...";
+                    document.getElementById('drv-txt-bop').innerText = "Rp 0";
+                    wadahTombol.innerHTML = `<button class="w-full bg-slate-700 text-slate-500 font-bold py-3 rounded-xl cursor-not-allowed text-xs uppercase tracking-wider">Menunggu Order Baru</button>`;
+                    return;
+                }
+
+                document.getElementById('drv-txt-muatan').innerText = order.muatan;
+                document.getElementById('drv-txt-bop').innerText = "Rp " + (order.bop || 0).toLocaleString('id-ID');
+                document.getElementById('drv-badge-status').innerText = order.status.replace(/_/g, ' ');
+
+                // KONDISI 1: ORDER BARU MASUK -> ALARM NYALA BERISIK
+                if (order.status === "ORDER_MASUK") {
+                    mulaiAlarmBerisik(); 
+                    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-red-600 animate-pulse text-white";
+                    wadahTombol.innerHTML = `
+                        <button onclick="ubahStatusOperasionalSupir('MENUJU_MUAT')" class="w-full bg-red-500 hover:bg-red-400 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-red-900/40">
+                            🔕 TERIMA ORDERAN (MATIKAN ALARM)
+                        </button>`;
+                } 
+                // KONDISI 2: MENUJU TEMPAT MUAT BARANG
+                else if (order.status === "MENUJU_MUAT") {
+                    matikanAlarm(); 
+                    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500 text-slate-900";
+                    wadahTombol.innerHTML = `
+                        <button onclick="ubahStatusOperasionalSupir('OTW_BONGKAR')" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-black py-3 rounded-xl text-xs uppercase tracking-wider">
+                            ✓ SELESAI MUAT (BERANGKAT BONGKAR)
+                        </button>`;
+                } 
+                // KONDISI 3: TRUK DI JALAN MENUJU BONGKARAN
+                else if (order.status === "OTW_BONGKAR") {
+                    matikanAlarm();
+                    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-blue-600 text-white";
+                    wadahTombol.innerHTML = `
+                        <button onclick="ubahStatusOperasionalSupir('STANDBY')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider">
+                            ✓ SELESAI BONGKAR (KEMBALI STANDBY)
+                        </button>`;
+                }
+            });
+        }
+
+        window.ubahStatusOperasionalSupir = async (statusBaru) => {
+            try {
+                if(statusBaru === "STANDBY") {
+                    // Jika supir klik selesai bongkar, hapus nota jalan aktif, kembalikan status truk ke STANDBY
+                    await set(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/order_aktif`), { status: "STANDBY" });
+                } else {
+                    await update(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/order_aktif`), { status: statusBaru });
+                }
+                alert("Status sukses dilaporkan ke Admin PT. BBS!");
+            } catch(e) { alert("Gagal update status: " + e.message); }
+        };
+
+        function aktifkanGpsOtomatisSupir() {
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition((pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    document.getElementById('drv-gps-coord').innerText = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+
+                    // Setor titik kordinat HP supir langsung ke database Berkah Baja Steel
+                    update(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/gps`), {
+                        email_driver: sessionUser.email,
+                        lat: lat,
+                        lng: lng,
+                        jam: new Date().toLocaleTimeString('id-ID')
+                    });
+                }, (err) => { console.error("GPS Terhalang: " + err.message); }, { enableHighAccuracy: true });
+            }
+        }
+    </script>
+</body>
+</html>
