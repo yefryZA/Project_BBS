@@ -4,13 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PT. BBS - Fleet Management System V3</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Leaflet Peta GPS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Pustaka Resmi Google Authentication API -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
 
+    <!-- Audio Efek Alarm Bunyi ala WA (Menggunakan Sound API Browser) -->
     <script>
         let audioContext;
         let alarmInterval;
@@ -30,11 +34,12 @@
         function matikanAlarm() { clearInterval(alarmInterval); alarmInterval = null; }
     </script>
 
+    <!-- ==================== LOG IN PAGE (REAL GOOGLE IDENTITY OAUTH) ==================== -->
     <div id="auth-page" class="flex items-center justify-center min-h-screen p-4">
         <div class="max-w-md w-full bg-slate-800 rounded-2xl shadow-xl border border-slate-700 p-6 text-center space-y-6">
             <div>
                 <h1 class="text-2xl font-black tracking-wider text-emerald-400">BERKAH BAJA STELL</h1>
-                <p class="text-xs text-slate-400 font-medium mt-1">SELAMAT BERGABUNG DI PT. BBS</p>
+                <p class="text-xs text-slate-400 font-medium mt-1">FLEET SYSTEM & AUTOMATIC GPS TRACKER</p>
             </div>
             
             <div class="bg-slate-900/50 p-4 rounded-xl text-left text-xs text-slate-400 space-y-2 border border-slate-700">
@@ -43,6 +48,7 @@
                 <p>• 1 Akun Google HP supir mutlak terikat di 1 HP Lapangan (Anti Kecurangan).</p>
             </div>
 
+            <!-- Wadah Tombol Google Resmi -->
             <div class="flex justify-center py-2">
                 <div id="buttonDiv"></div>
             </div>
@@ -50,16 +56,18 @@
         </div>
     </div>
 
+    <!-- ==================== PANEL CONTROL ROOM ADMIN (BANG YEFRY) ==================== -->
     <div id="admin-page" class="hidden max-w-6xl mx-auto p-4 md:p-6 space-y-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between bg-slate-800 p-6 rounded-2xl border border-slate-700 gap-4 shadow-lg">
             <div>
                 <h2 class="text-xl font-extrabold text-slate-100">PANEL CONTROL ROOM PT. BBS</h2>
                 <p class="text-xs text-emerald-400 font-semibold mt-1">Status Login: Owner / Administrator (yefrydesfirmanza@gmail.com)</p>
             </div>
-            <button onclick="logout()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-xs font-bold rounded-xl transition-all">LOGOUT SYSTEM</button>
+            <button onclick="logout()" class="px-4 py-2 bg-red-600 hover:bg-red-500 text-xs font-bold rounded-xl transition-all shadow-md">LOGOUT SYSTEM</button>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Form Input Order Berdasarkan PILIHAN PLAT NOMOR -->
             <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4 shadow-lg h-fit">
                 <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-700 pb-2">Kirim Order Per Unit</h3>
                 
@@ -92,6 +100,7 @@
                 </div>
             </div>
 
+            <!-- Monitoring Peta & Status Real-time Alur Supir -->
             <div class="lg:col-span-2 space-y-6">
                 <div class="grid grid-cols-3 gap-2 text-center text-xs">
                     <div class="bg-slate-800 p-2.5 rounded-xl border border-slate-700">
@@ -116,6 +125,7 @@
                     <div id="map" class="w-full h-80 rounded-xl bg-slate-700 border border-slate-600"></div>
                 </div>
 
+                <!-- Info Driver Logged In -->
                 <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 text-xs text-slate-400 flex justify-between items-center">
                     <div>Supir Pemegang Unit Saat Ini: <strong id="adm-supir-aktif" class="text-slate-200">Belum ada supir login</strong></div>
                     <div id="adm-last-update" class="font-mono">Sinyal: Off</div>
@@ -124,7 +134,9 @@
         </div>
     </div>
 
+    <!-- ==================== INTERFACE 2: INTERFACE HP SUPIR / DRIVER APP ==================== -->
     <div id="driver-page" class="hidden max-w-md mx-auto p-4 space-y-6">
+        <!-- Card Identitas Driver -->
         <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 flex items-center justify-between shadow-lg">
             <div>
                 <h2 id="drv-display-name" class="text-sm font-bold text-slate-200">NAMA SUPIR</h2>
@@ -136,6 +148,7 @@
             </div>
         </div>
 
+        <!-- Box Lembar Kerja Berdasarkan Alur Penurunan Status -->
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4 shadow-lg relative overflow-hidden">
             <div class="flex justify-between items-center border-b border-slate-700 pb-3">
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">📋 TUGAS SURAT JALAN</h3>
@@ -153,12 +166,14 @@
                     <strong id="drv-txt-bop" class="text-red-400 text-sm font-black">Rp 0</strong>
                 </div>
 
+                <!-- TOMBOL ALUR OPERASIONAL -->
                 <div id="box-tombol-alur" class="pt-2">
                     <button class="w-full bg-slate-700 text-slate-500 font-bold py-3 rounded-xl cursor-not-allowed text-xs uppercase tracking-wider">Menunggu Order Baru</button>
                 </div>
             </div>
         </div>
 
+        <!-- Indikator Kunci GPS HP -->
         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center justify-between text-xs shadow-md">
             <div class="flex items-center space-x-2">
                 <span class="flex h-2 w-2 relative">
@@ -167,10 +182,11 @@
                 </span>
                 <span id="drv-gps-coord" class="text-slate-400 font-mono">Mengunci Isyarat GPS HP...</span>
             </div>
-            <span id="drv-device-session" class="text-[9px] text-slate-600 uppercase font-mono">ID Sesi Terkunci</span>
+            <button onclick="logout()" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded font-bold">KELUAR</button>
         </div>
     </div>
 
+    <!-- ==================== CODE LOGIC UTAMA INTEGRASI FIREBASE & GOOGLE ==================== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, set, push, onValue, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
@@ -200,58 +216,86 @@
             return JSON.parse(jsonPayload);
         }
 
-        // --- MANAJEMEN CALL BACK SETELAH SUPIR KLIK AKUN GOOGLE DI HP NYA ---
-        window.handleCredentialResponse = (response) => {
-            // Ambil data profil Google asli dari sistem internal HP supir
-            const dataProfilGoogle = bongkarTokenGoogle(response.credential);
+        // --- PROSES SETELAH USER LOGIN BERHASIL (DIPISAH SUPAYA BISA DIPANGGIL AUTO-LOGIN) ---
+        function eksekusiMasukSistem(email, name) {
+            sessionUser.email = email.toLowerCase().trim();
+            sessionUser.name = name.toUpperCase().replace(/[^A-Z0-9]/g, '_');
             
-            sessionUser.email = dataProfilGoogle.email.toLowerCase().trim();
-            sessionUser.name = dataProfilGoogle.name.toUpperCase().replace(/[^A-Z0-9]/g, '_');
-            
-            // Bikin token acak pengunci perangkat HP
-            myDeviceToken = "BBS_HP_" + Math.floor(100000 + Math.random() * 900000);
+            // Simpan status login ke LocalStorage (Kantong Ajaib Browser) agar tidak hilang saat di-refresh
+            localStorage.setItem("bbs_saved_email", sessionUser.email);
+            localStorage.setItem("bbs_saved_name", sessionUser.name);
+
             document.getElementById('auth-page').classList.add('hidden');
 
-            // --- FILTER PENYARINGAN EMAIL ---
             if(sessionUser.email === "yefrydesfirmanza@gmail.com") {
-                // Akun Abang langsung otomatis bypass jadi Admin tanpa konfirmasi apapun
                 document.getElementById('admin-page').classList.remove('hidden');
                 initPetaAdmin();
                 pantauLaporanAdmin();
             } else {
-                // Akun Supir: Otomatis dipaksa memilih armada truk yang dia bawa malam ini
-                const penentuanPlat = prompt("KONFIRMASI UNIT TRUCK PT. BBS\n\nPilih & Ketik PLAT NOMOR Truk yang Anda bawa malam ini:\n\nPilihan terdaftar:\n• B 1234 BBS\n• A 5678 BBS\n• B 9999 BBS").replace(/\s+/g, '_').toUpperCase();
-                
-                if(penentuanPlat !== "B_1234_BBS" && penentuanPlat !== "A_5678_BBS" && penentuanPlat !== "B_9999_BBS") {
-                    alert("Plat nomor kendaraan salah atau tidak terdaftar di sistem BBS!");
-                    location.reload();
-                    return;
+                // Ambil plat terikat yang disimpan sebelumnya atau minta baru jika tidak ada
+                let platTersimpan = localStorage.getItem("bbs_saved_plat");
+                if(!platTersimpan) {
+                    const penentuanPlat = prompt("KONFIRMASI UNIT TRUCK PT. BBS\n\nPilih & Ketik PLAT NOMOR Truk yang Anda bawa malam ini:\n\nPilihan terdaftar:\n• B 1234 BBS\n• A 5678 BBS\n• B 9999 BBS").replace(/\s+/g, '_').toUpperCase();
+                    if(penentuanPlat !== "B_1234_BBS" && penentuanPlat !== "A_5678_BBS" && penentuanPlat !== "B_9999_BBS") {
+                        alert("Plat nomor kendaraan salah atau tidak terdaftar di sistem BBS!");
+                        logout();
+                        return;
+                    }
+                    platTersimpan = penentuanPlat;
+                    localStorage.setItem("bbs_saved_plat", platTersimpan);
                 }
-                currentPlatSelected = penentuanPlat;
                 
+                currentPlatSelected = platTersimpan;
                 document.getElementById('driver-page').classList.remove('hidden');
-                document.getElementById('drv-display-name').innerText = dataProfilGoogle.name;
+                document.getElementById('drv-display-name').innerText = sessionUser.name.replace(/_/g, ' ');
                 document.getElementById('drv-display-email').innerText = sessionUser.email;
                 document.getElementById('drv-display-plat').innerText = currentPlatSelected.replace(/_/g, ' ');
                 
+                // Gunakan token device yang sudah ada atau buat baru jika kosong
+                let tokenDeviceTersimpan = localStorage.getItem("bbs_device_token");
+                if(!tokenDeviceTersimpan) {
+                    tokenDeviceTersimpan = "BBS_HP_" + Math.floor(100000 + Math.random() * 900000);
+                    localStorage.setItem("bbs_device_token", tokenDeviceTersimpan);
+                }
+                myDeviceToken = tokenDeviceTersimpan;
+
                 kunciDanProteksiDeviceSupir();
             }
-        };
-
-        // --- INISIALISASI TOMBOL GOOGLE RESMI SAAT HALAMAN DIBUKA ---
-        window.onload = function () {
-            google.accounts.id.initialize({
-                // KUNCI GERBANG UTAMA PT BERKAH BAJA STELL SUDAH AKTIF DI BAWAH INI:
-                client_id: "69920941495-g31in472605f368dme60iugnh184ot5r.apps.googleusercontent.com",
-                callback: handleCredentialResponse
-            });
-            google.accounts.id.renderButton(
-                document.getElementById("buttonDiv"),
-                { theme: "filled_blue", size: "large", text: "signin_with", shape: "pill" } 
-            );
         }
 
-        window.logout = () => { location.reload(); };
+        // --- DATA DARI KLIK TOMBOL GOOGLE MANUAL ---
+        window.handleCredentialResponse = (response) => {
+            const dataProfilGoogle = bongkarTokenGoogle(response.credential);
+            eksekusiMasukSistem(dataProfilGoogle.email, dataProfilGoogle.name);
+        };
+
+        // --- ENGINE CEK AUTO LOGIN & INISIALISASI TOMBOL GOOGLE ---
+        window.onload = function () {
+            // Cek apakah di browser sudah tersimpan data login sebelumnya
+            const savedEmail = localStorage.getItem("bbs_saved_email");
+            const savedName = localStorage.getItem("bbs_saved_name");
+
+            if (savedEmail && savedName) {
+                // Jika ada data, langsung bypass masuk tanpa pencet tombol Google lagi!
+                eksekusiMasukSistem(savedEmail, savedName);
+            } else {
+                // Jika kosong, baru munculkan tombol Google resmi
+                google.accounts.id.initialize({
+                    client_id: "69920941495-g31in472605f368dme60iugnh184ot5r.apps.googleusercontent.com",
+                    callback: handleCredentialResponse
+                });
+                google.accounts.id.renderButton(
+                    document.getElementById("buttonDiv"),
+                    { theme: "filled_blue", size: "large", text: "signin_with", shape: "pill" } 
+                );
+            }
+        }
+
+        // --- TOMBOL LOGOUT SEBENARNYA (BERSIHKAN SEMUA DATA) ---
+        window.logout = () => { 
+            localStorage.clear(); // Hapus kantong ajaib browser
+            location.reload(); 
+        };
 
         // ==================== ENGINE 1 HP = 1 EMAIL (ANTI KECURANGAN) ====================
         async function kunciDanProteksiDeviceSupir() {
@@ -264,7 +308,7 @@
             onValue(ref(db, `${dbRoot}/Kunci_Sesi_Device/${sessionUser.name}/token_aktif`), (snap) => {
                 if (snap.exists() && snap.val() !== myDeviceToken) {
                     alert("⚠️ AKUN DI-KUNCI!\nEmail Google Anda baru saja login di perangkat HP lain. 1 Email supir hanya sah di 1 HP!");
-                    location.reload();
+                    logout();
                 }
             });
 
@@ -337,7 +381,7 @@
             });
         }
 
-        // ==================== DRIVER WORKFLOW ENGINE (ALUR ALARM BERISIK) ====================
+        // ==================== DRIVER WORKFLOW ENGINE ====================
         function pantauAlurKerjaSupir() {
             onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/order_aktif`), (snap) => {
                 const order = snap.val();
