@@ -83,11 +83,11 @@
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1">BOP Jalan (Rp)</label>
+                            <label class="block text-xs text-slate-400 mb-1">Uang Jalan (Rp)</label>
                             <input type="number" id="adm-bop" class="w-full p-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white">
                         </div>
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1">Ongkos Angkut (Rp)</label>
+                            <label class="block text-xs text-slate-400 mb-1">Ongkos Gendong (Rp)</label>
                             <input type="number" id="adm-ongkos" class="w-full p-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white">
                         </div>
                     </div>
@@ -544,19 +544,20 @@ let penontonStatusAdmin = null;
 
                 document.getElementById('drv-txt-muatan').innerText = order.muatan;
                 
-// Nama variabelnya disamakan, yaitu 'nominalOngkos' karena kita mau ambil data Ongkos dari Firebase!
-const nominalOngkos = order.ongkos || 0; 
-document.getElementById('drv-txt-bop').innerText = "Rp " + Number(nominalOngkos).toLocaleString('id-ID');
-document.getElementById('drv-badge-status').innerText = order.status.replace(/_/g, ' ');
+                // DI HP SUPIR: Hanya membaca Uang Jalan (BOP), 100% aman dari Ongkos Angkut
+                const nominalBop = order.bop || 0;
+                document.getElementById('drv-txt-bop').innerText = "Rp " + Number(nominalBop).toLocaleString('id-ID');
+                
+                document.getElementById('drv-badge-status').innerText = order.status.replace(/_/g, ' ');
 
-if (order.status === "ORDER_MASUK") {
-    mulaiAlarmBerisik(); 
-    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-red-600 animate-pulse text-white";
-    wadahTombol.innerHTML = `
-        <button onclick="ubahStatusOperasionalSupir('MENUJU_MUAT')" class="w-full bg-red-500 hover:bg-red-400 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-red-900/40">
-            🔕 TERIMA ORDERAN (MATIKAN ALARM)
-        </button>`;
-}
+                if (order.status === "ORDER_MASUK") {
+                    mulaiAlarmBerisik(); 
+                    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-red-600 animate-pulse text-white";
+                    wadahTombol.innerHTML = `
+                        <button onclick="ubahStatusOperasionalSupir('MENUJU_MUAT')" class="w-full bg-red-500 hover:bg-red-400 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-red-900/40">
+                            🔕 TERIMA ORDERAN (MATIKAN ALARM)
+                        </button>`;
+                } 
                 else if (order.status === "MENUJU_MUAT") {
                     matikanAlarm(); 
                     document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500 text-slate-900";
