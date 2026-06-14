@@ -63,16 +63,21 @@
             <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4 shadow-lg h-fit">
                 <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-700 pb-2">Kirim Order Per Unit</h3>
                 
-                <div class="space-y-3 text-sm">
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1 font-bold">PILIH PLAT NOMOR ARMADA</label>
-                        <select id="adm-pilih-plat" onchange="gantiPantauanPlatNomor()" class="w-full p-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white font-bold">
-                            <option value="B_1234_BBS">B 1234 BBS (Truk 01)</option>
-                            <option value="A_5678_BBS">A 5678 BBS (Truk 02)</option>
-                            <option value="B_9999_BBS">B 9999 BBS (Truk 03)</option>
-                        </select>
-                    </div>
-                    <div>
+               <!-- KODINGAN BARU YANG SUDAH DINAMIS (IKUT INPUTAN SUPIR) -->
+<div class="space-y-2">
+    <div>
+        <label class="block text-xs text-slate-400 mb-1 font-bold uppercase tracking-wider">Ketik Plat Nomor Armada</label>
+        <div class="flex gap-2">
+            <input type="text" id="adm-input-plat-manual" placeholder="Contoh: B 1234 BBS" class="w-full p-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white font-bold uppercase">
+            <button onclick="gantiPantauanPlatNomor()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 rounded-lg text-xs uppercase tracking-wider transition-all">
+                PANTAU
+            </button>
+        </div>
+    </div>
+    <div class="text-[11px] font-semibold text-slate-400 bg-slate-900/40 p-2 rounded-lg border border-slate-700/50">
+        📍 Sedang Dipantau: <span id="adm-display-plat-terpilih" class="text-emerald-400 font-bold font-mono">B_1234_BBS</span>
+    </div>
+</div>
                         <label class="block text-xs text-slate-400 mb-1">Detail Muatan / Rute</label>
                         <input type="text" id="adm-muatan" placeholder="Contoh: Besi Beton ke Cipondoh" class="w-full p-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white">
                     </div>
@@ -237,18 +242,23 @@
                 initPetaAdmin();
                 pantauLaporanAdmin();
             } else {
-                let platTersimpan = localStorage.getItem("bbs_saved_plat");
+         let platTersimpan = localStorage.getItem("bbs_saved_plat");
                 if(!platTersimpan) {
-                    const penentuanPlat = prompt("KONFIRMASI UNIT TRUCK PT. BBS\n\nPilih & Ketik PLAT NOMOR Truk yang Anda bawa malam ini:\n\nPilihan terdaftar:\n• B 1234 BBS\n• A 5678 BBS\n• B 9999 BBS").replace(/\s+/g, '_').toUpperCase();
-                    if(penentuanPlat !== "B_1234_BBS" && penentuanPlat !== "A_5678_BBS" && penentuanPlat !== "B_9999_BBS") {
-                        alert("Plat nomor kendaraan salah atau tidak terdaftar di sistem BBS!");
+                    // Supir bebas mengetik nomor plat truknya malam ini
+                    const penentuanPlat = prompt("KONFIRMASI UNIT TRUCK PT. BBS\n\nSilakan ketik PLAT NOMOR Truk yang Anda bawa malam ini:\n(Contoh: B 1234 BBS)");
+                    
+                    if(!penentuanPlat || penentuanPlat.trim() === "") {
+                        alert("Plat nomor kendaraan wajib diisi untuk pelacakan armada!");
                         logout();
                         return;
                     }
-                    platTersimpan = penentuanPlat;
+                    
+                    // Format inputan agar seragam menjadi HURUF BESAR dan spasi diganti underscore (_) untuk nama folder Firebase
+                    platTersimpan = penentuanPlat.trim().toUpperCase().replace(/\s+/g, '_');
                     localStorage.setItem("bbs_saved_plat", platTersimpan);
                 }
                 
+                            
                 currentPlatSelected = platTersimpan;
                 document.getElementById('driver-page').classList.remove('hidden');
                 document.getElementById('drv-display-name').innerText = sessionUser.name.replace(/_/g, ' ');
@@ -324,8 +334,25 @@
             markerTruck = L.marker([-6.2000, 106.6500]).addTo(mapAdmin).bindPopup("<b>Posisi Truk</b>").openPopup();
         }
 
-        window.gantiPantauanPlatNomor = () => {
-            currentPlatSelected = document.getElementById('adm-pilih-plat').value;
+window.gantiPantauanPlatNomor = () => {
+            // Mengambil data langsung dari kolom input teks di dashboard admin
+            const inputTeksAdmin = document.getElementById('adm-input-plat-manual').value.trim();
+            
+            if (!inputTeksAdmin) {
+                alert("Silakan ketik nomor plat truk yang ingin dipantau terlebih dahulu, Bang!");
+                return;
+            }
+            
+            // Format otomatis disamakan dengan inputan supir (Huruf besar dan spasi jadi underscore)
+            currentPlatSelected = inputTeksAdmin.toUpperCase().replace(/\s+/g, '_');
+            
+            // Perbarui teks indikator "Sedang Dipantau" di layar admin
+            const displayPlatAdmin = document.getElementById('adm-display-plat-terpilih');
+            if (displayPlatAdmin) {
+                displayPlatAdmin.innerText = currentPlatSelected.replace(/_/g, ' ');
+            }
+            
+            // Jalankan ulang pemantauan Firebase untuk membaca folder plat yang baru diketik ini
             pantauLaporanAdmin();
         };
 
