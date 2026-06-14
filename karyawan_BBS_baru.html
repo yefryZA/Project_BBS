@@ -48,7 +48,6 @@
                 <p>• Kerja Selamat dan Bertanggung Jawab.</p>
             </div>
 
-            <!-- Wadah Tombol Google Resmi -->
             <div class="flex justify-center py-2">
                 <div id="buttonDiv"></div>
             </div>
@@ -56,7 +55,6 @@
         </div>
     </div>
 
-    <!-- ==================== PANEL CONTROL ROOM ADMIN (BANG YEFRY) ==================== -->
     <div id="admin-page" class="hidden max-w-6xl mx-auto p-4 md:p-6 space-y-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between bg-slate-800 p-6 rounded-2xl border border-slate-700 gap-4 shadow-lg">
             <div>
@@ -67,7 +65,6 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Form Input Order Berdasarkan PILIHAN PLAT NOMOR -->
             <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4 shadow-lg h-fit">
                 <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-700 pb-2">Kirim Order Per Unit</h3>
                 
@@ -100,7 +97,6 @@
                 </div>
             </div>
 
-            <!-- Monitoring Peta & Status Real-time Alur Supir -->
             <div class="lg:col-span-2 space-y-6">
                 <div class="grid grid-cols-3 gap-2 text-center text-xs">
                     <div class="bg-slate-800 p-2.5 rounded-xl border border-slate-700">
@@ -125,7 +121,6 @@
                     <div id="map" class="w-full h-80 rounded-xl bg-slate-700 border border-slate-600"></div>
                 </div>
 
-                <!-- Info Driver Logged In -->
                 <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 text-xs text-slate-400 flex justify-between items-center">
                     <div>Supir Pemegang Unit Saat Ini: <strong id="adm-supir-aktif" class="text-slate-200">Belum ada supir login</strong></div>
                     <div id="adm-last-update" class="font-mono">Sinyal: Off</div>
@@ -134,13 +129,14 @@
         </div>
     </div>
 
-    <!-- ==================== INTERFACE 2: INTERFACE HP SUPIR / DRIVER APP ==================== -->
     <div id="driver-page" class="hidden max-w-md mx-auto p-4 space-y-6">
-        <!-- Card Identitas Driver -->
         <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 flex items-center justify-between shadow-lg">
-            <div>
+            <div class="space-y-1">
                 <h2 id="drv-display-name" class="text-sm font-bold text-slate-200">NAMA SUPIR</h2>
                 <p id="drv-display-email" class="text-[10px] text-slate-400 font-mono">email.supir@gmail.com</p>
+                <div class="text-[9px] bg-slate-900 text-emerald-400 font-mono font-bold px-2 py-0.5 rounded border border-slate-700 inline-block">
+                    STATUS SESI: <span id="drv-device-session">MENGUNCI...</span>
+                </div>
             </div>
             <div class="text-right">
                 <span class="text-[10px] block text-slate-400 font-bold uppercase">UNIT KENDARAAN</span>
@@ -148,7 +144,6 @@
             </div>
         </div>
 
-        <!-- Box Lembar Kerja Berdasarkan Alur Penurunan Status -->
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4 shadow-lg relative overflow-hidden">
             <div class="flex justify-between items-center border-b border-slate-700 pb-3">
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">📋 TUGAS SURAT JALAN</h3>
@@ -166,14 +161,12 @@
                     <strong id="drv-txt-bop" class="text-red-400 text-sm font-black">Rp 0</strong>
                 </div>
 
-                <!-- TOMBOL ALUR OPERASIONAL -->
                 <div id="box-tombol-alur" class="pt-2">
                     <button class="w-full bg-slate-700 text-slate-500 font-bold py-3 rounded-xl cursor-not-allowed text-xs uppercase tracking-wider">Menunggu Order Baru</button>
                 </div>
             </div>
         </div>
 
-        <!-- Indikator Kunci GPS HP -->
         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center justify-between text-xs shadow-md">
             <div class="flex items-center space-x-2">
                 <span class="flex h-2 w-2 relative">
@@ -185,7 +178,6 @@
             <button onclick="logout()" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded font-bold">KELUAR</button>
         </div>
     </div>
-
     <!-- ==================== CODE LOGIC UTAMA INTEGRASI FIREBASE & GOOGLE ==================== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
