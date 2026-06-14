@@ -199,17 +199,21 @@ const db = getDatabase(app);
 
 const dbRoot = "Karyawan_BBS";
 let sessionUser = { email: "", name: "" };
-let currentPlatSelected = "B_1234_BBS"; 
+
+// ==================== VARIABEL KONTROL TINGKAT GLOBAL ====================
+let currentPlatSelected = "B_1234_BBS"; // KONTROL ADMIN: Untuk dropdown pantauan Bang Yefry
+let myPlatNomor = "";                    // KONTROL SUPIR: Mengunci plat nomor HP supir saat login
+
 let mapAdmin, markerTruck;
 let myDeviceToken = ""; 
 
-// Variabel Tambahan Pengendali GPS & Offline Engine
+// ==================== ENGINE PENGENDALI GPS & OFFLINE ====================
 let lastCoordinates = { lat: 0, lng: 0 };
 let lastGpsSendTime = 0;
-const MIN_DISTANCE_METERS = 50; 
-const MIN_TIME_INTERVAL = 120000; 
+const MIN_DISTANCE_METERS = 50;         // Hanya kirim jika bergerak 50 meter
+const MIN_TIME_INTERVAL = 120000;        // Minimal jeda kirim 2 menit (120000 ms)
 
-// 2. DI SINI KITA TAMBAHKAN DUA VARIABEL BARU UNTUK RAMUAN PENGUSIR PENONTON LAMA:
+// ==================== ENGINE PENGUSIR PENONTON LAMA (ANTI TABRAKAN DATA) ====================
 let penontonGpsAdmin = null;
 let penontonStatusAdmin = null;
 
@@ -226,16 +230,7 @@ let penontonStatusAdmin = null;
         } myDeviceToken = "";
 
         // --- SISTEM PEMBONGKAR TOKEN DATA GOOGLE (JWT DECODER) ---
-        function bongkarTokenGoogle(token) {
-            var base64Url = token.split('.')[1];
-            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-                return '%' + ('0' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
-        }
-
-        // --- PROSES SETELAH USER LOGIN BERHASIL (DIPISAH SUPAYA BISA DIPANGGIL AUTO-LOGIN) ---
+       // --- PROSES SETELAH USER LOGIN BERHASIL (DIPISAH SUPAYA BISA DIPANGGIL AUTO-LOGIN) ---
         function eksekusiMasukSistem(email, name) {
             sessionUser.email = email.toLowerCase().trim();
             sessionUser.name = name.toUpperCase().replace(/[^A-Z0-9]/g, '_');
@@ -264,11 +259,13 @@ let penontonStatusAdmin = null;
                     localStorage.setItem("bbs_saved_plat", platTersimpan);
                 }
                 
-                currentPlatSelected = platTersimpan;
+                // PERBAIKAN UTAMA: Kunci plat supir ke variabel myPlatNomor agar mandiri tidak mengganggu admin
+                myPlatNomor = platTersimpan;
+
                 document.getElementById('driver-page').classList.remove('hidden');
                 document.getElementById('drv-display-name').innerText = sessionUser.name.replace(/_/g, ' ');
                 document.getElementById('drv-display-email').innerText = sessionUser.email;
-                document.getElementById('drv-display-plat').innerText = currentPlatSelected.replace(/_/g, ' ');
+                document.getElementById('drv-display-plat').innerText = myPlatNomor.replace(/_/g, ' '); // Tampilkan plat nomor supir yang benar
                 
                 // Gunakan token device yang sudah ada atau buat baru jika kosong
                 let tokenDeviceTersimpan = localStorage.getItem("bbs_device_token");
@@ -278,7 +275,9 @@ let penontonStatusAdmin = null;
                 }
                 myDeviceToken = tokenDeviceTersimpan;
 
+                // AKTIFKAN PROTEKSI DEVICE & JALANKAN PEMANTAUAN TUGAS SUPIR
                 kunciDanProteksiDeviceSupir();
+                pantauAlurKerjaSupir(); // <-- Menjalankan fungsi penonton Uang Jalan (BOP) HP Driver
             }
         }
 
@@ -311,9 +310,10 @@ let penontonStatusAdmin = null;
         }
 
         // --- TOMBOL LOGOUT SEBENARNYA (BERSIHKAN SEMUA DATA) ---
-        window.logout = () => { 
-            localStorage.clear(); // Hapus kantong ajaib browser
-            location.reload(); 
+ window.logout = () => { 
+            localStorage.clear(); // Bersihkan sisa login dan plat nomor dari memori browser
+            myPlatNomor = "";     // Kosongkan kunci plat nomor supir di sistem
+            location.reload();    // Muat ulang halaman untuk kembali ke menu LOGIN GOOGLE
         };
 
       async function kunciDanProteksiDeviceSupir() {
