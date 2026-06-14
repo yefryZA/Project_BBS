@@ -323,7 +323,7 @@ let penontonStatusAdmin = null;
             location.reload();    
         };
 
-        // 5. PROTEKSI GANDA DEVICE DRIVER & PENCATATAN SUPIR AKTIF
+        // ==================== PROTEKSI GANDA DEVICE DRIVER & PENCATATAN SUPIR AKTIF ====================
         async function kunciDanProteksiDeviceSupir() {
             try {
                 // 1. Kunci Sesi Perangkat HP Supir
@@ -341,7 +341,7 @@ let penontonStatusAdmin = null;
                     }
                 });
 
-                // 3. SELESAI SINKRONISASI: Tulis ke database menggunakan myPlatNomor (Bukan currentPlatSelected)
+                // 3. SINKRONISASI: Tulis ke database menggunakan myPlatNomor (Bukan currentPlatSelected)
                 console.log("Mendaftarkan supir aktif ke armada: ", myPlatNomor);
                 await update(ref(db, `${dbRoot}/Status_Armada/${myPlatNomor}`), {
                     supir_sekarang: sessionUser.email
@@ -357,6 +357,85 @@ let penontonStatusAdmin = null;
                 alert("TERJADI ERROR SISTEM PROTEKSI:\n" + error.message);
                 console.error(error);
             }
+        }
+
+        // ==================== ENGINE GPS MURNI SISI DRIVER (ANTI MACET) ====================
+        function aktifkanGpsOtomatisSupir() {
+            if (!navigator.geolocation) {
+                alert("HP Anda tidak mendukung fitur GPS Geolocation!");
+                return;
+            }
+
+            // Fungsi pengirim data koordinat ke Firebase Realtime Database
+            const kirimKoordinatKeFirebase = async (position) => {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+                const waktuSekarang = Date.now();
+
+                // Hitung jarak pergerakan agar hemat baterai dan kuota supir
+                const hitungJarakMeters = (lat1, lon1, lat2, lon2) => {
+                    const R = 6371e3; // Radius bumi dalam meter
+                    const phi1 = lat1 * Math.PI / 180;
+                    const phi2 = lat2 * Math.PI / 180;
+                    const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+                    const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+                    const a = Math.sin(deltaPhi/2) * Math.sin(deltaPhi/2) +
+                              Math.cos(phi1) * Math.cos(phi2) *
+                              Math.sin(deltaLambda/2) * Math.sin(deltaLambda/2);
+                    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                    return R * c;
+                };
+
+                // Pastikan variabel pembantu koordinat terakhir sudah ada di global, jika belum buat defaultnya
+                if (typeof lastCoordinates === 'undefined') {
+                    window.lastCoordinates = { lat: 0, lng: 0 };
+                }
+                if (typeof lastGpsSendTime === 'undefined') {
+                    window.lastGpsSendTime = 0;
+                }
+                if (typeof MIN_DISTANCE_METERS === 'undefined') {
+                    window.MIN_DISTANCE_METERS = 50; // Kirim tiap bergerak 50 meter
+                }
+                if (typeof MIN_TIME_INTERVAL === 'undefined') {
+                    window.MIN_TIME_INTERVAL = 120000; // Atau otomatis kirim tiap 2 menit
+                }
+
+                const jarakBergerak = hitungJarakMeters(
+                    lastCoordinates.lat, lastCoordinates.lng, 
+                    latitude, longitude
+                );
+
+                // Validasi filter pengiriman ke database
+                if (lastCoordinates.lat === 0 || jarakBergerak >= MIN_DISTANCE_METERS || (waktuSekarang - lastGpsSendTime) >= MIN_TIME_INTERVAL) {
+                    try {
+                        // Kunci penulisan koordinat murni pada lintasan myPlatNomor supir yang login
+                        await update(ref(db, `${dbRoot}/Status_Armada/${myPlatNomor}/gps`), {
+                            lat: latitude,
+                            lng: longitude,
+                            jam: new Date().toLocaleTimeString('id-ID'),
+                            email_driver: sessionUser.email
+                        });
+
+                        // Update memori lokal pelacak
+                        lastCoordinates = { lat: latitude, lng: longitude };
+                        lastGpsSendTime = waktuSekarang;
+                        console.log("GPS Berhasil Dikirim untuk unit: " + myPlatNomor);
+                    } catch (err) {
+                        console.error("Gagal mengirim sinyal GPS: ", err.message);
+                    }
+                }
+            };
+
+            const errorGpsHandler = (error) => {
+                console.warn("Peringatan GPS Driver: ", error.message);
+            };
+
+            // Jalankan pelacakan background secara realtime (High Accuracy)
+            navigator.geolocation.watchPosition(kirimKoordinatKeFirebase, errorGpsHandler, {
+                enableHighAccuracy: true,
+                maximumAge: 0,
+                timeout: 10000
+            });
         }
 
         // ==================== CONTROL ROOM ADMIN ENGINE ====================
@@ -433,7 +512,7 @@ let penontonStatusAdmin = null;
                 const ongkos = order?.ongkos || 0;
                 const profitBersih = ongkos - bop;
 
-                // PENYEMPURNAAN VISUAL: Minus hanya ada di BOP, Profit bersih murni nominal positif
+                // PENYEMPURNAAN VISUAL: Minus hanya ada di BOP, Profit bersih murni nominal positif tanpa tanda minus
                 document.getElementById('rep-omset').innerText = "Rp " + ongkos.toLocaleString('id-ID');
                 document.getElementById('rep-bop').innerText = "- Rp " + bop.toLocaleString('id-ID'); 
                 document.getElementById('rep-profit').innerText = "Rp " + profitBersih.toLocaleString('id-ID'); 
