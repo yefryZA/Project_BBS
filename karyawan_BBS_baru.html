@@ -280,14 +280,26 @@ let penontonStatusAdmin = null;
                 pantauAlurKerjaSupir(); // <-- Menjalankan fungsi penonton Uang Jalan (BOP) HP Driver
             }
         }
+   
+       // ==================== PAKET UTUH ALUR LOGIN GOOGLE PT. BBS ====================
 
-        // --- DATA DARI KLIK TOMBOL GOOGLE MANUAL ---
+        // 1. MESIN PEMBONGKAR TOKEN GOOGLE (Wajib ditaruh paling atas agar terbaca oleh fungsi di bawahnya)
+        function bongkarTokenGoogle(token) {
+            var base64Url = token.split('.')[1];
+            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                return '%' + ('0' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        }
+
+        // 2. PENERIMA RESPONS UTAMA DARI TOMBOL GOOGLE
         window.handleCredentialResponse = (response) => {
             const dataProfilGoogle = bongkarTokenGoogle(response.credential);
             eksekusiMasukSistem(dataProfilGoogle.email, dataProfilGoogle.name);
         };
 
-        // --- ENGINE CEK AUTO LOGIN & INISIALISASI TOMBOL GOOGLE ---
+        // 3. ENGINE CEK AUTO LOGIN & INISIALISASI TOMBOL GOOGLE
         window.onload = function () {
             // Cek apakah di browser sudah tersimpan data login sebelumnya
             const savedEmail = localStorage.getItem("bbs_saved_email");
@@ -309,8 +321,8 @@ let penontonStatusAdmin = null;
             }
         }
 
-        // --- TOMBOL LOGOUT SEBENARNYA (BERSIHKAN SEMUA DATA) ---
- window.logout = () => { 
+        // 4. TOMBOL LOGOUT SEBENARNYA (BERSIHKAN SEMUA DATA)
+        window.logout = () => { 
             localStorage.clear(); // Bersihkan sisa login dan plat nomor dari memori browser
             myPlatNomor = "";     // Kosongkan kunci plat nomor supir di sistem
             location.reload();    // Muat ulang halaman untuk kembali ke menu LOGIN GOOGLE
