@@ -229,13 +229,12 @@ let penontonStatusAdmin = null;
             return R * c;
         } myDeviceToken = "";
 
-        // --- SISTEM PEMBONGKAR TOKEN DATA GOOGLE (JWT DECODER) ---
-       // --- PROSES SETELAH USER LOGIN BERHASIL (DIPISAH SUPAYA BISA DIPANGGIL AUTO-LOGIN) ---
+  // --- PROSES SETELAH USER LOGIN BERHASIL (DIPISAH SUPAYA BISA DIPANGGIL AUTO-LOGIN) ---
         function eksekusiMasukSistem(email, name) {
             sessionUser.email = email.toLowerCase().trim();
             sessionUser.name = name.toUpperCase().replace(/[^A-Z0-9]/g, '_');
             
-            // Simpan status login ke LocalStorage (Kantong Ajaib Browser) agar tidak hilang saat di-refresh
+            // Simpan status login ke LocalStorage agar tidak hilang saat di-refresh
             localStorage.setItem("bbs_saved_email", sessionUser.email);
             localStorage.setItem("bbs_saved_name", sessionUser.name);
 
@@ -259,15 +258,15 @@ let penontonStatusAdmin = null;
                     localStorage.setItem("bbs_saved_plat", platTersimpan);
                 }
                 
-                // PERBAIKAN UTAMA: Kunci plat supir ke variabel myPlatNomor agar mandiri tidak mengganggu admin
+                // KUNCI UTAMA SUPIR: Amankan ke variabel myPlatNomor agar mandiri
                 myPlatNomor = platTersimpan;
 
                 document.getElementById('driver-page').classList.remove('hidden');
                 document.getElementById('drv-display-name').innerText = sessionUser.name.replace(/_/g, ' ');
                 document.getElementById('drv-display-email').innerText = sessionUser.email;
-                document.getElementById('drv-display-plat').innerText = myPlatNomor.replace(/_/g, ' '); // Tampilkan plat nomor supir yang benar
+                document.getElementById('drv-display-plat').innerText = myPlatNomor.replace(/_/g, ' ');
                 
-                // Gunakan token device yang sudah ada atau buat baru jika kosong
+                // Ambil atau buat token device
                 let tokenDeviceTersimpan = localStorage.getItem("bbs_device_token");
                 if(!tokenDeviceTersimpan) {
                     tokenDeviceTersimpan = "BBS_HP_" + Math.floor(100000 + Math.random() * 900000);
@@ -275,15 +274,14 @@ let penontonStatusAdmin = null;
                 }
                 myDeviceToken = tokenDeviceTersimpan;
 
-                // AKTIFKAN PROTEKSI DEVICE & JALANKAN PEMANTAUAN TUGAS SUPIR
+                // AKTIFKAN PROTEKSI DEVICE & ENGINE SUPIR
                 kunciDanProteksiDeviceSupir();
-                pantauAlurKerjaSupir(); // <-- Menjalankan fungsi penonton Uang Jalan (BOP) HP Driver
             }
         }
    
-       // ==================== PAKET UTUH ALUR LOGIN GOOGLE PT. BBS ====================
+        // ==================== PAKET UTUH ALUR LOGIN GOOGLE PT. BBS ====================
 
-        // 1. MESIN PEMBONGKAR TOKEN GOOGLE (Wajib ditaruh paling atas agar terbaca oleh fungsi di bawahnya)
+        // 1. MESIN PEMBONGKAR TOKEN GOOGLE
         function bongkarTokenGoogle(token) {
             var base64Url = token.split('.')[1];
             var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -301,15 +299,12 @@ let penontonStatusAdmin = null;
 
         // 3. ENGINE CEK AUTO LOGIN & INISIALISASI TOMBOL GOOGLE
         window.onload = function () {
-            // Cek apakah di browser sudah tersimpan data login sebelumnya
             const savedEmail = localStorage.getItem("bbs_saved_email");
             const savedName = localStorage.getItem("bbs_saved_name");
 
             if (savedEmail && savedName) {
-                // Jika ada data, langsung bypass masuk tanpa pencet tombol Google lagi!
                 eksekusiMasukSistem(savedEmail, savedName);
             } else {
-                // Jika kosong, baru munculkan tombol Google resmi
                 google.accounts.id.initialize({
                     client_id: "69920941495-g31in472605f368dme60iugnh184ot5r.apps.googleusercontent.com",
                     callback: handleCredentialResponse
@@ -321,49 +316,49 @@ let penontonStatusAdmin = null;
             }
         }
 
-        // 4. TOMBOL LOGOUT SEBENARNYA (BERSIHKAN SEMUA DATA)
+        // 4. TOMBOL LOGOUT SEBENARNYA
         window.logout = () => { 
-            localStorage.clear(); // Bersihkan sisa login dan plat nomor dari memori browser
-            myPlatNomor = "";     // Kosongkan kunci plat nomor supir di sistem
-            location.reload();    // Muat ulang halaman untuk kembali ke menu LOGIN GOOGLE
+            localStorage.clear(); 
+            myPlatNomor = "";     
+            location.reload();    
         };
 
-      async function kunciDanProteksiDeviceSupir() {
-    try {
-        // 1. Kunci Sesi Device
-        await update(ref(db, `${dbRoot}/Kunci_Sesi_Device/${sessionUser.name}`), {
-            token_aktif: myDeviceToken,
-            last_login: new Date().toLocaleTimeString('id-ID')
-        });
-        document.getElementById('drv-device-session').innerText = "DEVICE ID LOCK: OK";
+        // 5. PROTEKSI GANDA DEVICE DRIVER & PENCATATAN SUPIR AKTIF
+        async function kunciDanProteksiDeviceSupir() {
+            try {
+                // 1. Kunci Sesi Perangkat HP Supir
+                await update(ref(db, `${dbRoot}/Kunci_Sesi_Device/${sessionUser.name}`), {
+                    token_aktif: myDeviceToken,
+                    last_login: new Date().toLocaleTimeString('id-ID')
+                });
+                document.getElementById('drv-device-session').innerText = "DEVICE ID LOCK: OK";
 
-        // 2. Pantau Sesi Ganda
-        onValue(ref(db, `${dbRoot}/Kunci_Sesi_Device/${sessionUser.name}/token_aktif`), (snap) => {
-            if (snap.exists() && snap.val() !== myDeviceToken) {
-                alert("⚠️ AKUN DI-KUNCI!\nEmail Google Anda baru saja login di perangkat HP lain.");
-                logout();
+                // 2. Cegah Supir Memakai Akun yang Sama di HP Berbeda
+                onValue(ref(db, `${dbRoot}/Kunci_Sesi_Device/${sessionUser.name}/token_aktif`), (snap) => {
+                    if (snap.exists() && snap.val() !== myDeviceToken) {
+                        alert("⚠️ AKUN DI-KUNCI!\nEmail Google Anda baru saja login di perangkat HP lain.");
+                        logout();
+                    }
+                });
+
+                // 3. SELESAI SINKRONISASI: Tulis ke database menggunakan myPlatNomor (Bukan currentPlatSelected)
+                console.log("Mendaftarkan supir aktif ke armada: ", myPlatNomor);
+                await update(ref(db, `${dbRoot}/Status_Armada/${myPlatNomor}`), {
+                    supir_sekarang: sessionUser.email
+                });
+
+                alert("Berhasil mendaftarkan armada: " + myPlatNomor.replace(/_/g, ' '));
+
+                // 4. Nyalakan pemantauan tugas & GPS otomatis supir
+                aktifkanGpsOtomatisSupir();
+                pantauAlurKerjaSupir();
+
+            } catch (error) {
+                alert("TERJADI ERROR SISTEM PROTEKSI:\n" + error.message);
+                console.error(error);
             }
-        });
+        }
 
-        // 3. Update Status Armada (Pastikan plat nomor valid)
-        console.log("Mencoba menulis ke plat nomor: ", currentPlatSelected);
-        
-        await update(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}`), {
-            supir_sekarang: sessionUser.email
-        });
-
-        alert("Berhasil mendaftarkan armada: " + currentPlatSelected);
-
-        // 4. Jalankan mesin GPS dan Alur Kerja
-        aktifkanGpsOtomatisSupir();
-        pantauAlurKerjaSupir();
-
-    } catch (error) {
-        // Jika ada kode yang gagal, alert ini akan memberi tahu Anda kerusakannya di mana
-        alert("TERJADI ERROR SISTEM:\n" + error.message);
-        console.error(error);
-    }
-}
         // ==================== CONTROL ROOM ADMIN ENGINE ====================
         function initPetaAdmin() {
             mapAdmin = L.map('map').setView([-6.2000, 106.6500], 11);
@@ -371,10 +366,9 @@ let penontonStatusAdmin = null;
             markerTruck = L.marker([-6.2000, 106.6500]).addTo(mapAdmin).bindPopup("<b>Posisi Truk</b>").openPopup();
         }
 
-      window.gantiPantauanPlatNomor = () => {
-    // Cukup panggil fungsi pantau, dia otomatis mematikan penonton lama dan mengambil plat baru
-    pantauLaporanAdmin();
-};
+        window.gantiPantauanPlatNomor = () => {
+            pantauLaporanAdmin();
+        };
 
         window.kirimSuratJalanAdmin = async () => {
             const muatan = document.getElementById('adm-muatan').value;
@@ -396,143 +390,126 @@ let penontonStatusAdmin = null;
             } catch(e) { alert("Gagal kirim: " + e.message); }
         };
 
- function pantauLaporanAdmin() {
-    // 1. Ambil nilai plat nomor LAMA sebelum variabelnya kita timpa dengan yang baru
-    const platLama = currentPlatSelected;
+        function pantauLaporanAdmin() {
+            const platLama = currentPlatSelected;
+            currentPlatSelected = document.getElementById('adm-pilih-plat').value;
 
-    // 2. Ambil nilai plat nomor BARU yang saat ini dipilih dari dropdown admin
-    currentPlatSelected = document.getElementById('adm-pilih-plat').value;
+            if (penontonGpsAdmin) {
+                off(ref(db, `${dbRoot}/Status_Armada/${platLama}/gps`), 'value', penontonGpsAdmin);
+            }
+            if (penontonStatusAdmin) {
+                off(ref(db, `${dbRoot}/Status_Armada/${platLama}`), 'value', penontonStatusAdmin);
+            }
 
-    // 3. USIR/MATIKAN PENONTON LAMA pada lintasan plat lama (jika ada) agar tidak tabrakan data
-    if (penontonGpsAdmin) {
-        off(ref(db, `${dbRoot}/Status_Armada/${platLama}/gps`), 'value', penontonGpsAdmin);
-    }
-    if (penontonStatusAdmin) {
-        off(ref(db, `${dbRoot}/Status_Armada/${platLama}`), 'value', penontonStatusAdmin);
-    }
+            // Reset visual ke setelan awal
+            document.getElementById('adm-supir-aktif').innerText = "Belum ada supir login";
+            document.getElementById('adm-last-update').innerText = "Sinyal: Offline (Mencari data...)";
+            document.getElementById('rep-omset').innerText = "Rp 0";
+            document.getElementById('rep-bop').innerText = "- Rp 0";
+            document.getElementById('rep-profit').innerText = "Rp 0";
+            document.getElementById('adm-status-truk').innerText = "STANDBY";
 
-    // 4. RESET TAMPILAN DASHBOARD (Bersihkan sisa visual plat sebelumnya)
-    document.getElementById('adm-supir-aktif').innerText = "Belum ada supir login";
-    document.getElementById('adm-last-update').innerText = "Sinyal: Offline (Mencari data...)";
-    document.getElementById('rep-omset').innerText = "Rp 0";
-    document.getElementById('rep-bop').innerText = "- Rp 0";
-    document.getElementById('rep-profit').innerText = "Rp 0";
-    document.getElementById('adm-status-truk').innerText = "STANDBY";
+            penontonGpsAdmin = onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/gps`), (snap) => {
+                const gps = snap.val();
+                if(gps && gps.lat && gps.lng) {
+                    document.getElementById('adm-last-update').innerText = `Live: ${gps.jam} (${gps.email_driver})`;
+                    const koordinat = [gps.lat, gps.lng];
+                    markerTruck.setLatLng(koordinat).getPopup().setContent(`<b>Unit: ${currentPlatSelected.replace(/_/g, ' ')}</b><br>Driver: ${gps.email_driver}`);
+                    mapAdmin.panTo(koordinat);
+                } else {
+                    document.getElementById('adm-last-update').innerText = "Sinyal: Offline (Supir belum aktif)";
+                }
+            });
 
-    // 5. PASANG PENONTON BARU UNTUK GPS (Plat Baru)
-    penontonGpsAdmin = onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/gps`), (snap) => {
-        const gps = snap.val();
-        if(gps && gps.lat && gps.lng) {
-            document.getElementById('adm-last-update').innerText = `Live: ${gps.jam} (${gps.email_driver})`;
-            const koordinat = [gps.lat, gps.lng];
-            markerTruck.setLatLng(koordinat).getPopup().setContent(`<b>Unit: ${currentPlatSelected.replace(/_/g, ' ')}</b><br>Driver: ${gps.email_driver}`);
-            mapAdmin.panTo(koordinat);
-        } else {
-            document.getElementById('adm-last-update').innerText = "Sinyal: Offline (Supir belum aktif)";
+            penontonStatusAdmin = onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}`), (snap) => {
+                const data = snap.val();
+                document.getElementById('adm-supir-aktif').innerText = data?.supir_sekarang || "Belum ada supir login";
+                
+                const order = data?.order_aktif;
+                const statusSekarang = order?.status || "STANDBY";
+                document.getElementById('adm-status-truk').innerText = statusSekarang.replace(/_/g, ' ');
+
+                const bop = order?.bop || 0;
+                const ongkos = order?.ongkos || 0;
+                const profitBersih = ongkos - bop;
+
+                // PENYEMPURNAAN VISUAL: Minus hanya ada di BOP, Profit bersih murni nominal positif
+                document.getElementById('rep-omset').innerText = "Rp " + ongkos.toLocaleString('id-ID');
+                document.getElementById('rep-bop').innerText = "- Rp " + bop.toLocaleString('id-ID'); 
+                document.getElementById('rep-profit').innerText = "Rp " + profitBersih.toLocaleString('id-ID'); 
+            });
         }
-    });
-
-    // 6. PASANG PENONTON BARU UNTUK STATUS & ORDER (Plat Baru)
-    penontonStatusAdmin = onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}`), (snap) => {
-        const data = snap.val();
-        
-        // Menampilkan supir aktif khusus untuk plat ini saja
-        document.getElementById('adm-supir-aktif').innerText = data?.supir_sekarang || "Belum ada supir login";
-        
-        const order = data?.order_aktif;
-        const statusSekarang = order?.status || "STANDBY";
-        document.getElementById('adm-status-truk').innerText = statusSekarang.replace(/_/g, ' ');
-
-        // LOGIKA KEUANGAN BARU (Ongkos Angkut - BOP Jalan = Profit Bersih)
-        const bop = order?.bop || 0;
-        const ongkos = order?.ongkos || 0;
-        const profitBersih = ongkos - bop;
-
-        document.getElementById('rep-omset').innerText = "Rp " + ongkos.toLocaleString('id-ID');
-        document.getElementById('rep-bop').innerText = "- Rp " + bop.toLocaleString('id-ID'); // Format minus untuk pengeluaran uang jalan
-        document.getElementById('rep-profit').innerText = "Rp " + profitBersih.toLocaleString('id-ID'); // Hasil bersih profit
-    });
-}
 
         // ==================== DRIVER WORKFLOW ENGINE ====================
-       function pantauAlurKerjaSupir() {
-    // KUNCI UTAMA: Menggunakan myPlatNomor (bukan currentPlatSelected) agar HP supir tidak terpengaruh dropdown admin
-    onValue(ref(db, `${dbRoot}/Status_Armada/${myPlatNomor}/order_aktif`), (snap) => {
-        const order = snap.val();
-        const wadahTombol = document.getElementById('box-tombol-alur');
-        
-        // Jika order kosong atau statusnya STANDBY
-        if (!order || order.status === "STANDBY") {
-            matikanAlarm();
-            document.getElementById('drv-badge-status').innerText = "STANDBY";
-            document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-slate-700 text-slate-300";
-            document.getElementById('drv-txt-muatan').innerText = "Menunggu orderan masuk...";
-            document.getElementById('drv-txt-bop').innerText = "Rp 0";
-            wadahTombol.innerHTML = `<button class="w-full bg-slate-700 text-slate-500 font-bold py-3 rounded-xl cursor-not-allowed text-xs uppercase tracking-wider">Menunggu Order Baru</button>`;
-            return;
-        }
-
-        // Tampilkan data ke layar HP Supir
-        document.getElementById('drv-txt-muatan').innerText = order.muatan;
-        
-        // AMBIL NILAI BOP (UANG JALAN), BUKAN ONGKOS ANGKUT! FORMAT RUPIAH SUDAH AKTIF
-        document.getElementById('drv-txt-bop').innerText = "Rp " + (order.bop || 0).toLocaleString('id-ID');
-        document.getElementById('drv-badge-status').innerText = order.status.replace(/_/g, ' ');
-
-        // KONTROL ALUR TOMBOL OPERASIONAL SUPIR
-        if (order.status === "ORDER_MASUK") {
-            mulaiAlarmBerisik(); 
-            document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-red-600 animate-pulse text-white";
-            wadahTombol.innerHTML = `
-                <button onclick="ubahStatusOperasionalSupir('MENUJU_MUAT')" class="w-full bg-red-500 hover:bg-red-400 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-red-900/40">
-                    🔕 TERIMA ORDERAN (MATIKAN ALARM)
-                </button>`;
-        } 
-        else if (order.status === "MENUJU_MUAT") {
-            matikanAlarm(); 
-            document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500 text-slate-900";
-            wadahTombol.innerHTML = `
-                <button onclick="ubahStatusOperasionalSupir('OTW_BONGKAR')" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-black py-3 rounded-xl text-xs uppercase tracking-wider">
-                    ✓ SELESAI MUAT (BERANGKAT BONGKAR)
-                </button>`;
-        } 
-        else if (order.status === "OTW_BONGKAR") {
-            matikanAlarm();
-            document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-blue-600 text-white";
-            wadahTombol.innerHTML = `
-                <button onclick="ubahStatusOperasionalSupir('STANDBY')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider">
-                    ✓ SELESAI BONGKAR (KEMBALI STANDBY)
-                </button>`;
-        }
-    });
-}
-        window.ubahStatusOperasionalSupir = async (statusBaru) => {
-            try {
-                if(statusBaru === "STANDBY") {
-                    await set(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/order_aktif`), { status: "STANDBY" });
-                } else {
-                    await update(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/order_aktif`), { status: statusBaru });
+        function pantauAlurKerjaSupir() {
+            onValue(ref(db, `${dbRoot}/Status_Armada/${myPlatNomor}/order_aktif`), (snap) => {
+                const order = snap.val();
+                const wadahTombol = document.getElementById('box-tombol-alur');
+                
+                if (!order || order.status === "STANDBY") {
+                    matikanAlarm();
+                    document.getElementById('drv-badge-status').innerText = "STANDBY";
+                    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-slate-700 text-slate-300";
+                    document.getElementById('drv-txt-muatan').innerText = "Menunggu orderan masuk...";
+                    document.getElementById('drv-txt-bop').innerText = "Rp 0";
+                    wadahTombol.innerHTML = `<button class="w-full bg-slate-700 text-slate-500 font-bold py-3 rounded-xl cursor-not-allowed text-xs uppercase tracking-wider">Menunggu Order Baru</button>`;
+                    return;
                 }
-                alert("Status sukses dilaporkan ke Admin PT. BBS!");
-            } catch(e) { alert("Gagal update status: " + e.message); }
-        };
 
-        function aktifkanGpsOtomatisSupir() {
-            if (navigator.geolocation) {
-                navigator.geolocation.watchPosition((pos) => {
-                    const lat = pos.coords.latitude;
-                    const lng = pos.coords.longitude;
-                    document.getElementById('drv-gps-coord').innerText = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                document.getElementById('drv-txt-muatan').innerText = order.muatan;
+                
+                // DI HP SUPIR: Hanya membaca Uang Jalan (BOP), 100% aman dari Ongkos Angkut
+                const nominalBop = order.bop || 0;
+                document.getElementById('drv-txt-bop').innerText = "Rp " + Number(nominalBop).toLocaleString('id-ID');
+                
+                document.getElementById('drv-badge-status').innerText = order.status.replace(/_/g, ' ');
 
-                    update(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/gps`), {
-                        email_driver: sessionUser.email,
-                        lat: lat,
-                        lng: lng,
-                        jam: new Date().toLocaleTimeString('id-ID')
-                    });
-                }, (err) => { console.error("GPS Terhalang: " + err.message); }, { enableHighAccuracy: true });
-            }
+                if (order.status === "ORDER_MASUK") {
+                    mulaiAlarmBerisik(); 
+                    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-red-600 animate-pulse text-white";
+                    wadahTombol.innerHTML = `
+                        <button onclick="ubahStatusOperasionalSupir('MENUJU_MUAT')" class="w-full bg-red-500 hover:bg-red-400 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-red-900/40">
+                            🔕 TERIMA ORDERAN (MATIKAN ALARM)
+                        </button>`;
+                } 
+                else if (order.status === "MENUJU_MUAT") {
+                    matikanAlarm(); 
+                    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500 text-slate-900";
+                    wadahTombol.innerHTML = `
+                        <button onclick="ubahStatusOperasionalSupir('OTW_BONGKAR')" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-black py-3 rounded-xl text-xs uppercase tracking-wider">
+                            ✓ SELESAI MUAT (BERANGKAT BONGKAR)
+                        </button>`;
+                } 
+                else if (order.status === "OTW_BONGKAR") {
+                    matikanAlarm();
+                    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-blue-600 text-white";
+                    wadahTombol.innerHTML = `
+                        <button onclick="ubahStatusOperasionalSupir('STANDBY')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider">
+                            ✓ SELESAI BONGKAR (KEMBALI STANDBY)
+                        </button>`;
+                }
+            });
         }
+
+        window.ubahStatusOperasionalSupir = (statusBaru) => {
+            if (!myPlatNomor) {
+                alert("Gagal memproses! Plat nomor kendaraan Anda tidak terdeteksi sistem.");
+                return;
+            }
+
+            const pathOrder = `${dbRoot}/Status_Armada/${myPlatNomor}/order_aktif`;
+
+            if (statusBaru === "STANDBY") {
+                set(ref(db, pathOrder), null)
+                .then(() => { alert("Tugas selesai! Status armada kembali STANDBY."); })
+                .catch((err) => { alert("Gagal memperbarui status: " + err.message); });
+            } else {
+                update(ref(db, pathOrder), { status: statusBaru })
+                .then(() => { console.log("Status supir berhasil diubah ke: " + statusBaru); })
+                .catch((err) => { alert("Gagal mengubah status: " + err.message); });
+            }
+        };
+        
     </script>
 </body>
 </html>
