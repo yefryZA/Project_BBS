@@ -292,87 +292,94 @@
         }
     }
 
-  async function printSuratJalan(data) {
+  // ==========================================
+// 1. FUNGSI PRINT SURAT JALAN (STEMPEL DIBUANG)
+// ==========================================
+async function printSuratJalan(data) {
     const tgl = new Date().toLocaleString('id-ID', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
     const jam = new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
     
     const printArea = document.createElement('div');
-    printArea.style = "width: 380px; padding: 20px; background: white; color: black; font-family: monospace; position: absolute; left: -9999px; top: 0;";
+    // PERBAIKAN: Memaksa semua elemen teks di dalam container ini menjadi hitam murni (!important)
+    printArea.style = "width: 380px; padding: 20px; background: white !important; color: black !important; font-family: monospace; position: absolute; left: -9999px; top: 0; box-sizing: border-box;";
+    
     printArea.innerHTML = `
-    <div style="text-align: center; font-weight: bold; font-size: 18px;">PT. BERKAH BAJA STEEL</div>
-    <div style="text-align: center; font-size: 12px; font-weight: bold;">SUPLAY MATERIAL PROJECT ${data.project || "LOSARANG"}</div>
-    <div style="text-align: center;">--------------------------------</div>
-    <div style="font-size: 14px; line-height: 1.5;">
-        <div style="font-family: monospace; width: 100%; font-size: 12px;">
+    <div style="text-align: center; font-weight: bold; font-size: 18px; color: black !important;">PT. BERKAH BAJA STEEL</div>
+    <div style="text-align: center; font-size: 12px; font-weight: bold; color: black !important;">SUPLAY MATERIAL PROJECT ${data.project || "LOSARANG"}</div>
+    <div style="text-align: center; color: black !important;">--------------------------------</div>
+    <div style="font-size: 14px; line-height: 1.5; color: black !important;">
+        <div style="font-family: monospace; width: 100%; font-size: 12px; color: black !important;">
             
-            <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 12px; table-layout: fixed;">
-                <tr><td style="width: 75px;">TGL/JAM</td><td style="width: 15px;">:</td><td>${tgl} ‖ ${jam}</td></tr>
-                <tr><td>PLAT NO</td><td>:</td><td>${data.plat}</td></tr>
-                <tr><td>SOPIR</td><td>:</td><td>${data.sopir || "-"}</td></tr>
-                <tr><td>BARANG</td><td>:</td><td>${data.barang || "-"}</td></tr>
+            <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 12px; table-layout: fixed; color: black !important;">
+                <tr style="color: black !important;"><td style="width: 75px; color: black !important;">TGL/JAM</td><td style="width: 15px; color: black !important;">:</td><td style="color: black !important;">${tgl} ‖ ${jam}</td></tr>
+                <tr style="color: black !important;"><td style="color: black !important;">PLAT NO</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.plat}</td></tr>
+                <tr style="color: black !important;"><td style="color: black !important;">SOPIR</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.sopir || "-"}</td></tr>
+                <tr style="color: black !important;"><td style="color: black !important;">BARANG</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.barang || "-"}</td></tr>
                 
-                <tr>
-                    <td colspan="3" style="padding: 5px 0;">
+                <tr style="color: black !important;">
+                    <td colspan="3" style="padding: 5px 0; color: black !important;">
                         -----------------------------------------------<br>
                         panjang : ${data.p||0} ‖ lebar : ${data.l||0} ‖ tinggi : ${data.t||0} (m)<br>
                         -----------------------------------------------
                     </td>
                 </tr>
 
-                <tr><td>TOTAL</td><td>:</td><td><b>${data.volM || 0} M3</b></td></tr>
+                <tr style="color: black !important;"><td style="color: black !important;">TOTAL</td><td style="color: black !important;">:</td><td style="color: black !important;"><b style="color: black !important;">${data.volM || 0} M3</b></td></tr>
             </table>
 
-            <div style="text-align: center; margin-top: 5px;">ID SURAT: ${data.id}</div>
-            <div id="qrcode-box" style="display: flex; justify-content: center; padding: 10px;"></div>
-            -----------------------------------------------<br>
+            <div style="text-align: center; margin-top: 5px; color: black !important;">ID SURAT: ${data.id}</div>
+            <div id="qrcode-box" style="display: flex; justify-content: center; padding: 10px; background: white !important;"></div>
+            <div style="text-align: center; color: black !important;">-----------------------------------------------</div>
 
-            <table style="width: 100%; font-family: monospace; font-size: 11px; text-align: center;">
-                <tr>
+            <table style="width: 100%; font-family: monospace; font-size: 11px; text-align: center; color: black !important;">
+                <tr style="color: black !important;">
                     <td style="width: 50%;"></td>
-                    <td>Mengetahui,</td>
+                    <td style="color: black !important;">Mengetahui,</td>
                 </tr>
-                <tr>
+                <tr style="color: black !important;">
                     <td></td>
-                    <td style="padding: 5px 0;">
-                        <img src="https://raw.githubusercontent.com/yefryZA/SILSILAH-KELUARGA-H.-ZAINAL-ABIDIN/main/Stempel.png" 
-                             crossOrigin="anonymous"
-                             style="width: 90px; height: auto; display: block; margin: 0 auto;" />
-                    </td>
+                    <td style="padding: 25px 0;">
+                        </td>
                 </tr>
-                <tr>
+                <tr style="color: black !important;">
                     <td></td>
-                    <td><b>SOFYAN</b><br>Supervisor</td>
+                    <td style="color: black !important;"><b style="color: black !important;">SOFYAN</b><br>Supervisor</td>
                 </tr>
             </table>
-            -----------------------------------------------<br>
+            <div style="text-align: center; color: black !important;">-----------------------------------------------</div>
 
-            <div style="text-align: center; font-size: 11px; margin-top: 15px;">⚓ NIAT BAIK ‖ KERJA BAIK ‖ REZEKI BAIK ⚓</div>
-            <div style="text-align: center; font-size: 10px; margin-top:10px;">Hati-hati Pak Sopir, KELUARGA menunggu ANDA dirumah.</div>
+            <div style="text-align: center; font-size: 11px; margin-top: 15px; color: black !important;">⚓ NIAT BAIK ‖ KERJA BAIK ‖ REZEKI BAIK ⚓</div>
+            <div style="text-align: center; font-size: 10px; margin-top:10px; color: black !important;">Hati-hati Pak Sopir, KELUARGA menunggu ANDA dirumah.</div>
         </div>
     </div>
-`;
+    `;
 
-        document.body.appendChild(printArea);
-        
-        new QRCode(document.getElementById("qrcode-box"), {
-            text: "https://berkahbajasteel.web.app/verifikasi?id=" + data.id,
-            width: 150, height: 150
+    document.body.appendChild(printArea);
+    
+    new QRCode(document.getElementById("qrcode-box"), {
+        text: "https://berkahbajasteel.web.app/verifikasi?id=" + data.id,
+        width: 150, height: 150
+    });
+
+    // Waktu tunggu diset 1 detik agar QR Code selesai ter-render sempurna
+    setTimeout(() => {
+        html2canvas(printArea, {
+            backgroundColor: "#ffffff", // Memaksa latar belakang kanvas berwarna putih bersih
+            scale: 2                     // Menaikkan resolusi cetak thermal agar tulisan tajam
+        }).then(canvas => {
+            const imageData = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.download = `STRUK_${data.plat}_${data.id.substring(0,5)}.png`;
+            link.href = imageData;
+            link.click();
+            
+            document.body.removeChild(printArea);
+            document.getElementById('load-txt').innerHTML = "<b style='color:green'>STRUK TERDOWNLOAD!</b><br>Buka Galeri & Cetak Gambar.";
+            document.getElementById('loader').style.display = 'flex';
+            setTimeout(() => { location.reload(); }, 3000);
         });
-
-        setTimeout(() => {
-            html2canvas(printArea).then(canvas => {
-                const imageData = canvas.toDataURL("image/png");
-                const link = document.createElement('a');
-                link.download = `STRUK_${data.plat}_${data.id.substring(0,5)}.png`;
-                link.href = imageData;
-                link.click();
-                document.body.removeChild(printArea);
-                document.getElementById('load-txt').innerHTML = "<b style='color:green'>STRUK TERDOWNLOAD!</b><br>Buka Galeri & Cetak Gambar.";
-                document.getElementById('loader').style.display = 'flex';
-                setTimeout(() => { location.reload(); }, 3000);
-            });
-        }, 1000);
-    }
+    }, 1000);
+}
 
     window.prosesMuat = async () => {
         const p = document.getElementById('m-plat').value.toUpperCase();
@@ -429,8 +436,11 @@
         return "";
     }
 
-  // --- RENDER DASHBOARD ---
-   onValue(ref(db, `bbs_logs/${dbKey}`), (snap) => {
+  // ==========================================
+// 2. LOGIKA PERBAIKAN RENDER DASHBOARD
+// ==========================================
+// --- RENDER DASHBOARD (LOGIKA SINKRONISASI UNIT PERJALANAN) ---
+onValue(ref(db, `bbs_logs/${dbKey}`), (snap) => {
     const data = snap.val();
     let tm = 0, tb = 0, otw = 0; 
     rawData = [];
@@ -442,7 +452,7 @@
             const i = data[k];
             
             // Konversi status ke huruf besar semua agar aman dari error pengetikan ceker
-            const statusMobil = (i.status || "").toUpperCase();
+            const statusMobil = (i.status || "").toUpperCase().trim();
             
             if(statusMobil === 'ARCHIVED') return;
 
@@ -451,35 +461,33 @@
             // Menyisipkan id unik firebase ke data objek lokal
             rawData.push({ ...i, firebaseKey: k });
             
-            // Siapkan element untuk status / tombol aksi sesuai LOGIKA BARU PT.BBS
+            // --- FIX LOGIKA TRACKER: Mobil status MUAT berarti sedang OTW/dalam perjalanan ---
+            if(statusMobil === 'MUAT' || statusMobil === '') {
+                otw++;
+            }
+            // --------------------------------------------------------------------------------
+
+            // Siapkan element untuk status / tombol aksi sesuai LOGIKA LAPANGAN PT.BBS
             let statusElement = "";
 
-            if(statusMobil === 'OTW') {
-                otw++;
-            
-                statusElement = `
-                    <button onclick="openOtwManager('${k}', '${i.plat}')" style="background:#FF9800; color:white; border:none; padding:6px 12px; border-radius:6px; font-size:10px; font-weight:bold; cursor:pointer; font-family:'Orbitron';">
-                        ${statusMobil} (PROSES)
-                    </button>
-                `;
-            } else if(statusMobil === 'MUAT' || statusMobil === '' || !i.status) {
-                // JIKA STATUS BARU MUAT ATAU KOSONG: Tombol SET BOP Wajib Muncul!
+            if(statusMobil === 'MUAT' || statusMobil === '' || !i.status) {
+                // JIKA STATUS MUAT: Tombol SET BOP Wajib Muncul untuk Admin
                 statusElement = `
                     <button onclick="window.openOps('${k}', '${i.plat}')" style="background:var(--gold); color:#0A192F; border:none; padding:6px 12px; border-radius:6px; font-size:10px; font-weight:bold; cursor:pointer; font-family:'Orbitron'; min-width:95px; display:inline-block;">
                         ⚙️ SET BOP
                     </button>
                 `;
                 
-                // JIKA BOP SUDAH DIKUNCI ADMIN, OTOMATIS BERIKAN AKSES TOMBOL PROSES OTW DI BAWAHNYA
+                // JIKA BOP SUDAH DIKUNCI ADMIN, OTOMATIS BERIKAN AKSES TOMBOL MASUK MANAJER BONGKAR
                 if(i.bop_unit) {
                     statusElement += `
                         <button onclick="window.openOtwManager('${k}', '${i.plat}')" style="background:var(--green); color:#0A192F; border:none; padding:6px 12px; border-radius:6px; font-size:10px; font-weight:bold; cursor:pointer; font-family:'Orbitron'; margin-top:5px; min-width:95px; display:inline-block;">
-                            🚀 PROSES OTW
+                            🚀 PROSES BONGKAR
                         </button>
                     `;
                 }
             } else {
-                // Status lainnya (misal DONE dll)
+                // Status lainnya jika sudah selesai dibongkar (Status DONE dll)
                 statusElement = `
                     <span class="badge" style="background:#4CAF50; padding:5px 10px; border-radius:4px; font-size:10px; font-weight:bold;">
                         ${i.status}
@@ -511,6 +519,7 @@
         });
     }
     
+    // Tampilkan jumlah armada yang berstatus 'MUAT' ke counter Unit Dalam Perjalanan
     document.getElementById('d-count-otw').innerText = otw;
     
     if (typeof hitungUang === "function") {
