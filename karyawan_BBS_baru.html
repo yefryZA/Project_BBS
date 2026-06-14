@@ -376,33 +376,46 @@ const app = initializeApp(firebaseConfig);
         };
 
         function pantauLaporanAdmin() {
-            onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/gps`), (snap) => {
-                const gps = snap.val();
-                if(gps && gps.lat && gps.lng) {
-                    document.getElementById('adm-last-update').innerText = `Live: ${gps.jam} (${gps.email_driver})`;
-                    const koordinat = [gps.lat, gps.lng];
-                    markerTruck.setLatLng(koordinat).getPopup().setContent(`<b>Unit: ${currentPlatSelected.replace(/_/g, ' ')}</b><br>Driver: ${gps.email_driver}`);
-                    mapAdmin.panTo(koordinat);
-                } else {
-                    document.getElementById('adm-last-update').innerText = "Sinyal: Offline (Supir belum aktif)";
-                }
-            });
+    // 1. TULISKAN BARIS INI: Reset tulisan di dashboard admin setiap kali fungsi dipanggil
+    document.getElementById('adm-supir-aktif').innerText = "Belum ada supir login";
+    document.getElementById('adm-last-update').innerText = "Sinyal: Offline (Mencari data...)";
+    document.getElementById('rep-omset').innerText = "Rp 0";
+    document.getElementById('rep-bop').innerText = "Rp 0";
+    document.getElementById('rep-profit').innerText = "Rp 0";
+    document.getElementById('adm-status-truk').innerText = "STANDBY";
 
-            onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}`), (snap) => {
-                const data = snap.val();
-                document.getElementById('adm-supir-aktif').innerText = data?.supir_sekarang || "Tidak ada supir aktif";
-                
-                const order = data?.order_aktif;
-                const statusSekarang = order?.status || "STANDBY";
-                document.getElementById('adm-status-truk').innerText = statusSekarang.replace(/_/g, ' ');
-
-                const bop = order?.bop || 0;
-                const ongkos = order?.ongkos || 0;
-                document.getElementById('rep-omset').innerText = "Rp " + ongkos.toLocaleString('id-ID');
-                document.getElementById('rep-bop').innerText = "Rp " + bop.toLocaleString('id-ID');
-                document.getElementById('rep-profit').innerText = "Rp " + (ongkos - bop).toLocaleString('id-ID');
-            });
+    // 2. Pantau GPS Plat yang dipilih
+    onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/gps`), (snap) => {
+        const gps = snap.val();
+        if(gps && gps.lat && gps.lng) {
+            document.getElementById('adm-last-update').innerText = `Live: ${gps.jam} (${gps.email_driver})`;
+            const koordinat = [gps.lat, gps.lng];
+            markerTruck.setLatLng(koordinat).getPopup().setContent(`<b>Unit: ${currentPlatSelected.replace(/_/g, ' ')}</b><br>Driver: ${gps.email_driver}`);
+            mapAdmin.panTo(koordinat);
+        } else {
+            // Jika plat yang dipilih tidak punya data GPS, kembalikan ke status offline
+            document.getElementById('adm-last-update').innerText = "Sinyal: Offline (Supir belum aktif)";
         }
+    });
+
+    // 3. Pantau Status Armada yang dipilih
+    onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}`), (snap) => {
+        const data = snap.val();
+        
+        // JIKA DATA ADA, TAMPILKAN. JIKA KOSONG, TULIS "Belum ada supir login"
+        document.getElementById('adm-supir-aktif').innerText = data?.supir_sekarang || "Belum ada supir login";
+        
+        const order = data?.order_aktif;
+        const statusSekarang = order?.status || "STANDBY";
+        document.getElementById('adm-status-truk').innerText = statusSekarang.replace(/_/g, ' ');
+
+        const bop = order?.bop || 0;
+        const ongkos = order?.ongkos || 0;
+        document.getElementById('rep-omset').innerText = "Rp " + ongkos.toLocaleString('id-ID');
+        document.getElementById('rep-bop').innerText = "Rp " + bop.toLocaleString('id-ID');
+        document.getElementById('rep-profit').innerText = "Rp " + (ongkos - bop).toLocaleString('id-ID');
+    });
+}
 
         // ==================== DRIVER WORKFLOW ENGINE ====================
         function pantauAlurKerjaSupir() {
