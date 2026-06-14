@@ -97,19 +97,22 @@
                 </div>
             </div>
 
-            <div class="lg:col-span-2 space-y-6">
+       <div class="lg:col-span-2 space-y-6">
+                
                 <div class="grid grid-cols-3 gap-2 text-center text-xs">
-                    <div class="bg-slate-800 p-2.5 rounded-xl border border-slate-700">
-                        <span class="text-[10px] text-slate-400 block">OMSET UNIT</span>
-                        <b id="rep-omset" class="text-blue-400">Rp 0</b>
+                    <div class="bg-slate-800 p-2.5 rounded-xl border border-slate-700 shadow-md">
+                        <span class="text-[10px] text-slate-400 block font-bold uppercase tracking-wider mb-0.5">ONGKOS ANGKUT</span>
+                        <b id="rep-omset" class="text-blue-400 text-sm font-black font-mono">Rp 0</b>
                     </div>
-                    <div class="bg-slate-800 p-2.5 rounded-xl border border-slate-700">
-                        <span class="text-[10px] text-slate-400 block">BOP JALAN</span>
-                        <b id="rep-bop" class="text-red-400">Rp 0</b>
+                    
+                    <div class="bg-slate-800 p-2.5 rounded-xl border border-slate-700 shadow-md">
+                        <span class="text-[10px] text-slate-400 block font-bold uppercase tracking-wider mb-0.5">UANG JALAN (BOP)</span>
+                        <b id="rep-bop" class="text-red-400 text-sm font-black font-mono">- Rp 0</b>
                     </div>
-                    <div class="bg-slate-800 p-2.5 rounded-xl border border-slate-700">
-                        <span class="text-[10px] text-slate-400 block">PROFIT</span>
-                        <b id="rep-profit" class="text-emerald-400">Rp 0</b>
+                    
+                    <div class="bg-slate-800 p-2.5 rounded-xl border border-slate-700 bg-gradient-to-br from-slate-800 to-emerald-950/30 shadow-md">
+                        <span class="text-[10px] text-emerald-400 block font-bold uppercase tracking-wider mb-0.5">PROFIT BERSIH</span>
+                        <b id="rep-profit" class="text-emerald-400 text-sm font-black font-mono">Rp 0</b>
                     </div>
                 </div>
 
@@ -122,9 +125,10 @@
                 </div>
 
                 <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 text-xs text-slate-400 flex justify-between items-center">
-                    <div>Supir Pemegang Unit Saat Ini: <strong id="adm-supir-aktif" class="text-slate-200">Belum ada supir login</strong></div>
-                    <div id="adm-last-update" class="font-mono">Sinyal: Off</div>
+                    <div>Supir Pemegang Unit Saat Ini : <strong id="adm-supir-aktif" class="text-slate-200">Belum ada supir login</strong></div>
+                    <div id="adm-last-update" class="font-mono">Sinyal : Off</div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -156,10 +160,10 @@
                     <div id="drv-txt-muatan" class="font-bold text-slate-200 text-base">Menunggu orderan masuk...</div>
                 </div>
 
-                <div class="bg-slate-700/30 p-3 rounded-lg text-xs flex justify-between items-center">
-                    <span class="text-slate-400">Modal Jalan Lapangan (BOP):</span>
-                    <strong id="drv-txt-bop" class="text-red-400 text-sm font-black">Rp 0</strong>
-                </div>
+               <div class="bg-slate-700/30 p-3 rounded-lg text-xs flex justify-between items-center">
+    <span class="text-slate-400 font-bold">UANG JALAN / BOP :</span>
+    <strong id="drv-txt-bop" class="text-red-400 text-sm font-black">Rp 0</strong>
+</div>
 
                 <div id="box-tombol-alur" class="pt-2">
                     <button class="w-full bg-slate-700 text-slate-500 font-bold py-3 rounded-xl cursor-not-allowed text-xs uppercase tracking-wider">Menunggu Order Baru</button>
@@ -381,26 +385,29 @@ let penontonStatusAdmin = null;
         };
 
  function pantauLaporanAdmin() {
-    // 1. USIR/MATIKAN PENONTON LAMA (Jika ada) agar tidak terjadi tabrakan data lintas plat
-    if (penontonGpsAdmin) {
-        off(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/gps`), 'value', penontonGpsAdmin);
-    }
-    if (penontonStatusAdmin) {
-        off(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}`), 'value', penontonStatusAdmin);
-    }
+    // 1. Ambil nilai plat nomor LAMA sebelum variabelnya kita timpa dengan yang baru
+    const platLama = currentPlatSelected;
 
-    // 2. Ambil nilai plat nomor yang saat ini dipilih di dropdown admin
+    // 2. Ambil nilai plat nomor BARU yang saat ini dipilih dari dropdown admin
     currentPlatSelected = document.getElementById('adm-pilih-plat').value;
 
-    // 3. RESET TAMPILAN DASHBOARD (Bersihkan sisa data plat sebelumnya)
+    // 3. USIR/MATIKAN PENONTON LAMA pada lintasan plat lama (jika ada) agar tidak tabrakan data
+    if (penontonGpsAdmin) {
+        off(ref(db, `${dbRoot}/Status_Armada/${platLama}/gps`), 'value', penontonGpsAdmin);
+    }
+    if (penontonStatusAdmin) {
+        off(ref(db, `${dbRoot}/Status_Armada/${platLama}`), 'value', penontonStatusAdmin);
+    }
+
+    // 4. RESET TAMPILAN DASHBOARD (Bersihkan sisa visual plat sebelumnya)
     document.getElementById('adm-supir-aktif').innerText = "Belum ada supir login";
     document.getElementById('adm-last-update').innerText = "Sinyal: Offline (Mencari data...)";
     document.getElementById('rep-omset').innerText = "Rp 0";
-    document.getElementById('rep-bop').innerText = "Rp 0";
+    document.getElementById('rep-bop').innerText = "- Rp 0";
     document.getElementById('rep-profit').innerText = "Rp 0";
     document.getElementById('adm-status-truk').innerText = "STANDBY";
 
-    // 4. PASANG PENONTON BARU UNTUK GPS
+    // 5. PASANG PENONTON BARU UNTUK GPS (Plat Baru)
     penontonGpsAdmin = onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/gps`), (snap) => {
         const gps = snap.val();
         if(gps && gps.lat && gps.lng) {
@@ -413,7 +420,7 @@ let penontonStatusAdmin = null;
         }
     });
 
-    // 5. PASANG PENONTON BARU UNTUK STATUS & ORDER
+    // 6. PASANG PENONTON BARU UNTUK STATUS & ORDER (Plat Baru)
     penontonStatusAdmin = onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}`), (snap) => {
         const data = snap.val();
         
@@ -424,11 +431,14 @@ let penontonStatusAdmin = null;
         const statusSekarang = order?.status || "STANDBY";
         document.getElementById('adm-status-truk').innerText = statusSekarang.replace(/_/g, ' ');
 
+        // LOGIKA KEUANGAN BARU (Ongkos Angkut - BOP Jalan = Profit Bersih)
         const bop = order?.bop || 0;
         const ongkos = order?.ongkos || 0;
+        const profitBersih = ongkos - bop;
+
         document.getElementById('rep-omset').innerText = "Rp " + ongkos.toLocaleString('id-ID');
-        document.getElementById('rep-bop').innerText = "Rp " + bop.toLocaleString('id-ID');
-        document.getElementById('rep-profit').innerText = "Rp " + (ongkos - bop).toLocaleString('id-ID');
+        document.getElementById('rep-bop').innerText = "- Rp " + bop.toLocaleString('id-ID'); // Format minus untuk pengeluaran uang jalan
+        document.getElementById('rep-profit').innerText = "Rp " + profitBersih.toLocaleString('id-ID'); // Hasil bersih profit
     });
 }
 
