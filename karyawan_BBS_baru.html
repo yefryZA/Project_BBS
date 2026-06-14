@@ -443,52 +443,57 @@ let penontonStatusAdmin = null;
 }
 
         // ==================== DRIVER WORKFLOW ENGINE ====================
-        function pantauAlurKerjaSupir() {
-            onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/order_aktif`), (snap) => {
-                const order = snap.val();
-                const wadahTombol = document.getElementById('box-tombol-alur');
-                
-                if (!order || order.status === "STANDBY") {
-                    matikanAlarm();
-                    document.getElementById('drv-badge-status').innerText = "STANDBY";
-                    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-slate-700 text-slate-300";
-                    document.getElementById('drv-txt-muatan').innerText = "Menunggu orderan masuk...";
-                    document.getElementById('drv-txt-bop').innerText = "Rp 0";
-                    wadahTombol.innerHTML = `<button class="w-full bg-slate-700 text-slate-500 font-bold py-3 rounded-xl cursor-not-allowed text-xs uppercase tracking-wider">Menunggu Order Baru</button>`;
-                    return;
-                }
-
-                document.getElementById('drv-txt-muatan').innerText = order.muatan;
-                document.getElementById('drv-txt-bop').innerText = "Rp " + (order.bop || 0).toLocaleString('id-ID');
-                document.getElementById('drv-badge-status').innerText = order.status.replace(/_/g, ' ');
-
-                if (order.status === "ORDER_MASUK") {
-                    mulaiAlarmBerisik(); 
-                    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-red-600 animate-pulse text-white";
-                    wadahTombol.innerHTML = `
-                        <button onclick="ubahStatusOperasionalSupir('MENUJU_MUAT')" class="w-full bg-red-500 hover:bg-red-400 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-red-900/40">
-                            🔕 TERIMA ORDERAN (MATIKAN ALARM)
-                        </button>`;
-                } 
-                else if (order.status === "MENUJU_MUAT") {
-                    matikanAlarm(); 
-                    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500 text-slate-900";
-                    wadahTombol.innerHTML = `
-                        <button onclick="ubahStatusOperasionalSupir('OTW_BONGKAR')" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-black py-3 rounded-xl text-xs uppercase tracking-wider">
-                            ✓ SELESAI MUAT (BERANGKAT BONGKAR)
-                        </button>`;
-                } 
-                else if (order.status === "OTW_BONGKAR") {
-                    matikanAlarm();
-                    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-blue-600 text-white";
-                    wadahTombol.innerHTML = `
-                        <button onclick="ubahStatusOperasionalSupir('STANDBY')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider">
-                            ✓ SELESAI BONGKAR (KEMBALI STANDBY)
-                        </button>`;
-                }
-            });
+       function pantauAlurKerjaSupir() {
+    // KUNCI UTAMA: Menggunakan myPlatNomor (bukan currentPlatSelected) agar HP supir tidak terpengaruh dropdown admin
+    onValue(ref(db, `${dbRoot}/Status_Armada/${myPlatNomor}/order_aktif`), (snap) => {
+        const order = snap.val();
+        const wadahTombol = document.getElementById('box-tombol-alur');
+        
+        // Jika order kosong atau statusnya STANDBY
+        if (!order || order.status === "STANDBY") {
+            matikanAlarm();
+            document.getElementById('drv-badge-status').innerText = "STANDBY";
+            document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-slate-700 text-slate-300";
+            document.getElementById('drv-txt-muatan').innerText = "Menunggu orderan masuk...";
+            document.getElementById('drv-txt-bop').innerText = "Rp 0";
+            wadahTombol.innerHTML = `<button class="w-full bg-slate-700 text-slate-500 font-bold py-3 rounded-xl cursor-not-allowed text-xs uppercase tracking-wider">Menunggu Order Baru</button>`;
+            return;
         }
 
+        // Tampilkan data ke layar HP Supir
+        document.getElementById('drv-txt-muatan').innerText = order.muatan;
+        
+        // AMBIL NILAI BOP (UANG JALAN), BUKAN ONGKOS ANGKUT! FORMAT RUPIAH SUDAH AKTIF
+        document.getElementById('drv-txt-bop').innerText = "Rp " + (order.bop || 0).toLocaleString('id-ID');
+        document.getElementById('drv-badge-status').innerText = order.status.replace(/_/g, ' ');
+
+        // KONTROL ALUR TOMBOL OPERASIONAL SUPIR
+        if (order.status === "ORDER_MASUK") {
+            mulaiAlarmBerisik(); 
+            document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-red-600 animate-pulse text-white";
+            wadahTombol.innerHTML = `
+                <button onclick="ubahStatusOperasionalSupir('MENUJU_MUAT')" class="w-full bg-red-500 hover:bg-red-400 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-red-900/40">
+                    🔕 TERIMA ORDERAN (MATIKAN ALARM)
+                </button>`;
+        } 
+        else if (order.status === "MENUJU_MUAT") {
+            matikanAlarm(); 
+            document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500 text-slate-900";
+            wadahTombol.innerHTML = `
+                <button onclick="ubahStatusOperasionalSupir('OTW_BONGKAR')" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-black py-3 rounded-xl text-xs uppercase tracking-wider">
+                    ✓ SELESAI MUAT (BERANGKAT BONGKAR)
+                </button>`;
+        } 
+        else if (order.status === "OTW_BONGKAR") {
+            matikanAlarm();
+            document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-blue-600 text-white";
+            wadahTombol.innerHTML = `
+                <button onclick="ubahStatusOperasionalSupir('STANDBY')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider">
+                    ✓ SELESAI BONGKAR (KEMBALI STANDBY)
+                </button>`;
+        }
+    });
+}
         window.ubahStatusOperasionalSupir = async (statusBaru) => {
             try {
                 if(statusBaru === "STANDBY") {
