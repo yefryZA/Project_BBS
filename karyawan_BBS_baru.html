@@ -254,7 +254,7 @@ const app = initializeApp(firebaseConfig);
                 let platTersimpan = localStorage.getItem("bbs_saved_plat");
                 if(!platTersimpan) {
                     const penentuanPlat = prompt("KONFIRMASI UNIT TRUCK PT. BBS\n\nPilih & Ketik PLAT NOMOR Truk yang Anda bawa malam ini:\n\nPilihan terdaftar:\n• B 1234 BBS\n• A 5678 BBS\n• B 9999 BBS").replace(/\s+/g, '_').toUpperCase();
-                    if(penentuanPlat !== "B 1234 BBS" && penentuanPlat !== "A 5678 BBS" && penentuanPlat !== "B 9999 BBS") {
+                    if(penentuanPlat !== "B_1234_BBS" && penentuanPlat !== "A_5678_BBS" && penentuanPlat !== "B_9999_BBS") {
                         alert("Plat nomor kendaraan salah atau tidak terdaftar di sistem BBS!");
                         logout();
                         return;
