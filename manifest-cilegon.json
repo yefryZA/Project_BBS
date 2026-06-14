@@ -1,0 +1,28 @@
+{
+  "id": "https://yefryza.github.io/Project_BBS/Surat_Jalan_BBS.html?mode=cilegon",
+  "name": "Surat Jalan BBS - Cilegon",
+  "short_name": "Surat Jalan",
+  "description": "Sistem Manajemen Surat Jalan PT. Berkah Baja Steel - Khusus Rute Cilegon",
+  "start_url": "Surat_Jalan_BBS.html?mode=cilegon",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a192f",
+  "theme_color": "#0a192f",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Tampilan Mobile Cilegon"
+    }
+  ]
+}
