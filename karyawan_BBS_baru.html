@@ -254,7 +254,7 @@ const app = initializeApp(firebaseConfig);
                 let platTersimpan = localStorage.getItem("bbs_saved_plat");
                 if(!platTersimpan) {
                     const penentuanPlat = prompt("KONFIRMASI UNIT TRUCK PT. BBS\n\nPilih & Ketik PLAT NOMOR Truk yang Anda bawa malam ini:\n\nPilihan terdaftar:\n• B 1234 BBS\n• A 5678 BBS\n• B 9999 BBS").replace(/\s+/g, '_').toUpperCase();
-                    if(penentuanPlat !== "B_1234_BBS" && penentuanPlat !== "A_5678_BBS" && penentuanPlat !== "B_9999_BBS") {
+                    if(penentuanPlat !== "B 1234 BBS" && penentuanPlat !== "A 5678 BBS" && penentuanPlat !== "B 9999 BBS") {
                         alert("Plat nomor kendaraan salah atau tidak terdaftar di sistem BBS!");
                         logout();
                         return;
@@ -315,29 +315,42 @@ const app = initializeApp(firebaseConfig);
             location.reload(); 
         };
 
-        // ==================== ENGINE 1 HP = 1 EMAIL (ANTI KECURANGAN) ====================
-        async function kunciDanProteksiDeviceSupir() {
-            await update(ref(db, `${dbRoot}/Kunci_Sesi_Device/${sessionUser.name}`), {
-                token_aktif: myDeviceToken,
-                last_login: new Date().toLocaleTimeString('id-ID')
-            });
-            document.getElementById('drv-device-session').innerText = "DEVICE ID LOCK: OK";
+      async function kunciDanProteksiDeviceSupir() {
+    try {
+        // 1. Kunci Sesi Device
+        await update(ref(db, `${dbRoot}/Kunci_Sesi_Device/${sessionUser.name}`), {
+            token_aktif: myDeviceToken,
+            last_login: new Date().toLocaleTimeString('id-ID')
+        });
+        document.getElementById('drv-device-session').innerText = "DEVICE ID LOCK: OK";
 
-            onValue(ref(db, `${dbRoot}/Kunci_Sesi_Device/${sessionUser.name}/token_aktif`), (snap) => {
-                if (snap.exists() && snap.val() !== myDeviceToken) {
-                    alert("⚠️ AKUN DI-KUNCI!\nEmail Google Anda baru saja login di perangkat HP lain. 1 Email supir hanya sah di 1 HP!");
-                    logout();
-                }
-            });
+        // 2. Pantau Sesi Ganda
+        onValue(ref(db, `${dbRoot}/Kunci_Sesi_Device/${sessionUser.name}/token_aktif`), (snap) => {
+            if (snap.exists() && snap.val() !== myDeviceToken) {
+                alert("⚠️ AKUN DI-KUNCI!\nEmail Google Anda baru saja login di perangkat HP lain.");
+                logout();
+            }
+        });
 
-            await update(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}`), {
-                supir_sekarang: sessionUser.email
-            });
+        // 3. Update Status Armada (Pastikan plat nomor valid)
+        console.log("Mencoba menulis ke plat nomor: ", currentPlatSelected);
+        
+        await update(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}`), {
+            supir_sekarang: sessionUser.email
+        });
 
-            aktifkanGpsOtomatisSupir();
-            pantauAlurKerjaSupir();
-        }
+        alert("Berhasil mendaftarkan armada: " + currentPlatSelected);
 
+        // 4. Jalankan mesin GPS dan Alur Kerja
+        aktifkanGpsOtomatisSupir();
+        pantauAlurKerjaSupir();
+
+    } catch (error) {
+        // Jika ada kode yang gagal, alert ini akan memberi tahu Anda kerusakannya di mana
+        alert("TERJADI ERROR SISTEM:\n" + error.message);
+        console.error(error);
+    }
+}
         // ==================== CONTROL ROOM ADMIN ENGINE ====================
         function initPetaAdmin() {
             mapAdmin = L.map('map').setView([-6.2000, 106.6500], 11);
