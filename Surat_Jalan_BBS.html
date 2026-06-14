@@ -439,7 +439,6 @@ async function printSuratJalan(data) {
   // ==========================================
 // 2. LOGIKA PERBAIKAN RENDER DASHBOARD
 // ==========================================
-// --- RENDER DASHBOARD (LOGIKA SINKRONISASI UNIT PERJALANAN) ---
 onValue(ref(db, `bbs_logs/${dbKey}`), (snap) => {
     const data = snap.val();
     let tm = 0, tb = 0, otw = 0; 
@@ -499,10 +498,10 @@ onValue(ref(db, `bbs_logs/${dbKey}`), (snap) => {
             list.innerHTML += `<div class="truck-item" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 8px 0;">
                 <div>
                     <b>${i.plat}</b> [${i.project || 'LOSARANG'}]<br>
-                    <small style="color: #bbb;">SOPIR: ${i.sopir} | MUAT: ${i.volM} M3</small><br>
+                    <small style="color: #bbb;">SOPIR : ${i.sopir} | MUAT : ${i.volM} M3</small><br>
                     <small style="display:block; margin-top:2px; font-size:10px;">
-                        ${i.bop_unit ? `<span style="color:var(--gold)">💰 BOP: RP ${i.bop_unit.toLocaleString('id-ID')}</span>` : '<span style="color:var(--red); font-weight:bold;">⚠️ BOP BELUM DISET</span>'}
-                        ${i.margin_per_unit ? ` | <span style="color:var(--green)">📈 MARGIN: RP ${i.margin_per_unit.toLocaleString('id-ID')}</span>` : ''}
+                        ${i.bop_unit ? `<span style="color:var(--gold)">💰 BOP : RP ${i.bop_unit.toLocaleString('id-ID')}</span>` : '<span style="color:var(--red); font-weight:bold;">⚠️ BOP BELUM DISET</span>'}
+                        ${i.margin_per_unit ? ` | <span style="color:var(--green)">📈 MARGIN : RP ${i.margin_per_unit.toLocaleString('id-ID')}</span>` : ''}
                     </small>
                     <small style="display:block; margin-top:2px;">
                         <a href="${i.fotoM}" target="_blank" style="color:var(--green)">FOTO MUAT</a> 
