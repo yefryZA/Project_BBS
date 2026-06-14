@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PT. BBS - Fleet Management System V3.1 (APK Ready)</title>
+    <title>PT. BBS - Fleet Management System V3</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Leaflet Peta GPS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Pustaka Resmi Google Authentication API -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
 
+    <!-- Audio Efek Alarm Bunyi ala WA (Menggunakan Sound API Browser) -->
     <script>
         let audioContext;
         let alarmInterval;
@@ -30,10 +34,11 @@
         function matikanAlarm() { clearInterval(alarmInterval); alarmInterval = null; }
     </script>
 
+    <!-- ==================== LOG IN PAGE (REAL GOOGLE IDENTITY OAUTH) ==================== -->
     <div id="auth-page" class="flex items-center justify-center min-h-screen p-4">
         <div class="max-w-md w-full bg-slate-800 rounded-2xl shadow-xl border border-slate-700 p-6 text-center space-y-6">
             <div>
-                <h1 class="text-2xl font-black tracking-wider text-emerald-400">BERKAH BAJA STEEL</h1>
+                <h1 class="text-2xl font-black tracking-wider text-emerald-400">BERKAH BAJA STELL</h1>
                 <p class="text-xs text-slate-400 font-medium mt-1">FLEET SYSTEM & AUTOMATIC GPS TRACKER</p>
             </div>
             
@@ -43,6 +48,7 @@
                 <p>• 1 Akun Google HP supir mutlak terikat di 1 HP Lapangan (Anti Kecurangan).</p>
             </div>
 
+            <!-- Wadah Tombol Google Resmi -->
             <div class="flex justify-center py-2">
                 <div id="buttonDiv"></div>
             </div>
@@ -50,6 +56,7 @@
         </div>
     </div>
 
+    <!-- ==================== PANEL CONTROL ROOM ADMIN (BANG YEFRY) ==================== -->
     <div id="admin-page" class="hidden max-w-6xl mx-auto p-4 md:p-6 space-y-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between bg-slate-800 p-6 rounded-2xl border border-slate-700 gap-4 shadow-lg">
             <div>
@@ -60,24 +67,20 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Form Input Order Berdasarkan PILIHAN PLAT NOMOR -->
             <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4 shadow-lg h-fit">
                 <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider border-b border-slate-700 pb-2">Kirim Order Per Unit</h3>
                 
-               <!-- KODINGAN BARU YANG SUDAH DINAMIS (IKUT INPUTAN SUPIR) -->
-<div class="space-y-2">
-    <div>
-        <label class="block text-xs text-slate-400 mb-1 font-bold uppercase tracking-wider">Ketik Plat Nomor Armada</label>
-        <div class="flex gap-2">
-            <input type="text" id="adm-input-plat-manual" placeholder="Contoh: B 1234 BBS" class="w-full p-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white font-bold uppercase">
-            <button onclick="gantiPantauanPlatNomor()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 rounded-lg text-xs uppercase tracking-wider transition-all">
-                PANTAU
-            </button>
-        </div>
-    </div>
-    <div class="text-[11px] font-semibold text-slate-400 bg-slate-900/40 p-2 rounded-lg border border-slate-700/50">
-        📍 Sedang Dipantau: <span id="adm-display-plat-terpilih" class="text-emerald-400 font-bold font-mono">B_1234_BBS</span>
-    </div>
-</div>
+                <div class="space-y-3 text-sm">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1 font-bold">PILIH PLAT NOMOR ARMADA</label>
+                        <select id="adm-pilih-plat" onchange="gantiPantauanPlatNomor()" class="w-full p-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white font-bold">
+                            <option value="B_1234_BBS">B 1234 BBS (Truk 01)</option>
+                            <option value="A_5678_BBS">A 5678 BBS (Truk 02)</option>
+                            <option value="B_9999_BBS">B 9999 BBS (Truk 03)</option>
+                        </select>
+                    </div>
+                    <div>
                         <label class="block text-xs text-slate-400 mb-1">Detail Muatan / Rute</label>
                         <input type="text" id="adm-muatan" placeholder="Contoh: Besi Beton ke Cipondoh" class="w-full p-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white">
                     </div>
@@ -97,6 +100,7 @@
                 </div>
             </div>
 
+            <!-- Monitoring Peta & Status Real-time Alur Supir -->
             <div class="lg:col-span-2 space-y-6">
                 <div class="grid grid-cols-3 gap-2 text-center text-xs">
                     <div class="bg-slate-800 p-2.5 rounded-xl border border-slate-700">
@@ -121,6 +125,7 @@
                     <div id="map" class="w-full h-80 rounded-xl bg-slate-700 border border-slate-600"></div>
                 </div>
 
+                <!-- Info Driver Logged In -->
                 <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 text-xs text-slate-400 flex justify-between items-center">
                     <div>Supir Pemegang Unit Saat Ini: <strong id="adm-supir-aktif" class="text-slate-200">Belum ada supir login</strong></div>
                     <div id="adm-last-update" class="font-mono">Sinyal: Off</div>
@@ -129,7 +134,9 @@
         </div>
     </div>
 
+    <!-- ==================== INTERFACE 2: INTERFACE HP SUPIR / DRIVER APP ==================== -->
     <div id="driver-page" class="hidden max-w-md mx-auto p-4 space-y-6">
+        <!-- Card Identitas Driver -->
         <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 flex items-center justify-between shadow-lg">
             <div>
                 <h2 id="drv-display-name" class="text-sm font-bold text-slate-200">NAMA SUPIR</h2>
@@ -141,6 +148,7 @@
             </div>
         </div>
 
+        <!-- Box Lembar Kerja Berdasarkan Alur Penurunan Status -->
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4 shadow-lg relative overflow-hidden">
             <div class="flex justify-between items-center border-b border-slate-700 pb-3">
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">📋 TUGAS SURAT JALAN</h3>
@@ -158,33 +166,30 @@
                     <strong id="drv-txt-bop" class="text-red-400 text-sm font-black">Rp 0</strong>
                 </div>
 
+                <!-- TOMBOL ALUR OPERASIONAL -->
                 <div id="box-tombol-alur" class="pt-2">
                     <button class="w-full bg-slate-700 text-slate-500 font-bold py-3 rounded-xl cursor-not-allowed text-xs uppercase tracking-wider">Menunggu Order Baru</button>
                 </div>
             </div>
         </div>
 
-        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col space-y-2 text-xs shadow-md">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-2">
-                    <span class="flex h-2 w-2 relative">
-                        <span id="ping-indicator" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span id="dot-indicator" class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                    </span>
-                    <span id="drv-gps-coord" class="text-slate-400 font-mono">Mengunci Isyarat GPS HP...</span>
-                </div>
-                <button onclick="logout()" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded font-bold">KELUAR</button>
+        <!-- Indikator Kunci GPS HP -->
+        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex items-center justify-between text-xs shadow-md">
+            <div class="flex items-center space-x-2">
+                <span class="flex h-2 w-2 relative">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
+                <span id="drv-gps-coord" class="text-slate-400 font-mono">Mengunci Isyarat GPS HP...</span>
             </div>
-            <div class="flex justify-between items-center text-[10px] border-t border-slate-700/50 pt-2 text-slate-500 font-mono">
-                <span id="drv-signal-status" class="text-emerald-400">📶 NETWORK: ONLINE</span>
-                <span id="drv-buffer-status">BUFFER OFFLINE: 0</span>
-            </div>
+            <button onclick="logout()" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded font-bold">KELUAR</button>
         </div>
     </div>
 
+    <!-- ==================== CODE LOGIC UTAMA INTEGRASI FIREBASE & GOOGLE ==================== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyAfeLTKRQ66tjZjAt7tg6KcrWhtmv0y3fo", 
@@ -201,24 +206,7 @@
         let mapAdmin, markerTruck;
         let myDeviceToken = ""; 
 
-        // Variabel Tambahan Pengendali GPS & Offline Engine
-        let lastCoordinates = { lat: 0, lng: 0 };
-        let lastGpsSendTime = 0;
-        const MIN_DISTANCE_METERS = 50; // Hanya kirim jika bergerak 50 meter
-        const MIN_TIME_INTERVAL = 120000; // Atau minimal jeda 2 menit (120000 ms)
-
-        // --- HARNESS FORMULA HAVERSINE (PENGHITUNG JARAK PERGERAKAN AKURAT) ---
-        function hitungJarakMeter(lat1, lon1, lat2, lon2) {
-            const R = 6371000; // Jari-jari bumi dalam meter
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                      Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
-
+        // --- SISTEM PEMBONGKAR TOKEN DATA GOOGLE (JWT DECODER) ---
         function bongkarTokenGoogle(token) {
             var base64Url = token.split('.')[1];
             var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -228,10 +216,12 @@
             return JSON.parse(jsonPayload);
         }
 
+        // --- PROSES SETELAH USER LOGIN BERHASIL (DIPISAH SUPAYA BISA DIPANGGIL AUTO-LOGIN) ---
         function eksekusiMasukSistem(email, name) {
             sessionUser.email = email.toLowerCase().trim();
             sessionUser.name = name.toUpperCase().replace(/[^A-Z0-9]/g, '_');
             
+            // Simpan status login ke LocalStorage (Kantong Ajaib Browser) agar tidak hilang saat di-refresh
             localStorage.setItem("bbs_saved_email", sessionUser.email);
             localStorage.setItem("bbs_saved_name", sessionUser.name);
 
@@ -242,29 +232,26 @@
                 initPetaAdmin();
                 pantauLaporanAdmin();
             } else {
-         let platTersimpan = localStorage.getItem("bbs_saved_plat");
+                // Ambil plat terikat yang disimpan sebelumnya atau minta baru jika tidak ada
+                let platTersimpan = localStorage.getItem("bbs_saved_plat");
                 if(!platTersimpan) {
-                    // Supir bebas mengetik nomor plat truknya malam ini
-                    const penentuanPlat = prompt("KONFIRMASI UNIT TRUCK PT. BBS\n\nSilakan ketik PLAT NOMOR Truk yang Anda bawa malam ini:\n(Contoh: B 1234 BBS)");
-                    
-                    if(!penentuanPlat || penentuanPlat.trim() === "") {
-                        alert("Plat nomor kendaraan wajib diisi untuk pelacakan armada!");
+                    const penentuanPlat = prompt("KONFIRMASI UNIT TRUCK PT. BBS\n\nPilih & Ketik PLAT NOMOR Truk yang Anda bawa malam ini:\n\nPilihan terdaftar:\n• B 1234 BBS\n• A 5678 BBS\n• B 9999 BBS").replace(/\s+/g, '_').toUpperCase();
+                    if(penentuanPlat !== "B_1234_BBS" && penentuanPlat !== "A_5678_BBS" && penentuanPlat !== "B_9999_BBS") {
+                        alert("Plat nomor kendaraan salah atau tidak terdaftar di sistem BBS!");
                         logout();
                         return;
                     }
-                    
-                    // Format inputan agar seragam menjadi HURUF BESAR dan spasi diganti underscore (_) untuk nama folder Firebase
-                    platTersimpan = penentuanPlat.trim().toUpperCase().replace(/\s+/g, '_');
+                    platTersimpan = penentuanPlat;
                     localStorage.setItem("bbs_saved_plat", platTersimpan);
                 }
                 
-                            
                 currentPlatSelected = platTersimpan;
                 document.getElementById('driver-page').classList.remove('hidden');
                 document.getElementById('drv-display-name').innerText = sessionUser.name.replace(/_/g, ' ');
                 document.getElementById('drv-display-email').innerText = sessionUser.email;
                 document.getElementById('drv-display-plat').innerText = currentPlatSelected.replace(/_/g, ' ');
                 
+                // Gunakan token device yang sudah ada atau buat baru jika kosong
                 let tokenDeviceTersimpan = localStorage.getItem("bbs_device_token");
                 if(!tokenDeviceTersimpan) {
                     tokenDeviceTersimpan = "BBS_HP_" + Math.floor(100000 + Math.random() * 900000);
@@ -273,22 +260,26 @@
                 myDeviceToken = tokenDeviceTersimpan;
 
                 kunciDanProteksiDeviceSupir();
-                inisialisasiPemeriksaKoneksi();
             }
         }
 
+        // --- DATA DARI KLIK TOMBOL GOOGLE MANUAL ---
         window.handleCredentialResponse = (response) => {
             const dataProfilGoogle = bongkarTokenGoogle(response.credential);
             eksekusiMasukSistem(dataProfilGoogle.email, dataProfilGoogle.name);
         };
 
+        // --- ENGINE CEK AUTO LOGIN & INISIALISASI TOMBOL GOOGLE ---
         window.onload = function () {
+            // Cek apakah di browser sudah tersimpan data login sebelumnya
             const savedEmail = localStorage.getItem("bbs_saved_email");
             const savedName = localStorage.getItem("bbs_saved_name");
 
             if (savedEmail && savedName) {
+                // Jika ada data, langsung bypass masuk tanpa pencet tombol Google lagi!
                 eksekusiMasukSistem(savedEmail, savedName);
             } else {
+                // Jika kosong, baru munculkan tombol Google resmi
                 google.accounts.id.initialize({
                     client_id: "69920941495-g31in472605f368dme60iugnh184ot5r.apps.googleusercontent.com",
                     callback: handleCredentialResponse
@@ -300,11 +291,13 @@
             }
         }
 
+        // --- TOMBOL LOGOUT SEBENARNYA (BERSIHKAN SEMUA DATA) ---
         window.logout = () => { 
-            localStorage.clear(); 
+            localStorage.clear(); // Hapus kantong ajaib browser
             location.reload(); 
         };
 
+        // ==================== ENGINE 1 HP = 1 EMAIL (ANTI KECURANGAN) ====================
         async function kunciDanProteksiDeviceSupir() {
             await update(ref(db, `${dbRoot}/Kunci_Sesi_Device/${sessionUser.name}`), {
                 token_aktif: myDeviceToken,
@@ -314,7 +307,7 @@
 
             onValue(ref(db, `${dbRoot}/Kunci_Sesi_Device/${sessionUser.name}/token_aktif`), (snap) => {
                 if (snap.exists() && snap.val() !== myDeviceToken) {
-                    alert("⚠️ AKUN DI-KUNCI!\nEmail Google Anda baru saja login di perangkat HP lain!");
+                    alert("⚠️ AKUN DI-KUNCI!\nEmail Google Anda baru saja login di perangkat HP lain. 1 Email supir hanya sah di 1 HP!");
                     logout();
                 }
             });
@@ -334,25 +327,8 @@
             markerTruck = L.marker([-6.2000, 106.6500]).addTo(mapAdmin).bindPopup("<b>Posisi Truk</b>").openPopup();
         }
 
-window.gantiPantauanPlatNomor = () => {
-            // Mengambil data langsung dari kolom input teks di dashboard admin
-            const inputTeksAdmin = document.getElementById('adm-input-plat-manual').value.trim();
-            
-            if (!inputTeksAdmin) {
-                alert("Silakan ketik nomor plat truk yang ingin dipantau terlebih dahulu, Bang!");
-                return;
-            }
-            
-            // Format otomatis disamakan dengan inputan supir (Huruf besar dan spasi jadi underscore)
-            currentPlatSelected = inputTeksAdmin.toUpperCase().replace(/\s+/g, '_');
-            
-            // Perbarui teks indikator "Sedang Dipantau" di layar admin
-            const displayPlatAdmin = document.getElementById('adm-display-plat-terpilih');
-            if (displayPlatAdmin) {
-                displayPlatAdmin.innerText = currentPlatSelected.replace(/_/g, ' ');
-            }
-            
-            // Jalankan ulang pemantauan Firebase untuk membaca folder plat yang baru diketik ini
+        window.gantiPantauanPlatNomor = () => {
+            currentPlatSelected = document.getElementById('adm-pilih-plat').value;
             pantauLaporanAdmin();
         };
 
@@ -371,7 +347,7 @@ window.gantiPantauanPlatNomor = () => {
                     status: "ORDER_MASUK",
                     waktu: new Date().toLocaleTimeString('id-ID')
                 });
-                alert("Surat Jalan Sukses Di-Blast!");
+                alert("Surat Jalan Sukses Di-Blast! Alarm supir tujuan akan langsung berdering.");
                 document.getElementById('adm-muatan').value = "";
             } catch(e) { alert("Gagal kirim: " + e.message); }
         };
@@ -382,7 +358,7 @@ window.gantiPantauanPlatNomor = () => {
                 if(gps && gps.lat && gps.lng) {
                     document.getElementById('adm-last-update').innerText = `Live: ${gps.jam} (${gps.email_driver})`;
                     const koordinat = [gps.lat, gps.lng];
-                    markerTruck.setLatLng(koordinat).getPopup().setContent(`<b>Unit: ${currentPlatSelected.replace(/_/g, ' ')}</b><br>Driver: ${gps.email_driver}<br>Jam: ${gps.jam}`);
+                    markerTruck.setLatLng(koordinat).getPopup().setContent(`<b>Unit: ${currentPlatSelected.replace(/_/g, ' ')}</b><br>Driver: ${gps.email_driver}`);
                     mapAdmin.panTo(koordinat);
                 } else {
                     document.getElementById('adm-last-update').innerText = "Sinyal: Offline (Supir belum aktif)";
@@ -452,123 +428,32 @@ window.gantiPantauanPlatNomor = () => {
             });
         }
 
-        // PERBAIKAN: Klik tombol alur sekarang otomatis menjepret lokasi GPS terakhir
         window.ubahStatusOperasionalSupir = async (statusBaru) => {
-            const jamSekarang = new Date().toLocaleTimeString('id-ID');
             try {
-                // Jalankan update status utama
                 if(statusBaru === "STANDBY") {
                     await set(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/order_aktif`), { status: "STANDBY" });
                 } else {
                     await update(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/order_aktif`), { status: statusBaru });
                 }
-                
-                // Sekaligus paksa rekam jejak koordinat di detik tombol tersebut ditekan
-                if(lastCoordinates.lat !== 0) {
-                    await update(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/gps`), {
-                        email_driver: sessionUser.email,
-                        lat: lastCoordinates.lat,
-                        lng: lastCoordinates.lng,
-                        jam: jamSekarang + " (Klik Status: " + statusBaru + ")"
-                    });
-                }
                 alert("Status sukses dilaporkan ke Admin PT. BBS!");
-            } catch(e) { 
-                console.log("Koneksi bermasalah, menyimpan status secara lokal.");
-                // Jika offline, simpan data alur ke localstorage
-                localStorage.setItem("bbs_pending_status", statusBaru);
-            }
+            } catch(e) { alert("Gagal update status: " + e.message); }
         };
 
-        // ==================== ENGINE ENGINE GPS & BUFFER OFFLINE (SANGAT KRUSIAL UNTUK APK) ====================
         function aktifkanGpsOtomatisSupir() {
             if (navigator.geolocation) {
                 navigator.geolocation.watchPosition((pos) => {
                     const lat = pos.coords.latitude;
                     const lng = pos.coords.longitude;
-                    const waktuSekarang = Date.now();
-                    const jamSekarang = new Date().toLocaleTimeString('id-ID');
-
                     document.getElementById('drv-gps-coord').innerText = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 
-                    // VALIDASI 1: Hitung jarak pergerakan dari titik terakhir yang dikirim
-                    const jarakPergerakan = hitungJarakMeter(lastCoordinates.lat, lastCoordinates.lng, lat, lng);
-                    const jedaWaktu = waktuSekarang - lastGpsSendTime;
-
-                    // FILTER EFISIENSI BATERAI: Kirim HANYA jika bergerak > 50 meter ATAU sudah diam selama 2 menit
-                    if (lastCoordinates.lat === 0 || jarakPergerakan >= MIN_DISTANCE_METERS || jedaWaktu >= MIN_TIME_INTERVAL) {
-                        
-                        const paketGps = {
-                            email_driver: sessionUser.email,
-                            lat: lat,
-                            lng: lng,
-                            jam: jamSekarang
-                        };
-
-                        if (navigator.onLine) {
-                            // Jika ada internet, tembak langsung ke Firebase
-                            update(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/gps`), paketGps)
-                            .then(() => {
-                                document.getElementById('ping-indicator').className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
-                                document.getElementById('dot-indicator').className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
-                            });
-                        } else {
-                            // VALIDASI 2: Jika Offline, tampung ke memori localstorage biar data tidak hilang di jalan
-                            let antreanOffline = JSON.parse(localStorage.getItem("bbs_antrean_gps")) || [];
-                            antreanOffline.push(paketGps);
-                            localStorage.setItem("bbs_antrean_gps", JSON.stringify(antreanOffline));
-                            
-                            document.getElementById('drv-buffer-status').innerText = "BUFFER OFFLINE: " + antreanOffline.length;
-                            document.getElementById('ping-indicator').className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75";
-                            document.getElementById('dot-indicator').className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
-                        }
-
-                        // Perbarui data acuan terakhir
-                        lastCoordinates = { lat: lat, lng: lng };
-                        lastGpsSendTime = waktuSekarang;
-                    }
-                }, (err) => { 
-                    console.error("GPS Terhalang: " + err.message); 
-                }, { 
-                    enableHighAccuracy: true, // Paksa kunci satelit akurasi tinggi
-                    maximumAge: 0,
-                    timeout: 5000 
-                });
-            }
-        }
-
-        // ENGINE BACKUP: Pemulih data otomatis saat HP supir mendapatkan kembali sinyal internet
-        function inisialisasiPemeriksaKoneksi() {
-            window.addEventListener('online', () => {
-                document.getElementById('drv-signal-status').innerText = "📶 NETWORK: ONLINE";
-                document.getElementById('drv-signal-status').className = "text-emerald-400";
-
-                // 1. Kuras habis data GPS yang sempat tertunda di jalan tadi
-                let antreanOffline = JSON.parse(localStorage.getItem("bbs_antrean_gps")) || [];
-                if (antreanOffline.length > 0) {
-                    // Ambil koordinat paling terakhir/terbaru dari antrean
-                    const dataTerbaru = antreanOffline[antreanOffline.length - 1];
-                    dataTerbaru.jam = dataTerbaru.jam + " (Rapelan Sinyal Pulih)";
-                    
-                    update(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/gps`), dataTerbaru)
-                    .then(() => {
-                        localStorage.removeItem("bbs_antrean_gps");
-                        document.getElementById('drv-buffer-status').innerText = "BUFFER OFFLINE: 0";
+                    update(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/gps`), {
+                        email_driver: sessionUser.email,
+                        lat: lat,
+                        lng: lng,
+                        jam: new Date().toLocaleTimeString('id-ID')
                     });
-                }
-
-                // 2. Kuras status operasional supir jika ada yang tertunda
-                let statusTertunda = localStorage.getItem("bbs_pending_status");
-                if(statusTertunda) {
-                    window.ubahStatusOperasionalSupir(statusTertunda);
-                    localStorage.removeItem("bbs_pending_status");
-                }
-            });
-
-            window.addEventListener('offline', () => {
-                document.getElementById('drv-signal-status').innerText = "📶 NETWORK: OFFLINE";
-                document.getElementById('drv-signal-status').className = "text-red-500 font-bold";
-            });
+                }, (err) => { console.error("GPS Terhalang: " + err.message); }, { enableHighAccuracy: true });
+            }
         }
     </script>
 </body>
