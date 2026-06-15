@@ -460,33 +460,65 @@ let penontonStatusAdmin = null;
             pantauLaporanAdmin();
         };
 
-        window.kirimSuratJalanAdmin = async () => {
-    const muatan = document.getElementById('adm-muatan').value;
-    const bop = parseFloat(document.getElementById('adm-bop').value) || 0;
-    const ongkos = parseFloat(document.getElementById('adm-ongkos').value) || 0;
+       window.kirimSuratJalanAdmin = async () => {
+    // 1. Ambil elemen HTML-nya dulu secara aman
+    const elBarang = document.getElementById('adm-barang');
+    const elMuat = document.getElementById('adm-muat');
+    const elBongkar = document.getElementById('adm-bongkar');
+    const elBop = document.getElementById('adm-bop');
+    const elOngkos = document.getElementById('adm-ongkos');
 
-    if(!muatan) return alert("Silakan ketik detail muatannya dulu, Bang!");
+    // JIKA ADA SALAH SATU INPUT YANG GAIB / TIDAK KETEMU DI HTML, KITA KASIH UPDATE DI CONSOLE
+    if (!elBarang || !elMuat || !elBongkar || !elBop || !elOngkos) {
+        console.log("🚨 DETEKSI ELEMEN HILANG:", { elBarang, elMuat, elBongkar, elBop, elOngkos });
+        return alert("🚨 Waduh Bang! Ada komponen input yang belum sinkron atau hilang di HTML. Coba refresh halaman (Ctrl + F5).");
+    }
+
+    // Ambil nilainya setelah dipastikan elemennya ada semua
+    const barang = elBarang.value.trim();
+    const muat = elMuat.value.trim();
+    const bongkar = elBongkar.value.trim();
+    const bop = parseFloat(elBop.value) || 0;
+    const ongkos = parseFloat(elOngkos.value) || 0;
+
+    // Validasi pencegahan agar tidak kirim data kosong
+    if (!barang || !muat || !bongkar) {
+        return alert("Silakan lengkapi Nama Barang, Lokasi Muat, dan Lokasi Bongkar dulu, Bang!");
+    }
+
+    // Generate ID Surat unik menggunakan kode singkatan BBS + waktu milidetik
+    const idSuratJalan = "BBS-" + Date.now().toString().substring(7);
 
     try {
-        // DI SINI KUNCI TUKAR BALIKNYA, BANG:
-        // Kita paksa input BOP masuk ke field 'bop', dan input ONGKOS masuk ke field 'ongkos'
+        // Pastikan variabel currentPlatSelected sudah terdefinisi di aplikasi Abang
+        if (typeof currentPlatSelected === 'undefined' || !currentPlatSelected) {
+            return alert("🚨 Pilih Plat Nomor Armadanya dulu, Bang!");
+        }
+
+        // 2. Kirim paket data lengkap ke dalam kamar 'order_aktif' di Firebase
         await update(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/order_aktif`), {
-            muatan: muatan,
-            bop: bop,       // <--- Memastikan input BOP Admin masuk ke kamar 'bop' di Firebase
-            ongkos: ongkos, // <--- Memastikan input Ongkos Admin masuk ke kamar 'ongkos' di Firebase
+            id: idSuratJalan,
+            barang: barang,
+            lokasi_muat: muat,
+            lokasi_bongkar: bongkar,
+            bop: bop,       
+            ongkos: ongkos, 
             status: "ORDER_MASUK",
             waktu: new Date().toLocaleTimeString('id-ID')
         });
         
-        alert("Surat Jalan Sukses Di-Blast! Kamar database sudah lurus.");
-        document.getElementById('adm-muatan').value = "";
-        document.getElementById('adm-bop').value = "";
-        document.getElementById('adm-ongkos').value = "";
+        alert("🚀 Surat Jalan Sukses Di-Blast ke Unit " + currentPlatSelected.replace(/_/g, ' ') + "!");
+        
+        // 3. Bersihkan 3 kolom input setelah berhasil kirim
+        elBarang.value = "";
+        elMuat.value = "";
+        elBongkar.value = "";
+        elBop.value = "";
+        elOngkos.value = "";
     } catch(e) { 
-        alert("Gagal kirim: " + e.message); 
+        alert("Gagal kirim data ke Firebase: " + e.message); 
     }
 };
-
        function pantauLaporanAdmin() {
     const platLama = currentPlatSelected;
     currentPlatSelected = document.getElementById('adm-pilih-plat').value;
