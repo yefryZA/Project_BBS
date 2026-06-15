@@ -1049,7 +1049,7 @@ async function generatePdfBulanan(platNomor, bulanTahun, listOrderan) {
         doc.text("Manager PT. BBS", 19, finalY + 29);
         
         doc.text(`( ${listOrderan[0]?.sopir || 'H E R M A N'} )`, 145, finalY + 25);
-        doc.text("Pengurus Truck BBS", 145, finalY + 29);
+        doc.text("Penanggung Jawab Truck", 145, finalY + 29);
 
         // 6. DOWNLOAD FILE PDF
         doc.save(`LAPORAN_BULANAN_${platNomor.toUpperCase()}_${bulanTahun.replace(/ /g, '_')}.pdf`);
