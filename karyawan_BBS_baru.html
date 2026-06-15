@@ -476,7 +476,7 @@ let penontonStatusAdmin = null;
     }
 };
 
-        function pantauLaporanAdmin() {
+       function pantauLaporanAdmin() {
     const platLama = currentPlatSelected;
     currentPlatSelected = document.getElementById('adm-pilih-plat').value;
 
@@ -495,7 +495,11 @@ let penontonStatusAdmin = null;
     document.getElementById('rep-profit').innerText = "Rp 0";
     document.getElementById('adm-status-truk').innerText = "STANDBY";
 
-    // 1. PENONTON STATUS & WORKFLOW (Kita naikkan ke atas agar data order terbaca lebih dulu)
+    // Simpan koordinat terakhir di memori agar bisa di-refresh instan oleh penonton status
+    window.lastKnownKoordinat = null;
+    window.lastKnownEmailDriver = "";
+
+    // 1. PENONTON STATUS & WORKFLOW (Ditambahkan trigger pembongkar lag peta)
     penontonStatusAdmin = onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}`), (snap) => {
         const data = snap.val();
         document.getElementById('adm-supir-aktif').innerText = data?.supir_sekarang || "Belum ada supir login";
@@ -512,35 +516,54 @@ let penontonStatusAdmin = null;
         document.getElementById('rep-bop').innerText = "- Rp " + bop.toLocaleString('id-ID'); 
         document.getElementById('rep-profit').innerText = "Rp " + profitBersih.toLocaleString('id-ID'); 
         
-        // Simpan data order secara global sementara agar bisa dibaca oleh penonton GPS di bawah
+        // Simpan ke global memory
         window.currentStatusTruk = statusSekarang;
         window.currentMuatanTruk = order?.muatan || "";
+
+        // 🔥 TRIK INSTAN: Jika peta sudah pernah menggambar koordinat supir sebelumnya,
+        // langsung paksa teks balon peta di-update detik ini juga tanpa nunggu supir kirim GPS baru!
+        if (window.lastKnownKoordinat && markerTruck) {
+            const platBersih = currentPlatSelected.replace(/_/g, ' ');
+            const statusKeren = statusSekarang.replace(/_/g, ' ');
+            const muatanKeren = window.currentMuatanTruk;
+
+            let teksBalonInstan = `<b>Unit: ${platBersih} [${statusKeren}]</b><br>`;
+            if (statusKeren !== "STANDBY" && muatanKeren !== "") {
+                teksBalonInstan += `📌 <b>Order:</b> ${muatanKeren}<br>`;
+            }
+            teksBalonInstan += `👤 <b>Driver:</b> ${window.lastKnownEmailDriver}`;
+            
+            markerTruck.getPopup().setContent(teksBalonInstan);
+        }
     });
 
-    // 2. PENONTON GPS (Menampilkan plat, status operasional, dan rute muatan di peta)
+    // 2. PENONTON GPS
     penontonGpsAdmin = onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/gps`), (snap) => {
         const gps = snap.val();
         if(gps && gps.lat && gps.lng) {
             document.getElementById('adm-last-update').innerText = `Live: ${gps.jam} (${gps.email_driver})`;
             const koordinat = [gps.lat, gps.lng];
             
-            // Format teks pelat nomor dan status agar rapi saat dibaca
+            // Simpan koordinat ke memori agar bisa dipakai oleh penonton status di atas
+            window.lastKnownKoordinat = koordinat;
+            window.lastKnownEmailDriver = gps.email_driver;
+            
             const platBersih = currentPlatSelected.replace(/_/g, ' ');
             const statusKeren = (window.currentStatusTruk || "STANDBY").replace(/_/g, ' ');
             const muatanKeren = window.currentMuatanTruk || "";
 
-            // Bikin teks balon peta dinamis
             let teksBalon = `<b>Unit: ${platBersih} [${statusKeren}]</b><br>`;
             if (statusKeren !== "STANDBY" && muatanKeren !== "") {
                 teksBalon += `📌 <b>Order:</b> ${muatanKeren}<br>`;
             }
             teksBalon += `👤 <b>Driver:</b> ${gps.email_driver}`;
 
-            // Set isi konten baru ke dalam Peta Admin
             markerTruck.setLatLng(koordinat).getPopup().setContent(teksBalon);
             mapAdmin.panTo(koordinat);
         } else {
             document.getElementById('adm-last-update').innerText = "Sinyal: Offline (Supir belum aktif)";
+            window.lastKnownKoordinat = null;
+            window.lastKnownEmailDriver = "";
         }
     });
 }
