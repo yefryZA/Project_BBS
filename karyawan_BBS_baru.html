@@ -477,54 +477,73 @@ let penontonStatusAdmin = null;
 };
 
         function pantauLaporanAdmin() {
-            const platLama = currentPlatSelected;
-            currentPlatSelected = document.getElementById('adm-pilih-plat').value;
+    const platLama = currentPlatSelected;
+    currentPlatSelected = document.getElementById('adm-pilih-plat').value;
 
-            if (penontonGpsAdmin) {
-                off(ref(db, `${dbRoot}/Status_Armada/${platLama}/gps`), 'value', penontonGpsAdmin);
+    if (penontonGpsAdmin) {
+        off(ref(db, `${dbRoot}/Status_Armada/${platLama}/gps`), 'value', penontonGpsAdmin);
+    }
+    if (penontonStatusAdmin) {
+        off(ref(db, `${dbRoot}/Status_Armada/${platLama}`), 'value', penontonStatusAdmin);
+    }
+
+    // Reset visual ke setelan awal
+    document.getElementById('adm-supir-aktif').innerText = "Belum ada supir login";
+    document.getElementById('adm-last-update').innerText = "Sinyal: Offline (Mencari data...)";
+    document.getElementById('rep-omset').innerText = "Rp 0";
+    document.getElementById('rep-bop').innerText = "- Rp 0";
+    document.getElementById('rep-profit').innerText = "Rp 0";
+    document.getElementById('adm-status-truk').innerText = "STANDBY";
+
+    // 1. PENONTON STATUS & WORKFLOW (Kita naikkan ke atas agar data order terbaca lebih dulu)
+    penontonStatusAdmin = onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}`), (snap) => {
+        const data = snap.val();
+        document.getElementById('adm-supir-aktif').innerText = data?.supir_sekarang || "Belum ada supir login";
+        
+        const order = data?.order_aktif;
+        const statusSekarang = order?.status || "STANDBY";
+        document.getElementById('adm-status-truk').innerText = statusSekarang.replace(/_/g, ' ');
+
+        const bop = order?.bop || 0;
+        const ongkos = order?.ongkos || 0;
+        const profitBersih = ongkos - bop;
+
+        document.getElementById('rep-omset').innerText = "Rp " + ongkos.toLocaleString('id-ID');
+        document.getElementById('rep-bop').innerText = "- Rp " + bop.toLocaleString('id-ID'); 
+        document.getElementById('rep-profit').innerText = "Rp " + profitBersih.toLocaleString('id-ID'); 
+        
+        // Simpan data order secara global sementara agar bisa dibaca oleh penonton GPS di bawah
+        window.currentStatusTruk = statusSekarang;
+        window.currentMuatanTruk = order?.muatan || "";
+    });
+
+    // 2. PENONTON GPS (Menampilkan plat, status operasional, dan rute muatan di peta)
+    penontonGpsAdmin = onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/gps`), (snap) => {
+        const gps = snap.val();
+        if(gps && gps.lat && gps.lng) {
+            document.getElementById('adm-last-update').innerText = `Live: ${gps.jam} (${gps.email_driver})`;
+            const koordinat = [gps.lat, gps.lng];
+            
+            // Format teks pelat nomor dan status agar rapi saat dibaca
+            const platBersih = currentPlatSelected.replace(/_/g, ' ');
+            const statusKeren = (window.currentStatusTruk || "STANDBY").replace(/_/g, ' ');
+            const muatanKeren = window.currentMuatanTruk || "";
+
+            // Bikin teks balon peta dinamis
+            let teksBalon = `<b>Unit: ${platBersih} [${statusKeren}]</b><br>`;
+            if (statusKeren !== "STANDBY" && muatanKeren !== "") {
+                teksBalon += `📌 <b>Order:</b> ${muatanKeren}<br>`;
             }
-            if (penontonStatusAdmin) {
-                off(ref(db, `${dbRoot}/Status_Armada/${platLama}`), 'value', penontonStatusAdmin);
-            }
+            teksBalon += `👤 <b>Driver:</b> ${gps.email_driver}`;
 
-            // Reset visual ke setelan awal
-            document.getElementById('adm-supir-aktif').innerText = "Belum ada supir login";
-            document.getElementById('adm-last-update').innerText = "Sinyal: Offline (Mencari data...)";
-            document.getElementById('rep-omset').innerText = "Rp 0";
-            document.getElementById('rep-bop').innerText = "- Rp 0";
-            document.getElementById('rep-profit').innerText = "Rp 0";
-            document.getElementById('adm-status-truk').innerText = "STANDBY";
-
-            penontonGpsAdmin = onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}/gps`), (snap) => {
-                const gps = snap.val();
-                if(gps && gps.lat && gps.lng) {
-                    document.getElementById('adm-last-update').innerText = `Live: ${gps.jam} (${gps.email_driver})`;
-                    const koordinat = [gps.lat, gps.lng];
-                    markerTruck.setLatLng(koordinat).getPopup().setContent(`<b>Unit: ${currentPlatSelected.replace(/_/g, ' ')}</b><br>Driver: ${gps.email_driver}`);
-                    mapAdmin.panTo(koordinat);
-                } else {
-                    document.getElementById('adm-last-update').innerText = "Sinyal: Offline (Supir belum aktif)";
-                }
-            });
-
-            penontonStatusAdmin = onValue(ref(db, `${dbRoot}/Status_Armada/${currentPlatSelected}`), (snap) => {
-                const data = snap.val();
-                document.getElementById('adm-supir-aktif').innerText = data?.supir_sekarang || "Belum ada supir login";
-                
-                const order = data?.order_aktif;
-                const statusSekarang = order?.status || "STANDBY";
-                document.getElementById('adm-status-truk').innerText = statusSekarang.replace(/_/g, ' ');
-
-                const bop = order?.bop || 0;
-                const ongkos = order?.ongkos || 0;
-                const profitBersih = ongkos - bop;
-
-                // PENYEMPURNAAN VISUAL: Minus hanya ada di BOP, Profit bersih murni nominal positif tanpa tanda minus
-                document.getElementById('rep-omset').innerText = "Rp " + ongkos.toLocaleString('id-ID');
-                document.getElementById('rep-bop').innerText = "- Rp " + bop.toLocaleString('id-ID'); 
-                document.getElementById('rep-profit').innerText = "Rp " + profitBersih.toLocaleString('id-ID'); 
-            });
+            // Set isi konten baru ke dalam Peta Admin
+            markerTruck.setLatLng(koordinat).getPopup().setContent(teksBalon);
+            mapAdmin.panTo(koordinat);
+        } else {
+            document.getElementById('adm-last-update').innerText = "Sinyal: Offline (Supir belum aktif)";
         }
+    });
+}
 
         // ==================== DRIVER WORKFLOW ENGINE ====================
         function pantauAlurKerjaSupir() {
