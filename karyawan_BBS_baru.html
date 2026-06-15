@@ -786,7 +786,7 @@ function printSuratJalanDirect(inputData) {
         printArea.innerHTML = `
         <div style="text-align: center; font-weight: bold; font-size: 16px; color: #000000;">PT. BERKAH BAJA STEEL</div>
         <div style="text-align: center; font-size: 11px; font-weight: bold; color: #000000;">SUPLAY MATERIAL PROJECT ${data.project}</div>
-        <div style="text-align: center; color: #000000;">-----------------------------------------------</div>
+        <div style="text-align: center; color: #000000;">-------------------------------------------</div>
         <div style="font-size: 12px; line-height: 1.5; color: #000000;">
             <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 11px; table-layout: fixed; color: #000000;">
                 <tr><td style="width: 85px;">TGL/JAM</td><td style="width: 15px;">:</td><td>${tgl} ‖ ${jam}</td></tr>
@@ -1048,7 +1048,7 @@ async function generatePdfBulanan(platNomor, bulanTahun, listOrderan) {
         doc.text("( YEFRY DESFIRMANZA )", 19, finalY + 25);
         doc.text("Manager PT. BBS", 19, finalY + 29);
         
-        doc.text(`( ${listOrderan[0]?.sopir || 'H E R M A N'} )`, 145, finalY + 25);
+        doc.text("( H E R M A N )", 145, finalY + 25); // Sudah dikunci manual, tidak akan berubah jadi Driver lagi
         doc.text("Penanggung Jawab Truck", 145, finalY + 29);
 
         // 6. DOWNLOAD FILE PDF
