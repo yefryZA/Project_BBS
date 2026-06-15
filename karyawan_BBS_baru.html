@@ -917,7 +917,7 @@ window.ubahStatusOperasionalSupir = (statusBaru) => {
     }
 };
 
-// ==================== REKAP PDF BULANAN PER UNIT EMULATOR ====================
+// ==================== REKAP PDF BULANAN PER UNIT EMULATOR (PT. BBS) ====================
 async function generatePdfBulanan(platNomor, bulanTahun, listOrderan) {
     try {
         const { jsPDF } = window.jspdf;
@@ -1053,7 +1053,29 @@ async function generatePdfBulanan(platNomor, bulanTahun, listOrderan) {
 
         // 6. DOWNLOAD FILE PDF
         doc.save(`LAPORAN_BULANAN_${platNomor.toUpperCase()}_${bulanTahun.replace(/ /g, '_')}.pdf`);
-        alert(`✓ Berhasil membuat PDF Bulanan untuk Unit ${platNomor}!`);
+        
+        // ==================== PILIHAN KONFIRMASI TUTUP BUKU (HAPUS DATA HISTORI) ====================
+        setTimeout(() => {
+            const tanyaHapus = confirm(`✓ PDF Bulanan Unit ${platNomor.toUpperCase().replace(/_/g, ' ')} Berhasil Diunduh!\n\nApakah Anda ingin MENGHAPUS (TUTUP BUKU) seluruh data histori armada ini dari Firebase untuk periode berikutnya?\n\n[OK] = Hapus Total Data Histori\n[Cancel] = Biarkan Tetap Tersimpan`);
+            
+            if (tanyaHapus) {
+                // Jika Admin menekan OK, bersihkan node histori unit tersebut
+                const pathHistoriTerpakai = `${dbRoot}/Histori_Order/${platNomor}`;
+                
+                set(ref(db, pathHistoriTerpakai), null)
+                .then(() => {
+                    console.log(`✓ Folder Histori ${platNomor} berhasil dibersihkan.`);
+                    alert(`✓ Tutup buku sukses! Database histori unit ${platNomor.toUpperCase().replace(/_/g, ' ')} telah dikosongkan.`);
+                })
+                .catch((err) => {
+                    alert(`PDF berhasil diunduh, namun gagal mengosongkan database histori: ` + err.message);
+                });
+            } else {
+                // Jika Admin menekan Cancel, biarkan data aman di database
+                alert(`✓ Laporan aman! Data histori armada di Firebase tetap disimpan.`);
+            }
+        }, 500);
+        // ============================================================================================
 
     } catch (error) {
         alert("Gagal menyusun dokumen PDF Bulanan: " + error.message);
