@@ -861,11 +861,56 @@ window.ubahStatusOperasionalSupir = (statusBaru) => {
 
     const pathOrder = `${dbRoot}/Status_Armada/${myPlatNomor}/order_aktif`;
 
+    // JIKA SUPIR KLIK SELESAI BONGKAR (KEMBALI STANDBY)
     if (statusBaru === "STANDBY") {
-        set(ref(db, pathOrder), null)
-        .then(() => { alert("Tugas selesai! Status armada kembali STANDBY."); })
-        .catch((err) => { alert("Gagal memperbarui status: " + err.message); });
+        // 1. Tarik data orderan yang ada saat ini sebelum dihapus total
+        get(ref(db, pathOrder)).then((snapshot) => {
+            if (snapshot.exists()) {
+                const orderanSekarang = snapshot.val();
+                const idOrderan = orderanSekarang.id || `BBS-${Date.now()}`;
+                
+                // Siapkan format tanggal otomatis (Hari ini, contoh: 15/06/2026)
+                const d = new Date();
+                const tanggalFormat = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                
+                // 2. Bungkus semua data penting untuk dipindahkan ke folder rekap kantor
+                const dataArsipBBS = {
+                    id: idOrderan,
+                    barang: orderanSekarang.barang || orderanSekarang.nama_barang || "-",
+                    lokasi_muat: orderanSekarang.muat || orderanSekarang.lokasi_muat || "-",
+                    lokasi_bongkar: orderanSekarang.bongkar || orderanSekarang.lokasi_bongkar || "-",
+                    bop: Number(orderanSekarang.bop) || Number(orderanSekarang.uang_jalan) || 0,
+                    ongkos: Number(orderanSekarang.ongkos) || Number(orderanSekarang.ongkos_gendong) || 0,
+                    volM: orderanSekarang.volM || orderanSekarang.volume || "0",
+                    sopir: orderanSekarang.sopir || "SUPIR BBS",
+                    waktu: orderanSekarang.waktu || tanggalFormat, // Untuk filter bulan di PDF Admin
+                    tanggal: tanggalFormat,
+                    status: "SELESAI_BONGKAR"
+                };
+
+                // 3. Simpan data aman ke node Histori_Order
+                const pathHistori = `${dbRoot}/Histori_Order/${myPlatNomor}/${idOrderan}`;
+                
+                set(ref(db, pathHistori), dataArsipBBS).then(() => {
+                    console.log("✓ Data aman masuk rekap bulanan kantor pusat.");
+                    
+                    // 4. Setelah sukses diarsip, baru hapus orderan aktif (set null) agar supir kembali STANDBY
+                    set(ref(db, pathOrder), null)
+                    .then(() => { 
+                        alert("Tugas selesai! Data ritase telah terkirim ke rekap bulanan kantor pusat dan status armada kembali STANDBY."); 
+                    });
+                });
+
+            } else {
+                // Jika data memang kosong dari awal, langsung set null saja biar aman
+                set(ref(db, pathOrder), null).then(() => { alert("Armada kembali STANDBY."); });
+            }
+        }).catch((err) => {
+            alert("Gagal mengarsipkan data orderan: " + err.message);
+        });
+
     } else {
+        // JIKA STATUS LAIN (OTW MUAT, OTW BONGKAR, DLL) TETAP UPDATE SEPERTI BIASA
         update(ref(db, pathOrder), { status: statusBaru })
         .then(() => { console.log("Status supir berhasil diubah ke: " + statusBaru); })
         .catch((err) => { alert("Gagal mengubah status: " + err.message); });
