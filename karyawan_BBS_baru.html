@@ -634,208 +634,213 @@ let penontonStatusAdmin = null;
     });
 }
 
-// ==================== DRIVER WORKFLOW ENGINE ====================
-        function pantauAlurKerjaSupir() {
-            onValue(ref(db, `${dbRoot}/Status_Armada/${myPlatNomor}/order_aktif`), (snap) => {
-                const order = snap.val();
-                const wadahTombol = document.getElementById('box-tombol-alur');
-                
-                // JIKA TIDAK ADA ORDER ATAU STATUS STANDBY
-                if (!order || order.status === "STANDBY") {
-                    if (typeof matikanAlarm === "function") matikanAlarm();
-                    document.getElementById('drv-badge-status').innerText = "STANDBY";
-                    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-slate-700 text-slate-300";
-                    
-                    // Bersihkan teks 3 kolom supir ke status standby
-                    document.getElementById('drv-txt-barang').innerText = "Menunggu orderan masuk...";
-                    document.getElementById('drv-txt-muat').innerText = "Menunggu rute...";
-                    document.getElementById('drv-txt-bongkar').innerText = "Menunggu rute...";
-                    document.getElementById('drv-txt-bop').innerText = "Rp 0";
-                    
-                    wadahTombol.innerHTML = `<button class="w-full bg-slate-700 text-slate-500 font-bold py-3 rounded-xl cursor-not-allowed text-xs uppercase tracking-wider">Menunggu Order Baru</button>`;
-                    return;
-                }
+// ==================== DRIVER WORKFLOW ENGINE (KALIBRASI TOTAL) ====================
+function pantauAlurKerjaSupir() {
+    // Bersihkan variabel plat nomor dari spasi agar pas dengan kunci Firebase
+    const platBersih = myPlatNomor.replace(/\s+/g, '_');
 
-                // 🔄 SINKRONISASI 3 KOLOM DETAIL DATA BARU KE HP SUPIR
-                const infoBarang = order.barang || "-";
-                const infoMuat = order.lokasi_muat || "-";
-                const infoBongkar = order.lokasi_bongkar || "-";
-                
-                document.getElementById('drv-txt-barang').innerText = infoBarang.toUpperCase();
-                document.getElementById('drv-txt-muat').innerText = infoMuat.toUpperCase();
-                document.getElementById('drv-txt-bongkar').innerText = infoBongkar.toUpperCase();
-                
-                // DI HP SUPIR: Hanya membaca Uang Jalan (BOP), 100% aman dari Ongkos Angkut Owner
-                const nominalBop = order.bop || 0;
-                document.getElementById('drv-txt-bop').innerText = "Rp " + Number(nominalBop).toLocaleString('id-ID');
-                
-                document.getElementById('drv-badge-status').innerText = order.status.replace(/_/g, ' ');
-
-                // ALUR JALAN 1: ORDER BARU MASUK (ALARM BUNYI)
-                if (order.status === "ORDER_MASUK") {
-                    if (typeof mulaiAlarmBerisik === "function") mulaiAlarmBerisik(); 
-                    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-red-600 animate-pulse text-white";
-                    wadahTombol.innerHTML = `
-                        <button onclick="ubahStatusOperasionalSupir('MENUJU_MUAT')" class="w-full bg-red-500 hover:bg-red-400 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-red-900/40">
-                            🔕 TERIMA ORDERAN (MATIKAN ALARM)
-                        </button>`;
-                } 
-                // ALUR JALAN 2: SUPIR PERGI KE PABRIK/LOKASI MUAT
-                else if (order.status === "MENUJU_MUAT") {
-                    if (typeof matikanAlarm === "function") matikanAlarm(); 
-                    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500 text-slate-900";
-                    wadahTombol.innerHTML = `
-                        <button onclick="ubahStatusOperasionalSupir('OTW_BONGKAR')" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-black py-3 rounded-xl text-xs uppercase tracking-wider">
-                            ✓ SELESAI MUAT (BERANGKAT BONGKAR)
-                        </button>`;
-                } 
-                // ALUR JALAN 3: BARANG SUDAH DI ATAS BAK, PROSES KIRIM KE KONSUMEN
-                else if (order.status === "OTW_BONGKAR") {
-                    if (typeof matikanAlarm === "function") matikanAlarm();
-                    document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-blue-600 text-white";
-                    
-                    // KAMUS PATEN: Spesifikasi bak & nama supir otomatis berdasarkan plat nomor unit
-                    let spekBak = { p: 0, l: 0, t: 0, sopir: "Supir BBS" };
-                    
-                    if (myPlatNomor === "B_1234_BBS") {
-                        spekBak = { p: 6.00, l: 2.40, t: 1.80, sopir: "SOFYAN" };
-                    } else if (myPlatNomor === "A_5678_BBS") {
-                        spekBak = { p: 5.50, l: 2.20, t: 1.50, sopir: "DEDI" };
-                    } else if (myPlatNomor === "B_9999_BBS") {
-                        spekBak = { p: 7.20, l: 2.50, t: 2.00, sopir: "IWAN" };
-                    }
-                    
-                    // Hitung otomatis volume kubikasi M3 (P x L x T)
-                    const totalVolM3 = (spekBak.p * spekBak.l * spekBak.t).toFixed(2);
-
-                    // Paket data struk PNG yang siap dicetak printer thermal supir
-                    window.paketDataStruk = {
-                        id: order.id || "BBS-00000",
-                        project: infoBongkar.toUpperCase(), 
-                        plat: myPlatNomor.replace(/_/g, ' '),
-                        sopir: spekBak.sopir,
-                        barang: infoBarang.toUpperCase(),
-                        muat: infoMuat.toUpperCase(),
-                        bongkar: infoBongkar.toUpperCase(),
-                        p: spekBak.p,
-                        l: spekBak.l,
-                        t: spekBak.t,
-                        volM: totalVolM3
-                    };
-
-                    wadahTombol.innerHTML = `
-                        <button onclick="printSuratJalan(window.paketDataStruk)" class="w-full mb-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider shadow-md">
-                            🖨️ CETAK SURAT JALAN (PNG)
-                        </button>
-                        <button onclick="ubahStatusOperasionalSupir('STANDBY')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider">
-                            ✓ SELESAI BONGKAR (KEMBALI STANDBY)
-                        </button>`;
-                }
-            });
+    onValue(ref(db, `${dbRoot}/Status_Armada/${platBersih}/order_aktif`), (snap) => {
+        const order = snap.val();
+        const wadahTombol = document.getElementById('box-tombol-alur');
+        
+        // JIKA TIDAK ADA ORDER ATAU STATUS STANDBY
+        if (!order || order.status === "STANDBY") {
+            try { if (typeof matikanAlarm === "function") matikanAlarm(); } catch(e){}
+            document.getElementById('drv-badge-status').innerText = "STANDBY";
+            document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-slate-700 text-slate-300";
+            
+            document.getElementById('drv-txt-barang').innerText = "Menunggu orderan masuk...";
+            document.getElementById('drv-txt-muat').innerText = "Menunggu rute...";
+            document.getElementById('drv-txt-bongkar').innerText = "Menunggu rute...";
+            document.getElementById('drv-txt-bop').innerText = "Rp 0";
+            
+            if(wadahTombol) wadahTombol.innerHTML = `<button class="w-full bg-slate-700 text-slate-500 font-bold py-3 rounded-xl cursor-not-allowed text-xs uppercase tracking-wider">Menunggu Order Baru</button>`;
+            return;
         }
 
-      // ==================== FUNGSI CETAK SURAT JALAN ANTI-BLOKIR (CORS & COOP READY) ====================
+        // 🔄 SINKRONISASI DATA UTAMA KE LAYAR HP SUPIR
+        const infoBarang = order.barang || "-";
+        const infoMuat = order.lokasi_muat || "-";
+        const infoBongkar = order.lokasi_bongkar || "-";
+        
+        document.getElementById('drv-txt-barang').innerText = infoBarang.toUpperCase();
+        document.getElementById('drv-txt-muat').innerText = infoMuat.toUpperCase();
+        document.getElementById('drv-txt-bongkar').innerText = infoBongkar.toUpperCase();
+        
+        const nominalBop = order.bop || 0;
+        document.getElementById('drv-txt-bop').innerText = "Rp " + Number(nominalBop).toLocaleString('id-ID');
+        document.getElementById('drv-badge-status').innerText = order.status.replace(/_/g, ' ');
+
+        // ALUR 1: ORDER MASUK
+        if (order.status === "ORDER_MASUK") {
+            try { if (typeof mulaiAlarmBerisik === "function") mulaiAlarmBerisik(); } catch (e) {}
+            document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-red-600 animate-pulse text-white";
+            if(wadahTombol) wadahTombol.innerHTML = `
+                <button onclick="ubahStatusOperasionalSupir('MENUJU_MUAT')" class="w-full bg-red-500 hover:bg-red-400 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-red-900/40">
+                    🔕 TERIMA ORDERAN (MATIKAN ALARM)
+                </button>`;
+        } 
+        // ALUR 2: MENUJU LOKASI MUAT
+        else if (order.status === "MENUJU_MUAT") {
+            try { if (typeof matikanAlarm === "function") matikanAlarm(); } catch(e){}
+            document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500 text-slate-900";
+            if(wadahTombol) wadahTombol.innerHTML = `
+                <button onclick="ubahStatusOperasionalSupir('OTW_BONGKAR')" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 font-black py-3 rounded-xl text-xs uppercase tracking-wider">
+                    ✓ SELESAI MUAT (BERANGKAT BONGKAR)
+                </button>`;
+        } 
+        // ALUR 3: PROSES ANTAR BARANG (OTW BONGKAR)
+        else if (order.status === "OTW_BONGKAR") {
+            try { if (typeof matikanAlarm === "function") matikanAlarm(); } catch(e){}
+            document.getElementById('drv-badge-status').className = "text-xs px-2.5 py-0.5 rounded-full font-bold bg-blue-600 text-white";
+            
+            // PENGAMAN PLAT NOMOR: Deteksi cerdas variasi penulisan spasi / garis bawah
+            let spekBak = { p: 0, l: 0, t: 0, sopir: "Supir BBS" };
+            const cekPlat = platBersih.toUpperCase();
+            
+            if (cekPlat === "B_1234_BBS") {
+                spekBak = { p: 6.00, l: 2.40, t: 1.80, sopir: "SOFYAN" };
+            } else if (cekPlat === "A_5678_BBS") {
+                spekBak = { p: 5.50, l: 2.20, t: 1.50, sopir: "DEDI" }; // Unit Dedi yang sedang aktif
+            } else if (cekPlat === "B_9999_BBS") {
+                spekBak = { p: 7.20, l: 2.50, t: 2.00, sopir: "IWAN" };
+            } else {
+                // JIKA PLAT TIDAK TERDAFTAR, BERI SPEK STANDAR AGAR TIDAK ANGKAL 0 (CRASH)
+                spekBak = { p: 5.00, l: 2.00, t: 1.50, sopir: "DRIVER BBS" };
+            }
+            
+            const totalVolM3 = (spekBak.p * spekBak.l * spekBak.t).toFixed(2);
+
+            // Bungkus data dengan aman ke scope global window
+            window.paketDataStruk = {
+                id: order.id || "BBS-00000",
+                project: infoBongkar.toUpperCase(), 
+                plat: platBersih.replace(/_/g, ' '),
+                sopir: spekBak.sopir,
+                barang: infoBarang.toUpperCase(),
+                muat: infoMuat.toUpperCase(),
+                bongkar: infoBongkar.toUpperCase(),
+                p: spekBak.p,
+                l: spekBak.l,
+                t: spekBak.t,
+                volM: totalVolM3
+            };
+
+            if(wadahTombol) {
+                wadahTombol.innerHTML = `
+                    <button onclick="window.printSuratJalan(window.paketDataStruk)" class="w-full mb-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider shadow-md">
+                        🖨️ CETAK SURAT JALAN (PNG)
+                    </button>
+                    <button onclick="ubahStatusOperasionalSupir('STANDBY')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-wider">
+                        ✓ SELESAI BONGKAR (KEMBALI STANDBY)
+                    </button>`;
+            }
+        }
+    });
+}
+
+// ==================== FUNGSI CETAK ANTI-BLOKIR & ANTI-CRASH ====================
 async function printSuratJalan(data) {
     if (!data) {
-        alert("Data surat jalan kosong atau belum siap!");
+        alert("Waduh, data surat jalan belum siap dialirkan!");
         return;
     }
 
     const tgl = new Date().toLocaleString('id-ID', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
     const jam = new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
     
-    // Buat wadah cetak yang aman di latar belakang (dibuat transparan, bukan dilempar keluar layar)
     const printArea = document.createElement('div');
+    // Menggunakan trik opacity + fixed agar aman di-render semua tipe HP Android & iPhone
     printArea.style = "width: 380px; padding: 20px; background: #ffffff !important; color: #000000 !important; font-family: monospace; position: fixed; left: 0; top: 0; opacity: 0; z-index: -9999; box-sizing: border-box;";
     
     printArea.innerHTML = `
-    <div style="text-align: center; font-weight: bold; font-size: 18px; color: black !important;">PT. BERKAH BAJA STEEL</div>
-    <div style="text-align: center; font-size: 12px; font-weight: bold; color: black !important;">SUPLAY MATERIAL PROJECT ${data.project.toUpperCase()}</div>
-    <div style="text-align: center; color: black !important;">--------------------------------</div>
-    <div style="font-size: 14px; line-height: 1.5; color: black !important;">
-        <div style="font-family: monospace; width: 100%; font-size: 12px; color: black !important;">
+    <div style="text-align: center; font-weight: bold; font-size: 16px; color: black !important;">PT. BERKAH BAJA STEEL</div>
+    <div style="text-align: center; font-size: 11px; font-weight: bold; color: black !important;">SUPLAY MATERIAL PROJECT ${data.project}</div>
+    <div style="text-align: center; color: black !important;">-----------------------------------------------</div>
+    <div style="font-size: 12px; line-height: 1.5; color: black !important;">
+        
+        <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 11px; table-layout: fixed; color: black !important;">
+            <tr style="color: black !important;"><td style="width: 85px; color: black !important;">TGL/JAM</td><td style="width: 15px; color: black !important;">:</td><td style="color: black !important;">${tgl} ‖ ${jam}</td></tr>
+            <tr style="color: black !important;"><td style="color: black !important;">PLAT NO</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.plat}</td></tr>
+            <tr style="color: black !important;"><td style="color: black !important;">SOPIR</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.sopir}</td></tr>
+            <tr style="color: black !important;"><td style="color: black !important;">BARANG</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.barang}</td></tr>
+            <tr style="color: black !important;"><td style="color: black !important;">ASAL MUAT</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.muat}</td></tr>
+            <tr style="color: black !important;"><td style="color: black !important;">TUJ. BONGKAR</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.bongkar}</td></tr>
             
-            <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 12px; table-layout: fixed; color: black !important;">
-                <tr style="color: black !important;"><td style="width: 85px; color: black !important;">TGL/JAM</td><td style="width: 15px; color: black !important;">:</td><td style="color: black !important;">${tgl} ‖ ${jam}</td></tr>
-                <tr style="color: black !important;"><td style="color: black !important;">PLAT NO</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.plat}</td></tr>
-                <tr style="color: black !important;"><td style="color: black !important;">SOPIR</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.sopir || "-"}</td></tr>
-                <tr style="color: black !important;"><td style="color: black !important;">BARANG</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.barang || "-"}</td></tr>
-                <tr style="color: black !important;"><td style="width: 85px; color: black !important;">ASAL MUAT</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.muat || "-"}</td></tr>
-                <tr style="color: black !important;"><td style="color: black !important;">BONGKAR</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.bongkar || "-"}</td></tr>
-                
-                <tr style="color: black !important;">
-                    <td colspan="3" style="padding: 5px 0; color: black !important;">
-                        -----------------------------------------------<br>
-                        panjang : ${data.p||0} ‖ lebar : ${data.l||0} ‖ tinggi : ${data.t||0} (m)<br>
-                        -----------------------------------------------
-                    </td>
-                </tr>
+            <tr style="color: black !important;">
+                <td colspan="3" style="padding: 5px 0; color: black !important;">
+                    -----------------------------------------------<br>
+                    panjang : ${data.p} ‖ lebar : ${data.l} ‖ tinggi : ${data.t} (m)<br>
+                    -----------------------------------------------
+                </td>
+            </tr>
+            <tr style="color: black !important;"><td style="color: black !important;">TOTAL VOL</td><td style="color: black !important;">:</td><td style="color: black !important;"><b style="font-size: 13px; color: black !important;">${data.volM} M3</b></td></tr>
+        </table>
 
-                <tr style="color: black !important;"><td style="color: black !important;">TOTAL</td><td style="color: black !important;">:</td><td style="color: black !important;"><b style="color: black !important; font-size: 14px;">${data.volM || 0} M3</b></td></tr>
-            </table>
+        <div style="text-align: center; margin-top: 10px; color: black !important; font-weight: bold;">ID SURAT: ${data.id}</div>
+        <div id="qrcode-box-real" style="display: flex; justify-content: center; padding: 10px; background: white !important;"></div>
+        <div style="text-align: center; color: black !important;">-----------------------------------------------</div>
 
-            <div style="text-align: center; margin-top: 8px; color: black !important; font-weight: bold;">ID SURAT: ${data.id}</div>
-            <div id="qrcode-box" style="display: flex; justify-content: center; padding: 10px; background: white !important;"></div>
-            <div style="text-align: center; color: black !important;">-----------------------------------------------</div>
+        <table style="width: 100%; font-family: monospace; font-size: 11px; text-align: center; color: black !important;">
+            <tr style="color: black !important;">
+                <td style="width: 50%; color: black !important;">Tanda Terima,</td>
+                <td style="color: black !important;">Mengetahui,</td>
+            </tr>
+            <tr style="color: black !important;">
+                <td style="padding: 20px 0;"></td>
+                <td style="padding: 20px 0;"></td>
+            </tr>
+            <tr style="color: black !important;">
+                <td style="color: black !important;">( ______________ )</td>
+                <td style="color: black !important;"><b style="color: black !important;">${data.sopir}</b><br>Driver Armada</td>
+            </tr>
+        </table>
+        <div style="text-align: center; color: black !important;">-----------------------------------------------</div>
 
-            <table style="width: 100%; font-family: monospace; font-size: 11px; text-align: center; color: black !important;">
-                <tr style="color: black !important;">
-                    <td style="width: 50%; color: black !important;">Tanda Terima,</td>
-                    <td style="color: black !important;">Mengetahui,</td>
-                </tr>
-                <tr style="color: black !important;">
-                    <td style="padding: 20px 0;"></td>
-                    <td style="padding: 20px 0;"></td>
-                </tr>
-                <tr style="color: black !important;">
-                    <td style="color: black !important;">( ______________ )</td>
-                    <td style="color: black !important;"><b style="color: black !important;">${data.sopir}</b><br>Driver Armada</td>
-                </tr>
-            </table>
-            <div style="text-align: center; color: black !important;">-----------------------------------------------</div>
-
-            <div style="text-align: center; font-size: 11px; margin-top: 15px; color: black !important; font-weight: bold;">⚓ NIAT BAIK ‖ KERJA BAIK ‖ REZEKI BAIK ⚓</div>
-            <div style="text-align: center; font-size: 10px; margin-top:10px; color: black !important;">Hati-hati Pak Sopir, KELUARGA menunggu ANDA dirumah.</div>
-        </div>
+        <div style="text-align: center; font-size: 10px; margin-top: 10px; color: black !important; font-weight: bold;">⚓ NIAT BAIK ‖ KERJA BAIK ‖ REZEKI BAIK ⚓</div>
+        <div style="text-align: center; font-size: 9px; margin-top: 5px; color: black !important;">Hati-hati Pak Supir, KELUARGA menunggu ANDA di rumah.</div>
     </div>
     `;
 
     document.body.appendChild(printArea);
     
-    // Render QR-Code internal aplikasi
-    new QRCode(document.getElementById("qrcode-box"), {
-        text: "https://berkahbajasteel.web.app/verifikasi?id=" + data.id,
-        width: 130, 
-        height: 130,
-        correctLevel: QRCode.CorrectLevel.H // Memperkuat pembacaan QR Code walau dicetak printer thermal murah
-    });
+    // Render QR Code langsung ke boks ID yang baru
+    try {
+        new QRCode(document.getElementById("qrcode-box-real"), {
+            text: "https://berkahbajasteel.web.app/verifikasi?id=" + data.id,
+            width: 120, 
+            height: 120,
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    } catch(e) {
+        console.error("Gagal menggambar QR Code: ", e.message);
+    }
 
-    // Beri jeda sejenak agar QR-Code terpasang sempurna di canvas safari/chrome HP
+    // Beri jeda 1.2 detik agar komponen gambar tersusun sempurna di memori RAM HP supir
     setTimeout(() => {
         html2canvas(printArea, {
             backgroundColor: "#ffffff",
             scale: 2,
-            useCORS: true,          // 🌟 KUNCI UTAMA 1: Izinkan pemuatan resource lintas origin
-            allowTaint: true,       // 🌟 KUNCI UTAMA 2: Mengizinkan jepretan gambar yang dianggap "terkontaminasi" oleh aturan COOP
-            logging: false,
+            useCORS: true,
+            allowTaint: true,
             width: 380
         }).then(canvas => {
             const imageData = canvas.toDataURL("image/png");
             const link = document.createElement('a');
-            link.download = `STRUK_${data.plat.replace(/ /g, '_')}_${data.id.substring(0,6)}.png`;
+            link.download = `STRUK_${data.plat}_${data.id}.png`;
             link.href = imageData;
             link.click();
             
             document.body.removeChild(printArea);
-            alert("✓ STRUK SURAT JALAN BERHASIL DIUNDUH!\nSilakan cek galeri untuk cetak via bluetooth.");
+            alert("✓ STRUK SURAT JALAN BERHASIL DIUNDUH!\nSilakan cek galeri untuk cetak via printer bluetooth.");
         }).catch(err => {
-            alert("Gagal memproses struk gambar: " + err.message);
-            document.body.removeChild(printArea);
+            alert("Gagal menjepret gambar struk: " + err.message);
+            if(document.body.contains(printArea)) document.body.removeChild(printArea);
         });
     }, 1200);
 }
 
-// Pastikan terikat kuat di level Window agar aman dari proteksi scope internal script
+// Ikat kuat secara eksplisit ke window global scope agar tombol html onclick selalu mendeteksi fungsinya
 window.printSuratJalan = printSuratJalan;
 
 // FUNGSI EKSEKUSI PERUBAHAN STATUS KE FIREBASE
