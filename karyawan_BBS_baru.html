@@ -739,109 +739,97 @@ function pantauAlurKerjaSupir() {
     });
 }
 
-// ==================== FUNGSI CETAK ANTI-BLOKIR & ANTI-CRASH ====================
-async function printSuratJalan(data) {
-    if (!data) {
-        alert("Waduh, data surat jalan belum siap dialirkan!");
-        return;
-    }
-
-    const tgl = new Date().toLocaleString('id-ID', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-    const jam = new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
-    
-    const printArea = document.createElement('div');
-    // Menggunakan trik opacity + fixed agar aman di-render semua tipe HP Android & iPhone
-    printArea.style = "width: 380px; padding: 20px; background: #ffffff !important; color: #000000 !important; font-family: monospace; position: fixed; left: 0; top: 0; opacity: 0; z-index: -9999; box-sizing: border-box;";
-    
-    printArea.innerHTML = `
-    <div style="text-align: center; font-weight: bold; font-size: 16px; color: black !important;">PT. BERKAH BAJA STEEL</div>
-    <div style="text-align: center; font-size: 11px; font-weight: bold; color: black !important;">SUPLAY MATERIAL PROJECT ${data.project}</div>
-    <div style="text-align: center; color: black !important;">-----------------------------------------------</div>
-    <div style="font-size: 12px; line-height: 1.5; color: black !important;">
-        
-        <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 11px; table-layout: fixed; color: black !important;">
-            <tr style="color: black !important;"><td style="width: 85px; color: black !important;">TGL/JAM</td><td style="width: 15px; color: black !important;">:</td><td style="color: black !important;">${tgl} ‖ ${jam}</td></tr>
-            <tr style="color: black !important;"><td style="color: black !important;">PLAT NO</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.plat}</td></tr>
-            <tr style="color: black !important;"><td style="color: black !important;">SOPIR</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.sopir}</td></tr>
-            <tr style="color: black !important;"><td style="color: black !important;">BARANG</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.barang}</td></tr>
-            <tr style="color: black !important;"><td style="color: black !important;">ASAL MUAT</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.muat}</td></tr>
-            <tr style="color: black !important;"><td style="color: black !important;">TUJ. BONGKAR</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.bongkar}</td></tr>
-            
-            <tr style="color: black !important;">
-                <td colspan="3" style="padding: 5px 0; color: black !important;">
-                    -----------------------------------------------<br>
-                    panjang : ${data.p} ‖ lebar : ${data.l} ‖ tinggi : ${data.t} (m)<br>
-                    -----------------------------------------------
-                </td>
-            </tr>
-            <tr style="color: black !important;"><td style="color: black !important;">TOTAL VOL</td><td style="color: black !important;">:</td><td style="color: black !important;"><b style="font-size: 13px; color: black !important;">${data.volM} M3</b></td></tr>
-        </table>
-
-        <div style="text-align: center; margin-top: 10px; color: black !important; font-weight: bold;">ID SURAT: ${data.id}</div>
-        <div id="qrcode-box-real" style="display: flex; justify-content: center; padding: 10px; background: white !important;"></div>
-        <div style="text-align: center; color: black !important;">-----------------------------------------------</div>
-
-        <table style="width: 100%; font-family: monospace; font-size: 11px; text-align: center; color: black !important;">
-            <tr style="color: black !important;">
-                <td style="width: 50%; color: black !important;">Tanda Terima,</td>
-                <td style="color: black !important;">Mengetahui,</td>
-            </tr>
-            <tr style="color: black !important;">
-                <td style="padding: 20px 0;"></td>
-                <td style="padding: 20px 0;"></td>
-            </tr>
-            <tr style="color: black !important;">
-                <td style="color: black !important;">( ______________ )</td>
-                <td style="color: black !important;"><b style="color: black !important;">${data.sopir}</b><br>Driver Armada</td>
-            </tr>
-        </table>
-        <div style="text-align: center; color: black !important;">-----------------------------------------------</div>
-
-        <div style="text-align: center; font-size: 10px; margin-top: 10px; color: black !important; font-weight: bold;">⚓ NIAT BAIK ‖ KERJA BAIK ‖ REZEKI BAIK ⚓</div>
-        <div style="text-align: center; font-size: 9px; margin-top: 5px; color: black !important;">Hati-hati Pak Supir, KELUARGA menunggu ANDA di rumah.</div>
-    </div>
-    `;
-
-    document.body.appendChild(printArea);
-    
-    // Render QR Code langsung ke boks ID yang baru
+// ==================== FUNGSI EKSEKUSI CETAK DIRECT (TANPA QR CODE - ANTI MOGOK) ====================
+function printSuratJalanDirect(jsonString) {
     try {
-        new QRCode(document.getElementById("qrcode-box-real"), {
-            text: "https://berkahbajasteel.web.app/verifikasi?id=" + data.id,
-            width: 120, 
-            height: 120,
-            correctLevel: QRCode.CorrectLevel.H
-        });
-    } catch(e) {
-        console.error("Gagal menggambar QR Code: ", e.message);
-    }
-
-    // Beri jeda 1.2 detik agar komponen gambar tersusun sempurna di memori RAM HP supir
-    setTimeout(() => {
-        html2canvas(printArea, {
-            backgroundColor: "#ffffff",
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            width: 380
-        }).then(canvas => {
-            const imageData = canvas.toDataURL("image/png");
-            const link = document.createElement('a');
-            link.download = `STRUK_${data.plat}_${data.id}.png`;
-            link.href = imageData;
-            link.click();
+        // Dekode data teks dari tombol HTML menjadi objek bersih
+        const data = JSON.parse(jsonString);
+        
+        const tgl = new Date().toLocaleString('id-ID', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+        const jam = new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+        
+        const printArea = document.createElement('div');
+        
+        // Pengaturan gaya papan cetak hitam-putih murni murni (Steril dari Tailwind)
+        printArea.style.width = "380px";
+        printArea.style.padding = "20px";
+        printArea.style.backgroundColor = "#ffffff";
+        printArea.style.color = "#000000";
+        printArea.style.fontFamily = "monospace";
+        printArea.style.position = "fixed";
+        printArea.style.left = "0";
+        printArea.style.top = "0";
+        printArea.style.opacity = "0";
+        printArea.style.zIndex = "-9999";
+        printArea.style.boxSizing = "border-box";
+        
+        // HTML Struk Bersih Tanpa QR Code
+        printArea.innerHTML = `
+        <div style="text-align: center; font-weight: bold; font-size: 16px; color: #000000 !important;">PT. BERKAH BAJA STEEL</div>
+        <div style="text-align: center; font-size: 11px; font-weight: bold; color: #000000 !important;">SUPLAY MATERIAL PROJECT ${data.project}</div>
+        <div style="text-align: center; color: #000000 !important;">-----------------------------------------------</div>
+        <div style="font-size: 12px; line-height: 1.5; color: #000000 !important;">
+            <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 11px; table-layout: fixed; color: #000000 !important;">
+                <tr style="color: #000000 !important;"><td style="width: 85px; color: #000000 !important;">TGL/JAM</td><td style="width: 15px; color: #000000 !important;">:</td><td style="color: #000000 !important;">${tgl} ‖ ${jam}</td></tr>
+                <tr style="color: #000000 !important;"><td style="color: #000000 !important;">PLAT NO</td><td style="color: #000000 !important;">:</td><td style="color: #000000 !important;">${data.plat}</td></tr>
+                <tr style="color: #000000 !important;"><td style="color: #000000 !important;">SOPIR</td><td style="color: #000000 !important;">:</td><td style="color: #000000 !important;">${data.sopir}</td></tr>
+                <tr style="color: #000000 !important;"><td style="color: #000000 !important;">BARANG</td><td style="color: #000000 !important;">:</td><td style="color: #000000 !important;">${data.barang}</td></tr>
+                <tr style="color: #000000 !important;"><td style="color: #000000 !important;">ASAL MUAT</td><td style="color: #000000 !important;">:</td><td style="color: #000000 !important;">${data.muat}</td></tr>
+                <tr style="color: #000000 !important;"><td style="color: #000000 !important;">TUJ. BONGKAR</td><td style="color: #000000 !important;">:</td><td style="color: #000000 !important;">${data.bongkar}</td></tr>
+                <tr style="color: #000000 !important;">
+                    <td colspan="3" style="padding: 5px 0; color: #000000 !important;">
+                        -----------------------------------------------<br>
+                        panjang : ${data.p} ‖ lebar : ${data.l} ‖ tinggi : ${data.t} (m)<br>
+                        -----------------------------------------------
+                    </td>
+                </tr>
+                <tr style="color: #000000 !important;"><td style="color: #000000 !important;">TOTAL VOL</td><td style="color: #000000 !important;">:</td><td style="color: #000000 !important;"><b style="font-size: 13px; color: #000000 !important;">${data.volM} M3</b></td></tr>
+            </table>
             
-            document.body.removeChild(printArea);
-            alert("✓ STRUK SURAT JALAN BERHASIL DIUNDUH!\nSilakan cek galeri untuk cetak via printer bluetooth.");
-        }).catch(err => {
-            alert("Gagal menjepret gambar struk: " + err.message);
-            if(document.body.contains(printArea)) document.body.removeChild(printArea);
-        });
-    }, 1200);
+            <div style="text-align: center; margin-top: 15px; margin-bottom: 15px; color: #000000 !important; font-weight: bold; font-size: 13px;">ID SURAT: ${data.id}</div>
+            <div style="text-align: center; color: #000000 !important;">-----------------------------------------------</div>
+            
+            <table style="width: 100%; font-family: monospace; font-size: 11px; text-align: center; color: #000000 !important;">
+                <tr style="color: #000000 !important;"><td style="width: 50%; color: #000000 !important;">Tanda Terima,</td><td style="color: #000000 !important;">Mengetahui,</td></tr>
+                <tr style="color: #000000 !important;"><td style="padding: 25px 0;"></td><td style="padding: 25px 0;"></td></tr>
+                <tr style="color: #000000 !important;"><td style="color: #000000 !important;">( ______________ )</td><td style="color: #000000 !important;"><b style="color: #000000 !important;">${data.sopir}</b><br>Driver Armada</td></tr>
+            </table>
+            <div style="text-align: center; color: #000000 !important;">-----------------------------------------------</div>
+            <div style="text-align: center; font-size: 10px; margin-top: 10px; color: #000000 !important; font-weight: bold;">⚓ NIAT BAIK ‖ KERJA BAIK ‖ REZEKI BAIK ⚓</div>
+            <div style="text-align: center; font-size: 9px; margin-top: 5px; color: #000000 !important;">Hati-hati Pak Sopir, KELUARGA menunggu ANDA di rumah.</div>
+        </div>
+        `;
+
+        document.body.appendChild(printArea);
+
+        // Langsung jepret tanpa jeda lama karena tidak perlu menunggu loading library QR Code luar
+        setTimeout(() => {
+            html2canvas(printArea, {
+                backgroundColor: "#ffffff",
+                scale: 2,
+                logging: false,
+                width: 380
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `STRUK_${data.plat.replace(/ /g, '_')}_${data.id}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+                
+                document.body.removeChild(printArea);
+                alert("✓ SURAT JALAN BERHASIL DIUNDUH!");
+            }).catch(err => {
+                alert("Gagal memproses gambar: " + err.message);
+                if(document.body.contains(printArea)) document.body.removeChild(printArea);
+            });
+        }, 500); // Jeda dipangkas jadi setengah detik saja (Sangat instan)
+
+    } catch (error) {
+        alert("Gagal parsing data struk: " + error.message);
+    }
 }
 
-// Ikat kuat secara eksplisit ke window global scope agar tombol html onclick selalu mendeteksi fungsinya
-window.printSuratJalan = printSuratJalan;
+// Pasang pengikat global window
+window.printSuratJalanDirect = printSuratJalanDirect;
 
 // FUNGSI EKSEKUSI PERUBAHAN STATUS KE FIREBASE
 window.ubahStatusOperasionalSupir = (statusBaru) => {
