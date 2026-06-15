@@ -829,7 +829,7 @@ function printSuratJalanDirect(jsonString) {
 }
 
 // Pasang pengikat global window
-window.printSuratJalanDirect = printSuratJalanDirect;
+window.printSuratJalan = window.printSuratJalanDirect;
 
 // FUNGSI EKSEKUSI PERUBAHAN STATUS KE FIREBASE
 window.ubahStatusOperasionalSupir = (statusBaru) => {
