@@ -14,7 +14,7 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
 
     <style>
         .leaflet-container { z-index: 1 !important; }
@@ -739,31 +739,23 @@ function pantauAlurKerjaSupir() {
     });
 }
 
-// ==================== FUNGSI EKSEKUSI CETAK PINTAR (AUTO-DETECT OBJECT / JSON) ====================
+// ==================== FUNGSI EKSEKUSI CETAK MODERN (KEBAL OKLCH / TAILWIND v4) ====================
 function printSuratJalanDirect(inputData) {
     try {
         let data;
-        
-        // JIKA INPUT BERUPA TEKS STRING (JSON)
         if (typeof inputData === 'string') {
             data = JSON.parse(inputData);
-        } 
-        // JIKA INPUT SUDAH BERUPA OBJEK LANGSUNG (Bypass Parsing)
-        else if (typeof inputData === 'object' && inputData !== null) {
+        } else if (typeof inputData === 'object' && inputData !== null) {
             data = inputData;
-        } 
-        // JIKA DATA KOSONG
-        else {
+        } else {
             alert("Format data tidak dikenal!");
             return;
         }
         
-        // --- PROSES CETAK STRUK SEPERTI BIASA ---
         const tgl = new Date().toLocaleString('id-ID', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
         const jam = new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
         
         const printArea = document.createElement('div');
-        
         printArea.style.width = "380px";
         printArea.style.padding = "20px";
         printArea.style.backgroundColor = "#ffffff";
@@ -777,70 +769,72 @@ function printSuratJalanDirect(inputData) {
         printArea.style.boxSizing = "border-box";
         
         printArea.innerHTML = `
-        <div style="text-align: center; font-weight: bold; font-size: 16px; color: #000000 !important;">PT. BERKAH BAJA STEEL</div>
-        <div style="text-align: center; font-size: 11px; font-weight: bold; color: #000000 !important;">SUPLAY MATERIAL PROJECT ${data.project}</div>
-        <div style="text-align: center; color: #000000 !important;">-----------------------------------------------</div>
-        <div style="font-size: 12px; line-height: 1.5; color: #000000 !important;">
-            <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 11px; table-layout: fixed; color: #000000 !important;">
-                <tr style="color: #000000 !important;"><td style="width: 85px; color: #000000 !important;">TGL/JAM</td><td style="width: 15px; color: #000000 !important;">:</td><td style="color: #000000 !important;">${tgl} ‖ ${jam}</td></tr>
-                <tr style="color: #000000 !important;"><td style="color: #000000 !important;">PLAT NO</td><td style="color: #000000 !important;">:</td><td style="color: #000000 !important;">${data.plat}</td></tr>
-                <tr style="color: #000000 !important;"><td style="color: #000000 !important;">SOPIR</td><td style="color: #000000 !important;">:</td><td style="color: #000000 !important;">${data.sopir}</td></tr>
-                <tr style="color: #000000 !important;"><td style="color: #000000 !important;">BARANG</td><td style="color: #000000 !important;">:</td><td style="color: #000000 !important;">${data.barang}</td></tr>
-                <tr style="color: #000000 !important;"><td style="color: #000000 !important;">ASAL MUAT</td><td style="color: #000000 !important;">:</td><td style="color: #000000 !important;">${data.muat}</td></tr>
-                <tr style="color: #000000 !important;"><td style="color: #000000 !important;">TUJ. BONGKAR</td><td style="color: #000000 !important;">:</td><td style="color: #000000 !important;">${data.bongkar}</td></tr>
-                <tr style="color: #000000 !important;">
-                    <td colspan="3" style="padding: 5px 0; color: #000000 !important;">
+        <div style="text-align: center; font-weight: bold; font-size: 16px; color: #000000;">PT. BERKAH BAJA STEEL</div>
+        <div style="text-align: center; font-size: 11px; font-weight: bold; color: #000000;">SUPLAY MATERIAL PROJECT ${data.project}</div>
+        <div style="text-align: center; color: #000000;">-----------------------------------------------</div>
+        <div style="font-size: 12px; line-height: 1.5; color: #000000;">
+            <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 11px; table-layout: fixed; color: #000000;">
+                <tr><td style="width: 85px;">TGL/JAM</td><td style="width: 15px;">:</td><td>${tgl} ‖ ${jam}</td></tr>
+                <tr><td>PLAT NO</td><td>:</td><td>${data.plat}</td></tr>
+                <tr><td>SOPIR</td><td>:</td><td>${data.sopir}</td></tr>
+                <tr><td>BARANG</td><td>:</td><td>${data.barang}</td></tr>
+                <tr><td>ASAL MUAT</td><td>:</td><td>${data.muat}</td></tr>
+                <tr><td>TUJ. BONGKAR</td><td>:</td><td>${data.bongkar}</td></tr>
+                <tr>
+                    <td colspan="3" style="padding: 5px 0;">
                         -----------------------------------------------<br>
                         panjang : ${data.p} ‖ lebar : ${data.l} ‖ tinggi : ${data.t} (m)<br>
                         -----------------------------------------------
                     </td>
                 </tr>
-                <tr style="color: #000000 !important;"><td style="color: #000000 !important;">TOTAL VOL</td><td style="color: #000000 !important;">:</td><td style="color: #000000 !important;"><b style="font-size: 13px; color: #000000 !important;">${data.volM} M3</b></td></tr>
+                <tr><td>TOTAL VOL</td><td>:</td><td><b style="font-size: 13px;">${data.volM} M3</b></td></tr>
             </table>
             
-            <div style="text-align: center; margin-top: 15px; margin-bottom: 15px; color: #000000 !important; font-weight: bold; font-size: 13px;">ID SURAT: ${data.id}</div>
-            <div style="text-align: center; color: #000000 !important;">-----------------------------------------------</div>
+            <div style="text-align: center; margin-top: 15px; margin-bottom: 15px; color: #000000; font-weight: bold; font-size: 13px;">ID SURAT: ${data.id}</div>
+            <div style="text-align: center; color: #000000;">-----------------------------------------------</div>
             
-            <table style="width: 100%; font-family: monospace; font-size: 11px; text-align: center; color: #000000 !important;">
-                <tr style="color: #000000 !important;"><td style="width: 50%; color: #000000 !important;">Tanda Terima,</td><td style="color: #000000 !important;">Mengetahui,</td></tr>
-                <tr style="color: #000000 !important;"><td style="padding: 25px 0;"></td><td style="padding: 25px 0;"></td></tr>
-                <tr style="color: #000000 !important;"><td style="color: #000000 !important;">( ______________ )</td><td style="color: #000000 !important;"><b style="color: #000000 !important;">${data.sopir}</b><br>Driver Armada</td></tr>
+            <table style="width: 100%; font-family: monospace; font-size: 11px; text-align: center; color: #000000;">
+                <tr><td style="width: 50%;">Tanda Terima,</td><td>Mengetahui,</td></tr>
+                <tr><td style="padding: 25px 0;"></td><td style="padding: 25px 0;"></td></tr>
+                <tr><td>( ______________ )</td><td><b>${data.sopir}</b><br>Driver Armada</td></tr>
             </table>
-            <div style="text-align: center; color: #000000 !important;">-----------------------------------------------</div>
-            <div style="text-align: center; font-size: 10px; margin-top: 10px; color: #000000 !important; font-weight: bold;">⚓ NIAT BAIK ‖ KERJA BAIK ‖ REZEKI BAIK ⚓</div>
-            <div style="text-align: center; font-size: 9px; margin-top: 5px; color: #000000 !important;">Hati-hati Pak Sopir, KELUARGA menunggu ANDA di rumah.</div>
+            <div style="text-align: center; color: #000000;">-----------------------------------------------</div>
+            <div style="text-align: center; font-size: 10px; margin-top: 10px; font-weight: bold;">⚓ NIAT BAIK ‖ KERJA BAIK ‖ REZEKI BAIK ⚓</div>
+            <div style="text-align: center; font-size: 9px; margin-top: 5px;">Hati-hati Pak Sopir, KELUARGA menunggu ANDA di rumah.</div>
         </div>
         `;
 
         document.body.appendChild(printArea);
 
+        // 🌟 EKSEKUSI JEPRET PAKAI HTML-TO-IMAGE (ANTI-MOGOK)
         setTimeout(() => {
-            html2canvas(printArea, {
-                backgroundColor: "#ffffff",
-                scale: 2,
-                logging: false,
-                width: 380
-            }).then(canvas => {
+            htmlToImage.toPng(printArea, { 
+                backgroundColor: '#ffffff',
+                style: { opacity: '1' } // Paksa struk terlihat 100% pekat saat diambil gambarnya
+            })
+            .then(function (dataUrl) {
                 const link = document.createElement('a');
                 link.download = `STRUK_${data.plat.replace(/ /g, '_')}_${data.id}.png`;
-                link.href = canvas.toDataURL("image/png");
+                link.href = dataUrl;
                 link.click();
                 
                 document.body.removeChild(printArea);
                 alert("✓ SURAT JALAN BERHASIL DIUNDUH!");
-            }).catch(err => {
+            })
+            .catch(function (err) {
                 alert("Gagal memproses gambar: " + err.message);
                 if(document.body.contains(printArea)) document.body.removeChild(printArea);
             });
-        }, 500);
+        }, 400);
 
     } catch (error) {
         alert("Gagal memproses data struk: " + error.message);
     }
-}        
+}
+
+// Pengikat massal global window di paling bawah
 window.printSuratJalanDirect = printSuratJalanDirect; 
 window.printSuratJalan = printSuratJalanDirect;
-
 console.log("✓ Jalur cetak lama dan baru PT. BBS sudah dikunci!");
         
 // FUNGSI EKSEKUSI PERUBAHAN STATUS KE FIREBASE
