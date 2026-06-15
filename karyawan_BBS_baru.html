@@ -739,18 +739,31 @@ function pantauAlurKerjaSupir() {
     });
 }
 
-// ==================== FUNGSI EKSEKUSI CETAK DIRECT (TANPA QR CODE - ANTI MOGOK) ====================
-function printSuratJalanDirect(jsonString) {
+// ==================== FUNGSI EKSEKUSI CETAK PINTAR (AUTO-DETECT OBJECT / JSON) ====================
+function printSuratJalanDirect(inputData) {
     try {
-        // Dekode data teks dari tombol HTML menjadi objek bersih
-        const data = JSON.parse(jsonString);
+        let data;
         
+        // JIKA INPUT BERUPA TEKS STRING (JSON)
+        if (typeof inputData === 'string') {
+            data = JSON.parse(inputData);
+        } 
+        // JIKA INPUT SUDAH BERUPA OBJEK LANGSUNG (Bypass Parsing)
+        else if (typeof inputData === 'object' && inputData !== null) {
+            data = inputData;
+        } 
+        // JIKA DATA KOSONG
+        else {
+            alert("Format data tidak dikenal!");
+            return;
+        }
+        
+        // --- PROSES CETAK STRUK SEPERTI BIASA ---
         const tgl = new Date().toLocaleString('id-ID', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
         const jam = new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
         
         const printArea = document.createElement('div');
         
-        // Pengaturan gaya papan cetak hitam-putih murni murni (Steril dari Tailwind)
         printArea.style.width = "380px";
         printArea.style.padding = "20px";
         printArea.style.backgroundColor = "#ffffff";
@@ -763,7 +776,6 @@ function printSuratJalanDirect(jsonString) {
         printArea.style.zIndex = "-9999";
         printArea.style.boxSizing = "border-box";
         
-        // HTML Struk Bersih Tanpa QR Code
         printArea.innerHTML = `
         <div style="text-align: center; font-weight: bold; font-size: 16px; color: #000000 !important;">PT. BERKAH BAJA STEEL</div>
         <div style="text-align: center; font-size: 11px; font-weight: bold; color: #000000 !important;">SUPLAY MATERIAL PROJECT ${data.project}</div>
@@ -802,7 +814,6 @@ function printSuratJalanDirect(jsonString) {
 
         document.body.appendChild(printArea);
 
-        // Langsung jepret tanpa jeda lama karena tidak perlu menunggu loading library QR Code luar
         setTimeout(() => {
             html2canvas(printArea, {
                 backgroundColor: "#ffffff",
@@ -821,13 +832,12 @@ function printSuratJalanDirect(jsonString) {
                 alert("Gagal memproses gambar: " + err.message);
                 if(document.body.contains(printArea)) document.body.removeChild(printArea);
             });
-        }, 500); // Jeda dipangkas jadi setengah detik saja (Sangat instan)
+        }, 500);
 
-} catch (error) {
-        alert("Gagal parsing data struk: " + error.message);
+    } catch (error) {
+        alert("Gagal memproses data struk: " + error.message);
     }
-}
-        
+}        
 window.printSuratJalanDirect = printSuratJalanDirect; 
 window.printSuratJalan = printSuratJalanDirect;
 
