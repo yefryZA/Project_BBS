@@ -823,14 +823,16 @@ function printSuratJalanDirect(jsonString) {
             });
         }, 500); // Jeda dipangkas jadi setengah detik saja (Sangat instan)
 
-    } catch (error) {
+} catch (error) {
         alert("Gagal parsing data struk: " + error.message);
     }
 }
+        
+window.printSuratJalanDirect = printSuratJalanDirect; 
+window.printSuratJalan = printSuratJalanDirect;
 
-// Pasang pengikat global window
-window.printSuratJalan = window.printSuratJalanDirect;
-
+console.log("✓ Jalur cetak lama dan baru PT. BBS sudah dikunci!");
+        
 // FUNGSI EKSEKUSI PERUBAHAN STATUS KE FIREBASE
 window.ubahStatusOperasionalSupir = (statusBaru) => {
     if (!myPlatNomor) {
