@@ -204,7 +204,7 @@
         </div>
         <button onclick="logout()" class="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded font-bold text-white">KELUAR</button>
     </div>
-</div> ```
+</div>
 
 
     <script type="module">
@@ -734,102 +734,109 @@ let penontonStatusAdmin = null;
             });
         }
 
-        // ==================== FUNGSI CETAK SURAT JALAN EMULASI THERMAL ====================
-        async function printSuratJalan(data) {
-            if (!data) {
-                alert("Data surat jalan kosong atau belum siap!");
-                return;
-            }
+      // ==================== FUNGSI CETAK SURAT JALAN ANTI-BLOKIR (CORS & COOP READY) ====================
+async function printSuratJalan(data) {
+    if (!data) {
+        alert("Data surat jalan kosong atau belum siap!");
+        return;
+    }
 
-            const tgl = new Date().toLocaleString('id-ID', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-            const jam = new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+    const tgl = new Date().toLocaleString('id-ID', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+    const jam = new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+    
+    // Buat wadah cetak yang aman di latar belakang (dibuat transparan, bukan dilempar keluar layar)
+    const printArea = document.createElement('div');
+    printArea.style = "width: 380px; padding: 20px; background: #ffffff !important; color: #000000 !important; font-family: monospace; position: fixed; left: 0; top: 0; opacity: 0; z-index: -9999; box-sizing: border-box;";
+    
+    printArea.innerHTML = `
+    <div style="text-align: center; font-weight: bold; font-size: 18px; color: black !important;">PT. BERKAH BAJA STEEL</div>
+    <div style="text-align: center; font-size: 12px; font-weight: bold; color: black !important;">SUPLAY MATERIAL PROJECT ${data.project.toUpperCase()}</div>
+    <div style="text-align: center; color: black !important;">--------------------------------</div>
+    <div style="font-size: 14px; line-height: 1.5; color: black !important;">
+        <div style="font-family: monospace; width: 100%; font-size: 12px; color: black !important;">
             
-            const printArea = document.createElement('div');
-            printArea.style = "width: 380px; padding: 20px; background: white !important; color: black !important; font-family: monospace; position: absolute; left: -9999px; top: 0; box-sizing: border-box;";
+            <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 12px; table-layout: fixed; color: black !important;">
+                <tr style="color: black !important;"><td style="width: 85px; color: black !important;">TGL/JAM</td><td style="width: 15px; color: black !important;">:</td><td style="color: black !important;">${tgl} ‖ ${jam}</td></tr>
+                <tr style="color: black !important;"><td style="color: black !important;">PLAT NO</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.plat}</td></tr>
+                <tr style="color: black !important;"><td style="color: black !important;">SOPIR</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.sopir || "-"}</td></tr>
+                <tr style="color: black !important;"><td style="color: black !important;">BARANG</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.barang || "-"}</td></tr>
+                <tr style="color: black !important;"><td style="width: 85px; color: black !important;">ASAL MUAT</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.muat || "-"}</td></tr>
+                <tr style="color: black !important;"><td style="color: black !important;">BONGKAR</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.bongkar || "-"}</td></tr>
+                
+                <tr style="color: black !important;">
+                    <td colspan="3" style="padding: 5px 0; color: black !important;">
+                        -----------------------------------------------<br>
+                        panjang : ${data.p||0} ‖ lebar : ${data.l||0} ‖ tinggi : ${data.t||0} (m)<br>
+                        -----------------------------------------------
+                    </td>
+                </tr>
+
+                <tr style="color: black !important;"><td style="color: black !important;">TOTAL</td><td style="color: black !important;">:</td><td style="color: black !important;"><b style="color: black !important; font-size: 14px;">${data.volM || 0} M3</b></td></tr>
+            </table>
+
+            <div style="text-align: center; margin-top: 8px; color: black !important; font-weight: bold;">ID SURAT: ${data.id}</div>
+            <div id="qrcode-box" style="display: flex; justify-content: center; padding: 10px; background: white !important;"></div>
+            <div style="text-align: center; color: black !important;">-----------------------------------------------</div>
+
+            <table style="width: 100%; font-family: monospace; font-size: 11px; text-align: center; color: black !important;">
+                <tr style="color: black !important;">
+                    <td style="width: 50%; color: black !important;">Tanda Terima,</td>
+                    <td style="color: black !important;">Mengetahui,</td>
+                </tr>
+                <tr style="color: black !important;">
+                    <td style="padding: 20px 0;"></td>
+                    <td style="padding: 20px 0;"></td>
+                </tr>
+                <tr style="color: black !important;">
+                    <td style="color: black !important;">( ______________ )</td>
+                    <td style="color: black !important;"><b style="color: black !important;">${data.sopir}</b><br>Driver Armada</td>
+                </tr>
+            </table>
+            <div style="text-align: center; color: black !important;">-----------------------------------------------</div>
+
+            <div style="text-align: center; font-size: 11px; margin-top: 15px; color: black !important; font-weight: bold;">⚓ NIAT BAIK ‖ KERJA BAIK ‖ REZEKI BAIK ⚓</div>
+            <div style="text-align: center; font-size: 10px; margin-top:10px; color: black !important;">Hati-hati Pak Sopir, KELUARGA menunggu ANDA dirumah.</div>
+        </div>
+    </div>
+    `;
+
+    document.body.appendChild(printArea);
+    
+    // Render QR-Code internal aplikasi
+    new QRCode(document.getElementById("qrcode-box"), {
+        text: "https://berkahbajasteel.web.app/verifikasi?id=" + data.id,
+        width: 130, 
+        height: 130,
+        correctLevel: QRCode.CorrectLevel.H // Memperkuat pembacaan QR Code walau dicetak printer thermal murah
+    });
+
+    // Beri jeda sejenak agar QR-Code terpasang sempurna di canvas safari/chrome HP
+    setTimeout(() => {
+        html2canvas(printArea, {
+            backgroundColor: "#ffffff",
+            scale: 2,
+            useCORS: true,          // 🌟 KUNCI UTAMA 1: Izinkan pemuatan resource lintas origin
+            allowTaint: true,       // 🌟 KUNCI UTAMA 2: Mengizinkan jepretan gambar yang dianggap "terkontaminasi" oleh aturan COOP
+            logging: false,
+            width: 380
+        }).then(canvas => {
+            const imageData = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.download = `STRUK_${data.plat.replace(/ /g, '_')}_${data.id.substring(0,6)}.png`;
+            link.href = imageData;
+            link.click();
             
-            printArea.innerHTML = `
-            <div style="text-align: center; font-weight: bold; font-size: 18px; color: black !important;">PT. BERKAH BAJA STEEL</div>
-            <div style="text-align: center; font-size: 12px; font-weight: bold; color: black !important;">SUPLAY MATERIAL PROJECT ${data.project.toUpperCase()}</div>
-            <div style="text-align: center; color: black !important;">--------------------------------</div>
-            <div style="font-size: 14px; line-height: 1.5; color: black !important;">
-                <div style="font-family: monospace; width: 100%; font-size: 12px; color: black !important;">
-                    
-                    <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 12px; table-layout: fixed; color: black !important;">
-                        <tr style="color: black !important;"><td style="width: 85px; color: black !important;">TGL/JAM</td><td style="width: 15px; color: black !important;">:</td><td style="color: black !important;">${tgl} ‖ ${jam}</td></tr>
-                        <tr style="color: black !important;"><td style="color: black !important;">PLAT NO</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.plat}</td></tr>
-                        <tr style="color: black !important;"><td style="color: black !important;">SOPIR</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.sopir || "-"}</td></tr>
-                        <tr style="color: black !important;"><td style="color: black !important;">BARANG</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.barang || "-"}</td></tr>
-                        <tr style="color: black !important;"><td style="color: black !important;">ASAL MUAT</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.muat || "-"}</td></tr>
-                        <tr style="color: black !important;"><td style="color: black !important;">BONGKAR</td><td style="color: black !important;">:</td><td style="color: black !important;">${data.bongkar || "-"}</td></tr>
-                        
-                        <tr style="color: black !important;">
-                            <td colspan="3" style="padding: 5px 0; color: black !important;">
-                                -----------------------------------------------<br>
-                                panjang : ${data.p||0} ‖ lebar : ${data.l||0} ‖ tinggi : ${data.t||0} (m)<br>
-                                -----------------------------------------------
-                            </td>
-                        </tr>
+            document.body.removeChild(printArea);
+            alert("✓ STRUK SURAT JALAN BERHASIL DIUNDUH!\nSilakan cek galeri untuk cetak via bluetooth.");
+        }).catch(err => {
+            alert("Gagal memproses struk gambar: " + err.message);
+            document.body.removeChild(printArea);
+        });
+    }, 1200);
+}
 
-                        <tr style="color: black !important;"><td style="color: black !important;">TOTAL</td><td style="color: black !important;">:</td><td style="color: black !important;"><b style="color: black !important; font-size: 14px;">${data.volM || 0} M3</b></td></tr>
-                    </table>
-
-                    <div style="text-align: center; margin-top: 8px; color: black !important; font-weight: bold;">ID SURAT: ${data.id}</div>
-                    <div id="qrcode-box" style="display: flex; justify-content: center; padding: 10px; background: white !important;"></div>
-                    <div style="text-align: center; color: black !important;">-----------------------------------------------</div>
-
-                    <table style="width: 100%; font-family: monospace; font-size: 11px; text-align: center; color: black !important;">
-                        <tr style="color: black !important;">
-                            <td style="width: 50%; color: black !important;">Tanda Terima,</td>
-                            <td style="color: black !important;">Mengetahui,</td>
-                        </tr>
-                        <tr style="color: black !important;">
-                            <td style="padding: 20px 0;"></td>
-                            <td style="padding: 20px 0;"></td>
-                        </tr>
-                        <tr style="color: black !important;">
-                            <td style="color: black !important;">( ______________ )</td>
-                            <td style="color: black !important;"><b style="color: black !important;">${data.sopir}</b><br>Driver Armada</td>
-                        </tr>
-                    </table>
-                    <div style="text-align: center; color: black !important;">-----------------------------------------------</div>
-
-                    <div style="text-align: center; font-size: 11px; margin-top: 15px; color: black !important; font-weight: bold;">⚓ NIAT BAIK ‖ KERJA BAIK ‖ REZEKI BAIK ⚓</div>
-                    <div style="text-align: center; font-size: 10px; margin-top:10px; color: black !important;">Hati-hati Pak Sopir, KELUARGA menunggu ANDA dirumah.</div>
-                </div>
-            </div>
-            `;
-
-            document.body.appendChild(printArea);
-            
-            // Render QR-Code internal aplikasi
-            new QRCode(document.getElementById("qrcode-box"), {
-                text: "https://berkahbajasteel.web.app/verifikasi?id=" + data.id,
-                width: 130, 
-                height: 130
-            });
-
-            // Proses konversi HTML ke Gambar PNG siap print
-            setTimeout(() => {
-                html2canvas(printArea, {
-                    backgroundColor: "#ffffff",
-                    scale: 2
-                }).then(canvas => {
-                    const imageData = canvas.toDataURL("image/png");
-                    const link = document.createElement('a');
-                    link.download = `STRUK_${data.plat.replace(/ /g, '_')}_${data.id}.png`;
-                    link.href = imageData;
-                    link.click();
-                    
-                    document.body.removeChild(printArea);
-                    alert("✓ STRUK SURAT JALAN TERDOWNLOAD!\nSilakan cek galeri untuk cetak via bluetooth.");
-                }).catch(err => {
-                    alert("Error menjepret gambar: " + err.message);
-                });
-            }, 1000);
-        }
-
-        // Deklarasi Global tingkat paling atas agar bisa dijangkau tag HTML onclick
-        window.printSuratJalan = printSuratJalan;
+// Pastikan terikat kuat di level Window agar aman dari proteksi scope internal script
+window.printSuratJalan = printSuratJalan;
 
 // FUNGSI EKSEKUSI PERUBAHAN STATUS KE FIREBASE
 window.ubahStatusOperasionalSupir = (statusBaru) => {
