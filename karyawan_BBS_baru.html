@@ -1022,13 +1022,14 @@ async function generatePdfBulanan(platNomor, bulanTahun, listOrderan) {
         // Reset warna teks ke hitam
         doc.setTextColor(0, 0, 0);
 
-        // 4. GENERATE TABEL OTOMATIS (MENGGUNAKAN JSPDF-AUTOTABLE)
+  // 4. GENERATE TABEL OTOMATIS (MENGGUNAKAN JSPDF-AUTOTABLE) - TEMA BIRU MUDA
         doc.autoTable({
             startY: 70,
             head: [['No', 'Tanggal', 'ID Order', 'Barang', 'Rute (Muat -> Bongkar)', 'Vol', 'Ongkosan', 'BOP', 'Profit']],
             body: barisTabel,
             theme: 'grid',
-            headStyles: { fillColor: [30, 41, 59], fontSize: 8, halign: 'center' }, // Tema Slate Gelap Kantor
+            // GANTI DISINI: headStyles fillColor diubah ke Biru Muda Logistik yang Tegas
+            headStyles: { fillColor: [14, 116, 144], textColor: [255, 255, 255], fontSize: 8, halign: 'center' }, 
             columnStyles: {
                 0: { cellWidth: 8, halign: 'center' },
                 1: { cellWidth: 15, halign: 'center' },
@@ -1049,7 +1050,8 @@ async function generatePdfBulanan(platNomor, bulanTahun, listOrderan) {
                 "Rp " + totalBop.toLocaleString('id-ID'), 
                 "Rp " + totalProfit.toLocaleString('id-ID')
             ]],
-            footStyles: { fillColor: [226, 232, 240], textColor: [0, 0, 0], fontSize: 8, fontStyle: 'bold' }
+            // GANTI DISINI: footStyles fillColor diubah ke Biru Muda Soft biar serasi
+            footStyles: { fillColor: [224, 242, 254], textColor: [15, 23, 42], fontSize: 8, fontStyle: 'bold' }
         });
 
         // 5. TANDA TANGAN MANAJEMEN
