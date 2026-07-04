@@ -211,8 +211,8 @@
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyZhTJrSLlzeV8DyC1NcZciJyUrTLzMff5UahkTpZcDuF6PPX2o4E9Pc2K_guOhMjEh/exec";
 
     const mode = new URLSearchParams(window.location.search).get('mode');
-    if(mode === 'cilegon') document.getElementById('view-cilegon').style.display = 'flex';
-    else if(mode === 'jakarta') {
+    if(mode === 'muat') document.getElementById('view-cilegon').style.display = 'flex';
+    else if(mode === 'bongkar') {
         document.getElementById('view-jakarta').style.display = 'flex';
         initScanner();
     }
