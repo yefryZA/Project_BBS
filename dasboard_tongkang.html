@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ringkasan Kas Tongkang (HP)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      touch-action: manipulation;
+    }
+    input, select {
+      font-family: 'Arial Black', Gadget, sans-serif !important;
+    }
+    .val-font {
+      font-family: 'Arial Black', Gadget, sans-serif !important;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen p-4 pb-12 flex flex-col justify-between">
+
+  <div class="space-y-5 max-w-md mx-auto w-full">
+    
+    <!-- HEADER APP MOBILE -->
+    <header class="flex justify-between items-center border-b border-slate-800 pb-3">
+      <div>
+        <h1 class="text-xl font-black text-amber-400 tracking-wide flex items-center gap-2">
+          🚢 RINGKASAN KAS
+        </h1>
+        <p class="text-xs text-slate-400">Tampilan Ringkas & Cepat (Mobile)</p>
+      </div>
+      <span class="text-xs bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-full text-slate-300 font-semibold">
+        LIVE 🟢
+      </span>
+    </header>
+
+    <!-- CARDS CONTAINER -->
+    <div class="space-y-3">
+      
+      <!-- CARD TOTAL DP MASUK (KLIKABLE FOR POPUP) -->
+      <div onclick="bukaModalRincian('MASUK')" class="bg-gradient-to-r from-emerald-950 to-slate-900 border border-emerald-500/40 p-4 rounded-2xl shadow-lg active:scale-95 transition cursor-pointer flex justify-between items-center">
+        <div>
+          <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-400 uppercase tracking-wider">
+            <span>📥</span> Total DP Masuk
+          </div>
+          <p id="cardTotalDP" class="val-font text-2xl font-black text-emerald-400 mt-1">Rp 0</p>
+          <p class="text-[10px] text-emerald-500/80 mt-1">Klik untuk lihat rincian & tanggal ➔</p>
+        </div>
+        <div class="text-emerald-500/30 text-3xl font-black">❯</div>
+      </div>
+
+      <!-- CARD BIAYA OPERASIONAL (KLIKABLE FOR POPUP) -->
+      <div onclick="bukaModalRincian('KELUAR')" class="bg-gradient-to-r from-rose-950 to-slate-900 border border-rose-500/40 p-4 rounded-2xl shadow-lg active:scale-95 transition cursor-pointer flex justify-between items-center">
+        <div>
+          <div class="flex items-center gap-1.5 text-xs font-bold text-rose-400 uppercase tracking-wider">
+            <span>📤</span> Total Biaya Operasional
+          </div>
+          <p id="cardTotalBiaya" class="val-font text-2xl font-black text-rose-400 mt-1">Rp 0</p>
+          <p class="text-[10px] text-rose-500/80 mt-1">Klik untuk lihat rincian & tanggal ➔</p>
+        </div>
+        <div class="text-rose-500/30 text-3xl font-black">❯</div>
+      </div>
+
+      <!-- CARD PROFIT EKSTERNAL -->
+      <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl shadow-md">
+        <p class="text-xs font-bold text-amber-400 uppercase tracking-wider">💰 Profit</p>
+        <p id="cardProfit" class="val-font text-2xl font-black text-amber-400 mt-1">Rp 0</p>
+      </div>
+
+      <!-- CARD KAS PT 10% -->
+      <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl shadow-md">
+        <p class="text-xs font-bold text-blue-400 uppercase tracking-wider">🏢 Kas PT (10%)</p>
+        <p id="cardKasPT" class="val-font text-2xl font-black text-blue-400 mt-1">Rp 0</p>
+      </div>
+
+      <!-- HIGHLIGHT HASIL AKHIR ANGGOTA -->
+      <div class="bg-gradient-to-br from-blue-900 to-slate-900 border-2 border-blue-500/50 p-5 rounded-2xl shadow-xl space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="bg-blue-600 text-[10px] font-black px-2 py-0.5 rounded text-white uppercase tracking-wider">
+            Hasil Akhir Anggota
+          </span>
+          <span class="text-xs text-slate-300 font-bold">
+            Dibagi: <span id="cardJmlPembagi" class="text-amber-400 val-font">5</span> Orang
+          </span>
+        </div>
+        
+        <div class="pt-2">
+          <p id="cardHakTotal" class="val-font text-3xl font-black text-emerald-400">Rp 0</p>
+          <p id="cardHakPerM3" class="val-font text-sm font-bold text-blue-300 mt-0.5">Rp 0 / m³</p>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- POP-UP MODAL RINCIAN (POP UP JIKA CARD DIKLIK) -->
+  <div id="modalRincian" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden flex flex-col justify-end z-50 p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl p-5 max-h-[80vh] flex flex-col shadow-2xl space-y-4">
+      
+      <!-- MODAL HEADER -->
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div>
+          <h3 id="modalTitle" class="text-lg font-black text-white">Rincian Transaksi</h3>
+          <p id="modalSubtitle" class="text-xs text-slate-400">Riwayat tanggal & nominal</p>
+        </div>
+        <button onclick="tutupModalRincian()" class="w-8 h-8 rounded-full bg-slate-800 text-slate-300 font-bold text-sm flex items-center justify-center">
+          ✕
+        </button>
+      </div>
+
+      <!-- MODAL CONTENT LIST -->
+      <div id="modalListContent" class="overflow-y-auto space-y-2.5 pr-1 flex-1">
+        <!-- Rincian item dimasukkan lewat JavaScript -->
+      </div>
+
+      <button onclick="tutupModalRincian()" class="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-sm transition">
+        Tutup
+      </button>
+
+    </div>
+  </div>
+
+  <!-- FIREBASE ENGINE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_wvEsCCOEjiwxui7_pdOrG8-xMBCw3mw",
+      authDomain: "barcode-warung-81e97.firebaseapp.com",
+      databaseURL: "https://barcode-warung-81e97-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "barcode-warung-81e97",
+      storageBucket: "barcode-warung-81e97.firebasestorage.app",
+      messagingSenderId: "1089837830503",
+      appId: "1:1089837830503:web:410644c17a04314e37dfc2",
+      measurementId: "G-92V3E8BM6J"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const dbRefKas = ref(db, "KAS_TONGKANG");
+
+    let dataKas = { transaksi: {}, params: {} };
+
+    function formatRupiah(num) {
+      return "Rp " + Math.round(num || 0).toLocaleString('id-ID');
+    }
+
+    // UPDATE DISPLAY MOBILE
+    onValue(dbRefKas, (snapshot) => {
+      const val = snapshot.val() || {};
+      dataKas.transaksi = val.transaksi || {};
+      dataKas.params = val.params || {};
+
+      let totalDP = 0;
+      let totalBiaya = 0;
+
+      for (let key in dataKas.transaksi) {
+        const item = dataKas.transaksi[key];
+        if (item.tipe === 'MASUK') totalDP += item.nominal;
+        if (item.tipe === 'KELUAR') totalBiaya += item.nominal;
+      }
+
+      // Ambil nilai parameter dari Firebase dengan pengecekan ketat
+      const kubikasi = Number(dataKas.params.kubikasi) || 0;
+      const pembagi = Number(dataKas.params.pembagi) > 0 ? Number(dataKas.params.pembagi) : 5;
+      const tabunganPerM3 = Number(dataKas.params.tabunganPerM3) || 0;
+
+      const totalProfitKotor = totalDP - totalBiaya;
+      const totalTabunganIntern = tabunganPerM3 * kubikasi;
+      const profitEksternal = totalProfitKotor - totalTabunganIntern;
+      const kasPT = profitEksternal > 0 ? profitEksternal * 0.10 : 0;
+      const sisaProfitAnggota = profitEksternal - kasPT;
+
+      const hakPerOrangTotal = pembagi > 0 ? sisaProfitAnggota / pembagi : 0;
+      const hakPerOrangPerM3 = kubikasi > 0 ? hakPerOrangTotal / kubikasi : 0;
+
+      // Render ke Tampilan
+      document.getElementById('cardTotalDP').innerText = formatRupiah(totalDP);
+      document.getElementById('cardTotalBiaya').innerText = formatRupiah(totalBiaya);
+      document.getElementById('cardProfit').innerText = formatRupiah(profitEksternal);
+      document.getElementById('cardKasPT').innerText = formatRupiah(kasPT);
+      document.getElementById('cardJmlPembagi').innerText = pembagi.toLocaleString('id-ID');
+
+      document.getElementById('cardHakPerM3').innerText = formatRupiah(hakPerOrangPerM3) + " / m³";
+      document.getElementById('cardHakTotal').innerText = formatRupiah(hakPerOrangTotal);
+    });
+
+    // MODAL RINCIAN POP-UP LOGIC
+    window.bukaModalRincian = (tipeFilter) => {
+      const modal = document.getElementById('modalRincian');
+      const listContent = document.getElementById('modalListContent');
+      const title = document.getElementById('modalTitle');
+      const subtitle = document.getElementById('modalSubtitle');
+
+      listContent.innerHTML = '';
+
+      if (tipeFilter === 'MASUK') {
+        title.innerText = "📥 Rincian DP Masuk";
+        title.className = "text-lg font-black text-emerald-400";
+        subtitle.innerText = "Daftar histori transaksi DP dari pembeli";
+      } else {
+        title.innerText = "📤 Rincian Biaya Operasional";
+        title.className = "text-lg font-black text-rose-400";
+        subtitle.innerText = "Daftar pengeluaran material & tongkang";
+      }
+
+      let count = 0;
+      for (let key in dataKas.transaksi) {
+        const item = dataKas.transaksi[key];
+        if (item.tipe === tipeFilter) {
+          count++;
+          const div = document.createElement('div');
+          div.className = "bg-slate-800/90 border border-slate-700/60 p-3 rounded-xl flex justify-between items-center";
+          
+          const waktuFormatted = item.timestamp ? item.timestamp : "Tanpa Tanggal";
+
+          div.innerHTML = `
+            <div>
+              <p class="text-sm font-bold text-white">${item.keterangan}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">📅 ${waktuFormatted}</p>
+            </div>
+            <p class="val-font text-sm font-bold ${tipeFilter === 'MASUK' ? 'text-emerald-400' : 'text-rose-400'}">
+              ${formatRupiah(item.nominal)}
+            </p>
+          `;
+          listContent.appendChild(div);
+        }
+      }
+
+      if (count === 0) {
+        listContent.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">Belum ada data transaksi.</p>`;
+      }
+
+      modal.classList.remove('hidden');
+    };
+
+    window.tutupModalRincian = () => {
+      document.getElementById('modalRincian').classList.add('hidden');
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kas Tongkang & Bagi Hasil Batu Split</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- LIBRARY UNTUK MERENDER DAN MENDOWNLOAD LAPORAN PDF AUTOMATIS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    /* Mengubah font seluruh elemen input, select, dan textarea menjadi Arial Black */
+    input, select, textarea {
+      font-family: 'Arial Black', Gadget, sans-serif !important;
+    }
+  
+    @media print {
+    /* Sembunyikan tombol, form input, dan elemen navigasi */
+    button, form, #modalAdmin, #modalParam, input {
+      display: none !important;
+    }
+
+    body {
+      background-color: #ffffff !important;
+      color: #000000 !important;
+      padding: 0 !important;
+    }
+
+    .max-w-4xl {
+      max-width: 100% !important;
+      margin: 0 !important;
+    }
+
+    /* Styling khusus kotak ringkasan PDF */
+    .bg-slate-900 {
+      background-color: #f8fafc !important;
+      color: #0f172a !important;
+      border: 2px solid #cbd5e1 !important;
+    }
+
+    .text-white, .text-slate-300, .text-slate-400 {
+      color: #0f172a !important;
+    }
+
+    .border-slate-800 {
+      border-color: #cbd5e1 !important;
+    }
+
+    /* Memastikan tabel tercetak jelas */
+    table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+    }
+
+    th, td {
+      border: 1px solid #cbd5e1 !important;
+      padding: 8px !important;
+    }
+  }
+  </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 p-4 md:p-8">
+
+  <div class="max-w-4xl mx-auto space-y-6">
+    
+   <!-- HEADER (Update: Tambahkan tombol gerigi di samping tombol Tabungan Intern) -->
+<header class="bg-slate-900 text-white p-6 rounded-2xl shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+  <div>
+    <h1 class="text-2xl font-bold">🚢 Kas Tongkang Batu Split</h1>
+    <p class="text-slate-400 text-sm">Pencatatan DP, Biaya Operasional, & Pembagian Hasil</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <!-- TOMBOL GERIGI POPUP PARAMETER -->
+    <button onclick="bukaModalParam()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 p-2.5 rounded-xl text-sm font-semibold transition" title="Pengaturan Parameter">
+      ⚙️
+    </button>
+    <!-- TOMBOL CETAK PDF -->
+<button onclick="window.cetakPDF()" class="bg-slate-800 hover:bg-slate-700 text-rose-400 border border-rose-500/30 px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition">
+  📄 Cetak PDF
+</button>
+    <!-- TOMBOL TABUNGAN INTERN -->
+    <button onclick="bukaModalAdmin()" class="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition">
+      🔒
+    </button>
+  </div>
+</header>
+
+    <!-- FORM INPUT DANA -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <!-- KAS MASUK (DP) -->
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <h2 class="text-lg font-bold text-emerald-600 mb-4 flex items-center gap-2">
+          📥 Input Kas Masuk (DP Pembeli)
+        </h2>
+        <form id="formPenerimaan" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Keterangan / Tahap</label>
+            <input type="text" id="ketPenerimaan" placeholder="Contoh: DP 1 Pembeli" class="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" required>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Nominal (Rp)</label>
+            <input type="text" id="nominalPenerimaan" placeholder="0" class="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-emerald-500 outline-none input-number-format" required>
+          </div>
+          <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-sm transition">
+            + Tambah DP
+          </button>
+        </form>
+      </div>
+
+      <!-- KAS KELUAR (OPERASIONAL) -->
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <h2 class="text-lg font-bold text-rose-600 mb-4 flex items-center gap-2">
+          📤 Input Kas Keluar (Material / Tongkang)
+        </h2>
+        <form id="formPengeluaran" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Keterangan Pengeluaran</label>
+            <input type="text" id="ketPengeluaran" placeholder="Contoh: Panjar Material Batu" class="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-rose-500 outline-none" required>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Nominal (Rp)</label>
+            <input type="text" id="nominalPengeluaran" placeholder="0" class="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-rose-500 outline-none input-number-format" required>
+          </div>
+          <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2.5 rounded-xl text-sm transition">
+            + Tambah Pengeluaran
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+
+<!-- MODAL POPUP PARAMETER KALKULASI (DISAMBUNGKAN KE TOMBOL GERIGI) -->
+<div id="modalParam" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+  <div class="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
+    <div class="flex justify-between items-center border-b pb-3">
+      <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">⚙️ Parameter Pengiriman & Pembagian</h2>
+      <button onclick="tutupModalParam()" class="text-slate-400 hover:text-slate-600">✕</button>
+    </div>
+    
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Total Kubikasi (m³)</label>
+        <input type="text" id="inputKubikasi" placeholder="Misal: 1.000" class="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none input-number-format">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Jumlah Pembagi (Orang)</label>
+        <input type="text" id="inputPembagi" value="5" class="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none input-number-format">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Tabungan Intern / m³ (Rp)</label>
+        <input type="text" id="inputTabunganPerM3" placeholder="Misal: 5.000" class="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 input-number-format">
+      </div>
+    </div>
+    
+    <div class="flex justify-end gap-2 pt-2">
+      <button onclick="tutupModalParam()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
+      <button onclick="simpanParameter()" class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition">
+        Hitung & Simpan
+      </button>
+    </div>
+  </div>
+</div>
+
+    <!-- RINGKASAN PEMBAGIAN RESULT -->
+    <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-md space-y-6">
+      <h2 class="text-xl font-bold border-b border-slate-800 pb-3">📊 Ringkasan Pembagian Hasil</h2>
+      
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+        <div class="bg-slate-800 p-4 rounded-xl">
+          <p class="text-xs text-slate-400">Total DP Masuk</p>
+          <p id="resTotalDP" class="text-lg font-bold text-emerald-400">Rp 0</p>
+        </div>
+        <div class="bg-slate-800 p-4 rounded-xl">
+          <p class="text-xs text-slate-400">Total Biaya Operasional</p>
+          <p id="resTotalBiaya" class="text-lg font-bold text-rose-400">Rp 0</p>
+        </div>
+        <div class="bg-slate-800 p-4 rounded-xl">
+          <p class="text-xs text-slate-400">Profit Eksternal</p>
+          <p id="resProfitEksternal" class="text-lg font-bold text-amber-400">Rp 0</p>
+        </div>
+        <div class="bg-slate-800 p-4 rounded-xl">
+          <p class="text-xs text-slate-400">Kas PT (10%)</p>
+          <p id="resKasPT" class="text-lg font-bold text-blue-400">Rp 0</p>
+        </div>
+      </div>
+
+      <!-- HIGHLIGHT HAK PER ORANG -->
+      <div class="bg-blue-900/40 border border-blue-500/30 p-6 rounded-xl flex flex-col md:flex-row justify-between items-center gap-4">
+        <div>
+          <span class="bg-blue-600 text-xs px-2.5 py-1 rounded-md font-semibold uppercase">Hasil Akhir Anggota</span>
+          <p class="text-sm text-slate-300 mt-2">Diterima masing-masing dari <span id="resJmlPembagi" class="font-bold text-white">5</span> orang:</p>
+        </div>
+        <div class="text-right">
+          <p id="resHakPerM3" class="text-sm text-blue-300 font-semibold">Rp 0 / m³</p>
+          <p id="resHakTotal" class="text-3xl font-extrabold text-emerald-400">Rp 0</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABEL CATATAN TRANSAKSI -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+      <h2 class="text-lg font-bold text-slate-800 mb-4">📜 Riwayat Transaksi DP & Operasional</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-b bg-slate-50 text-slate-500">
+              <th class="p-3">Tipe</th>
+              <th class="p-3">Keterangan</th>
+              <th class="p-3 text-right">Nominal (Rp)</th>
+              <th class="p-3 text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="tabelRiwayat" class="divide-y">
+            <!-- Data dimasukkan lewat JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAL TABUNGAN INTERN (PASSWORD PROTECTED) -->
+  <div id="modalAdmin" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+      
+      <!-- FORM INPUT PASSWORD -->
+      <div id="secPass">
+        <h3 class="text-lg font-bold text-slate-800">🔒 Akses Tabungan Intern</h3>
+        <p class="text-xs text-slate-500 mb-4">Masukkan password admin untuk melihat saldo tabungan rahasia.</p>
+        <input type="password" id="passAdmin" placeholder="Masukkan Password" class="w-full border rounded-xl p-2.5 text-sm mb-4 outline-none focus:ring-2 focus:ring-slate-800">
+        <div class="flex justify-end gap-2">
+          <button onclick="tutupModalAdmin()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
+          <button onclick="verifikasiPass()" class="px-4 py-2 text-sm bg-slate-900 text-white rounded-xl hover:bg-slate-800">Buka</button>
+        </div>
+      </div>
+
+      <!-- KONTEN TABUNGAN INTERN -->
+      <div id="secDataAdmin" class="hidden space-y-4">
+        <div class="flex justify-between items-center border-b pb-2">
+          <h3 class="text-lg font-bold text-amber-600">💰 Tabungan Intern (Rahasia)</h3>
+          <button onclick="tutupModalAdmin()" class="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
+        
+        <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl">
+          <p class="text-xs text-amber-800 uppercase font-semibold">Total Nilai Tabungan Intern</p>
+          <p id="resTotalTabunganIntern" class="text-2xl font-bold text-amber-600 mt-1">Rp 0</p>
+          <p class="text-xs text-amber-700 mt-2">*Dihitung dari (Tabungan / m³) × Total Kubikasi</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FIREBASE MODULES & LOGIC -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, push, onValue, remove, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA_wvEsCCOEjiwxui7_pdOrG8-xMBCw3mw",
+      authDomain: "barcode-warung-81e97.firebaseapp.com",
+      databaseURL: "https://barcode-warung-81e97-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "barcode-warung-81e97",
+      storageBucket: "barcode-warung-81e97.firebasestorage.app",
+      messagingSenderId: "1089837830503",
+      appId: "1:1089837830503:web:410644c17a04314e37dfc2",
+      measurementId: "G-92V3E8BM6J"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const dbRefKas = ref(db, "KAS_TONGKANG");
+
+    // STATE LOCAL
+    let dataKas = {
+      transaksi: {},
+      params: {
+        kubikasi: 0,
+        pembagi: 5,
+        tabunganPerM3: 0
+      }
+    };
+
+    // DOM ELEMENTS
+    const formPenerimaan = document.getElementById('formPenerimaan');
+    const formPengeluaran = document.getElementById('formPengeluaran');
+    const tabelRiwayat = document.getElementById('tabelRiwayat');
+
+    // HELPER UTILS PEMFORATAN ANGKA (RIBUAN TANDA TITIK)
+    function cleanNumber(str) {
+      if (!str) return 0;
+      return parseFloat(str.toString().replace(/\./g, '')) || 0;
+    }
+
+    function formatNumberString(val) {
+      const num = cleanNumber(val);
+      if (num === 0 && val === '') return '';
+      return num.toLocaleString('id-ID');
+    }
+
+    // LISTENER OTOMATIS PEMFORMAT ANGKA SAAT MENGETIK
+    document.querySelectorAll('.input-number-format').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const cursorPosition = e.target.selectionStart;
+        const originalLength = e.target.value.length;
+        
+        e.target.value = formatNumberString(e.target.value);
+        
+        const newLength = e.target.value.length;
+        e.target.setSelectionRange(cursorPosition + (newLength - originalLength), cursorPosition + (newLength - originalLength));
+      });
+    });
+
+// HELPER TANGGAL & JAM (Format: DD/MM/YYYY | Jam HH:MM)
+function getFormattedDateTime() {
+  const now = new Date();
+  const tgl = now.toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+  const jam = now.toLocaleTimeString('id-ID', {
+    hour: '2-digit',
+    minute: '2-digit'
+  }).replace(/\./g, ':');
+
+  return `${tgl} | Jam ${jam}`;
+}
+
+// SUBMIT DP
+formPenerimaan.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const ket = document.getElementById('ketPenerimaan').value;
+  const nominal = cleanNumber(document.getElementById('nominalPenerimaan').value);
+
+  push(ref(db, "KAS_TONGKANG/transaksi"), {
+    tipe: 'MASUK',
+    keterangan: ket,
+    nominal: nominal,
+    timestamp: getFormattedDateTime() // <--- Otomatis Catat Tanggal & Jam
+  });
+
+  formPenerimaan.reset();
+});
+
+// SUBMIT PENGELUARAN
+formPengeluaran.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const ket = document.getElementById('ketPengeluaran').value;
+  const nominal = cleanNumber(document.getElementById('nominalPengeluaran').value);
+
+  push(ref(db, "KAS_TONGKANG/transaksi"), {
+    tipe: 'KELUAR',
+    keterangan: ket,
+    nominal: nominal,
+    timestamp: getFormattedDateTime() // <--- Otomatis Catat Tanggal & Jam
+  });
+
+  formPengeluaran.reset();
+});
+
+    // SIMPAN PARAMETER (KUBIKASI, PEMBAGI, TABUNGAN INTERN)
+    window.simpanParameter = () => {
+      const kubikasi = cleanNumber(document.getElementById('inputKubikasi').value);
+      const pembagi = cleanNumber(document.getElementById('inputPembagi').value) || 5;
+      const tabunganPerM3 = cleanNumber(document.getElementById('inputTabunganPerM3').value);
+
+      set(ref(db, "KAS_TONGKANG/params"), {
+        kubikasi: kubikasi,
+        pembagi: pembagi,
+        tabunganPerM3: tabunganPerM3
+      });
+
+      alert("Parameter berhasil disimpan!");
+    };
+
+    // HAPUS TRANSAKSI
+    window.hapusTransaksi = (key) => {
+      if (confirm("Hapus catatan transaksi ini?")) {
+        remove(ref(db, `KAS_TONGKANG/transaksi/${key}`));
+      }
+    };
+
+    // LISTEN FIREBASE
+    onValue(dbRefKas, (snapshot) => {
+      const val = snapshot.val() || {};
+      dataKas.transaksi = val.transaksi || {};
+      dataKas.params = val.params || { kubikasi: 0, pembagi: 5, tabunganPerM3: 0 };
+
+      // Fill Inputs dengan Format Ribuan
+      document.getElementById('inputKubikasi').value = dataKas.params.kubikasi ? formatNumberString(dataKas.params.kubikasi) : '';
+      document.getElementById('inputPembagi').value = dataKas.params.pembagi ? formatNumberString(dataKas.params.pembagi) : '5';
+      document.getElementById('inputTabunganPerM3').value = dataKas.params.tabunganPerM3 ? formatNumberString(dataKas.params.tabunganPerM3) : '';
+
+      renderTabel();
+      hitungKalkulasi();
+    });
+
+    // RENDER TABEL (TANGGAL DITAMPILKAN DI SINI)
+    function renderTabel() {
+      tabelRiwayat.innerHTML = '';
+      const list = dataKas.transaksi;
+
+      for (let key in list) {
+        const item = list[key];
+        const isMasuk = item.tipe === 'MASUK';
+        // Mengambil timestamp dari firebase, jika tidak ada (data lama) diberi tanda '-'
+        const waktuFormatted = item.timestamp ? item.timestamp : '-';
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-3">
+            <span class="px-2 py-1 text-xs rounded-md font-semibold ${isMasuk ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+              ${item.tipe}
+            </span>
+          </td>
+          <td class="p-3">
+            <div class="font-medium text-slate-800">${item.keterangan}</div>
+            <div class="text-[11px] text-slate-400">📅 ${waktuFormatted}</div>
+          </td>
+          <td class="p-3 text-right font-semibold ${isMasuk ? 'text-emerald-600' : 'text-rose-600'}">
+            Rp ${item.nominal.toLocaleString('id-ID')}
+          </td>
+          <td class="p-3 text-center">
+            <button onclick="hapusTransaksi('${key}')" class="text-slate-400 hover:text-rose-600">🗑️</button>
+          </td>
+        `;
+        tabelRiwayat.appendChild(tr);
+      }
+    }
+
+    // UTILS FORMAT RUPIAH
+    function formatRupiah(num) {
+      return "Rp " + Math.round(num).toLocaleString('id-ID');
+    }
+
+    // LOGIKA HITUNGAN UTAMA
+    function hitungKalkulasi() {
+      let totalDP = 0;
+      let totalBiaya = 0;
+
+      for (let key in dataKas.transaksi) {
+        const item = dataKas.transaksi[key];
+        if (item.tipe === 'MASUK') totalDP += item.nominal;
+        if (item.tipe === 'KELUAR') totalBiaya += item.nominal;
+      }
+
+      const totalProfitKotor = totalDP - totalBiaya;
+      const kubikasi = dataKas.params.kubikasi || 0;
+      const pembagi = dataKas.params.pembagi || 5;
+      const tabunganPerM3 = dataKas.params.tabunganPerM3 || 0;
+
+      // Tabungan Intern Total
+      const totalTabunganIntern = tabunganPerM3 * kubikasi;
+
+      // Profit Eksternal (Diakui)
+      const profitEksternal = totalProfitKotor - totalTabunganIntern;
+
+      // Kas PT 10%
+      const kasPT = profitEksternal > 0 ? profitEksternal * 0.10 : 0;
+
+      // Sisa Profit Dibagi Anggota
+      const sisaProfitAnggota = profitEksternal - kasPT;
+
+      // Hak Per Orang
+      const hakPerOrangTotal = pembagi > 0 ? sisaProfitAnggota / pembagi : 0;
+      const hakPerOrangPerM3 = kubikasi > 0 ? hakPerOrangTotal / kubikasi : 0;
+
+      // Update UI Tampilan
+      document.getElementById('resTotalDP').innerText = formatRupiah(totalDP);
+      document.getElementById('resTotalBiaya').innerText = formatRupiah(totalBiaya);
+      document.getElementById('resProfitEksternal').innerText = formatRupiah(profitEksternal);
+      document.getElementById('resKasPT').innerText = formatRupiah(kasPT);
+      document.getElementById('resJmlPembagi').innerText = pembagi.toLocaleString('id-ID');
+
+      document.getElementById('resHakPerM3').innerText = formatRupiah(hakPerOrangPerM3) + " / m³";
+      document.getElementById('resHakTotal').innerText = formatRupiah(hakPerOrangTotal);
+
+      // Data Modal Admin (Hidden)
+      document.getElementById('resTotalTabunganIntern').innerText = formatRupiah(totalTabunganIntern);
+    }
+
+    // VERIFIKASI ADMIN (PASSWORD SEMENTARA: 1234)
+    window.bukaModalAdmin = () => {
+      document.getElementById('modalAdmin').classList.remove('hidden');
+      document.getElementById('secPass').classList.remove('hidden');
+      document.getElementById('secDataAdmin').classList.add('hidden');
+      document.getElementById('passAdmin').value = '';
+    };
+
+    window.tutupModalAdmin = () => {
+      document.getElementById('modalAdmin').classList.add('hidden');
+    };
+
+    window.verifikasiPass = () => {
+      const pass = document.getElementById('passAdmin').value;
+      if (pass === '1234') { // <-- GANTI PASSWORD ADMIN DI SINI JIKA INGIN DITUKAR
+        document.getElementById('secPass').classList.add('hidden');
+        document.getElementById('secDataAdmin').classList.remove('hidden');
+      } else {
+        alert("Password salah!");
+      }
+    };
+    // FUNGSI MODAL PARAMETER (GERIGI)
+window.bukaModalParam = () => {
+  document.getElementById('modalParam').classList.remove('hidden');
+};
+
+window.tutupModalParam = () => {
+  document.getElementById('modalParam').classList.add('hidden');
+};
+
+// SIMPAN PARAMETER & OTOMATIS TUTUP MODAL
+window.simpanParameter = () => {
+  const kubikasi = cleanNumber(document.getElementById('inputKubikasi').value);
+  const pembagi = cleanNumber(document.getElementById('inputPembagi').value) || 5;
+  const tabunganPerM3 = cleanNumber(document.getElementById('inputTabunganPerM3').value);
+
+  set(ref(db, "KAS_TONGKANG/params"), {
+    kubikasi: kubikasi,
+    pembagi: pembagi,
+    tabunganPerM3: tabunganPerM3
+  });
+
+  tutupModalParam();
+  alert("Parameter berhasil disimpan!");
+};
+
+// FUNGSI UNTUK GENERATE & DOWNLOAD PDF LAPORAN RESMI
+window.cetakPDF = () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({
+    orientation: "p",
+    unit: "mm",
+    format: "a4"
+  });
+
+  const kubikasi = dataKas.params.kubikasi || 0;
+  const tabunganPerM3 = dataKas.params.tabunganPerM3 || 0;
+  const totalTabunganIntern = tabunganPerM3 * kubikasi;
+
+  let totalDP = 0;
+  let totalBiaya = 0;
+
+  // 1. SIAPKAN DATA TABEL TRANSAKSI
+  const tableData = [];
+  let no = 1;
+
+  for (let key in dataKas.transaksi) {
+    const item = dataKas.transaksi[key];
+    const isMasuk = item.tipe === 'MASUK';
+    const tglWaktu = item.timestamp ? item.timestamp : '-';
+    
+    const masukVal = isMasuk ? item.nominal : 0;
+    const keluarVal = !isMasuk ? item.nominal : 0;
+
+    totalDP += masukVal;
+    totalBiaya += keluarVal;
+
+    tableData.push([
+      no++,
+      tglWaktu,
+      item.keterangan,
+      masukVal > 0 ? "Rp " + masukVal.toLocaleString('id-ID') : "-",
+      keluarVal > 0 ? "Rp " + keluarVal.toLocaleString('id-ID') : "-"
+    ]);
+  }
+
+  // KALKULASI BERJENJANG
+  const profitKotor = totalDP - totalBiaya;
+  const profitEksternal = profitKotor - totalTabunganIntern;
+  const kasPT = profitEksternal > 0 ? profitEksternal * 0.10 : 0;
+  const totalProfitDibagi = profitEksternal - kasPT;
+
+  // 2. HEADER LAPORAN (BERSIH TANPA TANGGAL)
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("LAPORAN KEUANGAN PENGIRIMAN TONGKANG MATERIAL SPLIT", 105, 18, { align: "center" });
+
+  doc.setLineWidth(0.5);
+  doc.line(14, 22, 196, 22);
+
+  // 3. TABEL TRANSAKSI MASUK & KELUAR
+  doc.autoTable({
+    startY: 27,
+    head: [["No.", "Tgl & Waktu", "Keterangan", "Uang Masuk", "Uang Keluar"]],
+    body: tableData.length > 0 ? tableData : [["-", "-", "Belum ada data transaksi", "-", "-"]],
+    theme: "grid",
+    headStyles: {
+      fillColor: [241, 245, 249],
+      textColor: [0, 0, 0],
+      fontStyle: "bold",
+      halign: "center"
+    },
+    styles: {
+      fontSize: 9,
+      cellPadding: 2.5
+    },
+    columnStyles: {
+      0: { halign: "center", cellWidth: 12 },
+      1: { halign: "center", cellWidth: 38 },
+      2: { halign: "left" },
+      3: { halign: "right", cellWidth: 35 },
+      4: { halign: "right", cellWidth: 35 }
+    }
+  });
+
+  // 4. TABEL REKAPITULASI TOTAL DI BAWAH TRANSAKSI
+  const finalY = doc.lastAutoTable.finalY + 8;
+
+  doc.autoTable({
+    startY: finalY,
+    head: [["Ringkasan Rekapitulasi Keuangan", "Nilai (Rp)"]],
+    body: [
+      ["Total Uang Masuk", "Rp " + totalDP.toLocaleString('id-ID')],
+      ["Total Uang Keluar", "Rp " + totalBiaya.toLocaleString('id-ID')],
+      ["Tabungan (" + formatRupiah(tabunganPerM3) + " x " + kubikasi.toLocaleString('id-ID') + " m3)", formatRupiah(totalTabunganIntern)],
+      ["Kas PT (10%)", formatRupiah(kasPT)],
+      ["TOTAL PROFIT DIBAGI ANGGOTA", formatRupiah(totalProfitDibagi)]
+    ],
+    theme: "grid",
+    headStyles: {
+      fillColor: [226, 232, 240],
+      textColor: [0, 0, 0],
+      fontStyle: "bold"
+    },
+    styles: {
+      fontSize: 9,
+      cellPadding: 2.5
+    },
+    columnStyles: {
+      0: { fontStyle: "bold" },
+      1: { halign: "right", fontStyle: "bold", cellWidth: 55 }
+    }
+  });
+
+  // 5. TANDA TANGAN (TTD) MANAGER
+  const ttdY = doc.lastAutoTable.finalY + 12;
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text("Manager,", 160, ttdY, { align: "center" });
+
+  doc.setFont("helvetica", "bold");
+  doc.text("YEFRY DESFIRMANZA", 160, ttdY + 22, { align: "center" });
+
+  doc.setFontSize(8);
+  doc.text("MANAGER", 160, ttdY + 26, { align: "center" });
+
+// 6. CATATAN OTOMATIS TANGGAL & WAKTU CETAK DI PALING BAWAH
+  const bottomY = ttdY + 34;
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+
+  // Penulisan rapi & benar:
+  doc.text("Laporan ini dibuat secara otomatis pada tanggal " + getFormattedDateTime(), 14, bottomY);
+
+  // 7. DOWNLOAD FILE PDF
+  doc.save("Laporan_Kas_Tongkang_" + new Date().toISOString().slice(0, 10) + ".pdf");
+};
+  </script>
+</body>
+</html>
