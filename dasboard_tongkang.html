@@ -42,7 +42,7 @@
       <div onclick="bukaModalRincian('MASUK')" class="bg-gradient-to-r from-emerald-950 to-slate-900 border border-emerald-500/40 p-4 rounded-2xl shadow-lg active:scale-95 transition cursor-pointer flex justify-between items-center">
         <div>
           <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-400 uppercase tracking-wider">
-            <span>📥</span> Total DP Masuk
+            <span>📥</span> UANG MASUK
           </div>
           <p id="cardTotalDP" class="val-font text-2xl font-black text-emerald-400 mt-1">Rp 0</p>
           <p class="text-[10px] text-emerald-500/80 mt-1">Klik untuk lihat rincian & tanggal ➔</p>
@@ -62,20 +62,26 @@
         <div class="text-rose-500/30 text-3xl font-black">❯</div>
       </div>
 
-      <!-- CARD PROFIT EKSTERNAL -->
-      <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl shadow-md">
-        <p class="text-xs font-bold text-amber-400 uppercase tracking-wider">💰 Profit</p>
-        <p id="cardProfit" class="val-font text-2xl font-black text-amber-400 mt-1">Rp 0</p>
+      <!-- CARD PAJAK PPN 11% (HANYA MUNCUL JIKA KUBIKASI > 0) -->
+      <div id="cardPajakPPN" class="bg-slate-800/80 border border-purple-500/40 p-4 rounded-2xl shadow-md hidden">
+        <p class="text-xs font-bold text-purple-400 uppercase tracking-wider">🏛️ Pajak PPN 11%</p>
+        <p id="cardValPajakPPN" class="val-font text-2xl font-black text-purple-400 mt-1">Rp 0</p>
       </div>
 
-      <!-- CARD KAS PT 10% -->
-      <div class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl shadow-md">
+      <!-- CARD FEE BROKER (HANYA MUNCUL JIKA KUBIKASI > 0) -->
+      <div id="cardFeeBroker" class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl shadow-md hidden">
+        <p class="text-xs font-bold text-amber-400 uppercase tracking-wider">🤝 Fee Broker</p>
+        <p id="cardValFeeBroker" class="val-font text-2xl font-black text-amber-400 mt-1">Rp 0</p>
+      </div>
+
+      <!-- CARD KAS PT 10% (HANYA MUNCUL JIKA KUBIKASI > 0) -->
+      <div id="cardKasPT" class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl shadow-md hidden">
         <p class="text-xs font-bold text-blue-400 uppercase tracking-wider">🏢 Kas PT (10%)</p>
-        <p id="cardKasPT" class="val-font text-2xl font-black text-blue-400 mt-1">Rp 0</p>
+        <p id="cardValKasPT" class="val-font text-2xl font-black text-blue-400 mt-1">Rp 0</p>
       </div>
 
-      <!-- HIGHLIGHT HASIL AKHIR ANGGOTA -->
-      <div class="bg-gradient-to-br from-blue-900 to-slate-900 border-2 border-blue-500/50 p-5 rounded-2xl shadow-xl space-y-2">
+      <!-- HIGHLIGHT HASIL AKHIR ANGGOTA (HANYA MUNCUL JIKA KUBIKASI > 0) -->
+      <div id="cardHasilAnggota" class="bg-gradient-to-br from-blue-900 to-slate-900 border-2 border-blue-500/50 p-5 rounded-2xl shadow-xl space-y-2 hidden">
         <div class="flex justify-between items-center">
           <span class="bg-blue-600 text-[10px] font-black px-2 py-0.5 rounded text-white uppercase tracking-wider">
             Hasil Akhir Anggota
@@ -163,29 +169,60 @@
         if (item.tipe === 'KELUAR') totalBiaya += item.nominal;
       }
 
-      // Ambil nilai parameter dari Firebase dengan pengecekan ketat
+      // Ambil nilai parameter dari Firebase
       const kubikasi = Number(dataKas.params.kubikasi) || 0;
-      const pembagi = Number(dataKas.params.pembagi) > 0 ? Number(dataKas.params.pembagi) : 5;
-      const tabunganPerM3 = Number(dataKas.params.tabunganPerM3) || 0;
+      const pajakPPN = Number(dataKas.params.pajakPPN) || 0;
+      const pembagi = dataKas.params.pembagi !== undefined ? Number(dataKas.params.pembagi) : 5;
+      const feeBrokerPerM3 = Number(dataKas.params.tabunganPerM3) || 0;
 
+      // ALUR PERHITUNGAN SESUAI ADMIN
       const totalProfitKotor = totalDP - totalBiaya;
-      const totalTabunganIntern = tabunganPerM3 * kubikasi;
-      const profitEksternal = totalProfitKotor - totalTabunganIntern;
+      const sisaSetelahPajak = totalProfitKotor - pajakPPN;
+      const totalFeeBroker = feeBrokerPerM3 * kubikasi;
+      const profitEksternal = sisaSetelahPajak - totalFeeBroker;
+      
       const kasPT = profitEksternal > 0 ? profitEksternal * 0.10 : 0;
       const sisaProfitAnggota = profitEksternal - kasPT;
 
       const hakPerOrangTotal = pembagi > 0 ? sisaProfitAnggota / pembagi : 0;
-      const hakPerOrangPerM3 = kubikasi > 0 ? hakPerOrangTotal / kubikasi : 0;
+      const hakPerOrangPerM3 = (pembagi > 0 && kubikasi > 0) ? hakPerOrangTotal / kubikasi : 0;
 
-      // Render ke Tampilan
+      // Render Nilai Utama
       document.getElementById('cardTotalDP').innerText = formatRupiah(totalDP);
       document.getElementById('cardTotalBiaya').innerText = formatRupiah(totalBiaya);
-      document.getElementById('cardProfit').innerText = formatRupiah(profitEksternal);
-      document.getElementById('cardKasPT').innerText = formatRupiah(kasPT);
-      document.getElementById('cardJmlPembagi').innerText = pembagi.toLocaleString('id-ID');
 
-      document.getElementById('cardHakPerM3').innerText = formatRupiah(hakPerOrangPerM3) + " / m³";
-      document.getElementById('cardHakTotal').innerText = formatRupiah(hakPerOrangTotal);
+      // DOM Elemen Tambahan
+      const cardPajakPPN = document.getElementById('cardPajakPPN');
+      const cardFeeBroker = document.getElementById('cardFeeBroker');
+      const cardKasPT = document.getElementById('cardKasPT');
+      const cardHasilAnggota = document.getElementById('cardHasilAnggota');
+
+      // VISIBILITAS LOGIK: Tampilkan komponen kalkulasi HANYA jika Kubikasi > 0
+      if (kubikasi > 0) {
+        if (cardPajakPPN) {
+          cardPajakPPN.classList.remove('hidden');
+          document.getElementById('cardValPajakPPN').innerText = formatRupiah(pajakPPN);
+        }
+        if (cardFeeBroker) {
+          cardFeeBroker.classList.remove('hidden');
+          document.getElementById('cardValFeeBroker').innerText = formatRupiah(totalFeeBroker);
+        }
+        if (cardKasPT) {
+          cardKasPT.classList.remove('hidden');
+          document.getElementById('cardValKasPT').innerText = formatRupiah(kasPT);
+        }
+        if (cardHasilAnggota) {
+          cardHasilAnggota.classList.remove('hidden');
+          document.getElementById('cardJmlPembagi').innerText = pembagi.toLocaleString('id-ID');
+          document.getElementById('cardHakPerM3').innerText = formatRupiah(hakPerOrangPerM3) + " / m³";
+          document.getElementById('cardHakTotal').innerText = formatRupiah(hakPerOrangTotal);
+        }
+      } else {
+        if (cardPajakPPN) cardPajakPPN.classList.add('hidden');
+        if (cardFeeBroker) cardFeeBroker.classList.add('hidden');
+        if (cardKasPT) cardKasPT.classList.add('hidden');
+        if (cardHasilAnggota) cardHasilAnggota.classList.add('hidden');
+      }
     });
 
     // MODAL RINCIAN POP-UP LOGIC
