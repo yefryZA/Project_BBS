@@ -15,75 +15,72 @@
     }
   
     @media print {
-    /* Sembunyikan tombol, form input, dan elemen navigasi */
-    button, form, #modalAdmin, #modalParam, input {
-      display: none !important;
-    }
+      button, form, #modalAdmin, #modalParam, input {
+        display: none !important;
+      }
 
-    body {
-      background-color: #ffffff !important;
-      color: #000000 !important;
-      padding: 0 !important;
-    }
+      body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        padding: 0 !important;
+      }
 
-    .max-w-4xl {
-      max-width: 100% !important;
-      margin: 0 !important;
-    }
+      .max-w-4xl {
+        max-width: 100% !important;
+        margin: 0 !important;
+      }
 
-    /* Styling khusus kotak ringkasan PDF */
-    .bg-slate-900 {
-      background-color: #f8fafc !important;
-      color: #0f172a !important;
-      border: 2px solid #cbd5e1 !important;
-    }
+      .bg-slate-900 {
+        background-color: #f8fafc !important;
+        color: #0f172a !important;
+        border: 2px solid #cbd5e1 !important;
+      }
 
-    .text-white, .text-slate-300, .text-slate-400 {
-      color: #0f172a !important;
-    }
+      .text-white, .text-slate-300, .text-slate-400 {
+        color: #0f172a !important;
+      }
 
-    .border-slate-800 {
-      border-color: #cbd5e1 !important;
-    }
+      .border-slate-800 {
+        border-color: #cbd5e1 !important;
+      }
 
-    /* Memastikan tabel tercetak jelas */
-    table {
-      width: 100% !important;
-      border-collapse: collapse !important;
-    }
+      table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+      }
 
-    th, td {
-      border: 1px solid #cbd5e1 !important;
-      padding: 8px !important;
+      th, td {
+        border: 1px solid #cbd5e1 !important;
+        padding: 8px !important;
+      }
     }
-  }
-  </style>
+</style>
 </head>
 <body class="bg-slate-100 font-sans text-slate-800 p-4 md:p-8">
 
   <div class="max-w-4xl mx-auto space-y-6">
     
-   <!-- HEADER (Update: Tambahkan tombol gerigi di samping tombol Tabungan Intern) -->
-<header class="bg-slate-900 text-white p-6 rounded-2xl shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-  <div>
-    <h1 class="text-2xl font-bold">🚢 Kas Tongkang Batu Split</h1>
-    <p class="text-slate-400 text-sm">Pencatatan DP, Biaya Operasional, & Pembagian Hasil</p>
-  </div>
-  <div class="flex items-center gap-2">
-    <!-- TOMBOL GERIGI POPUP PARAMETER -->
-    <button onclick="bukaModalParam()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 p-2.5 rounded-xl text-sm font-semibold transition" title="Pengaturan Parameter">
-      ⚙️
-    </button>
-    <!-- TOMBOL CETAK PDF -->
-<button onclick="window.cetakPDF()" class="bg-slate-800 hover:bg-slate-700 text-rose-400 border border-rose-500/30 px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition">
-  📄 Cetak PDF
-</button>
-    <!-- TOMBOL TABUNGAN INTERN -->
-    <button onclick="bukaModalAdmin()" class="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition">
-      🔒
-    </button>
-  </div>
-</header>
+    <!-- HEADER -->
+    <header class="bg-slate-900 text-white p-6 rounded-2xl shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-bold">🚢 Kas Tongkang Batu Split</h1>
+        <p class="text-slate-400 text-sm">Pencatatan DP, Biaya Operasional, & Pembagian Hasil</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <!-- TOMBOL GERIGI POPUP PARAMETER -->
+        <button type="button" onclick="window.bukaModalParam()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 p-2.5 rounded-xl text-sm font-semibold transition cursor-pointer" title="Pengaturan Parameter">
+          ⚙️
+        </button>
+        <!-- TOMBOL CETAK PDF -->
+        <button type="button" onclick="window.cetakPDF()" class="bg-slate-800 hover:bg-slate-700 text-rose-400 border border-rose-500/30 px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer">
+          📄 Cetak PDF
+        </button>
+        <!-- TOMBOL PROFIT ANGGOTA (BERPASSWORD) -->
+        <button type="button" onclick="window.bukaModalAdmin()" class="bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition cursor-pointer" title="Akses Profit Anggota">
+          🔒 Profit
+        </button>
+      </div>
+    </header>
 
     <!-- FORM INPUT DANA -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -130,44 +127,47 @@
 
     </div>
 
-
-<!-- MODAL POPUP PARAMETER KALKULASI (DISAMBUNGKAN KE TOMBOL GERIGI) -->
-<div id="modalParam" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
-  <div class="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
-    <div class="flex justify-between items-center border-b pb-3">
-      <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">⚙️ Parameter Pengiriman & Pembagian</h2>
-      <button onclick="tutupModalParam()" class="text-slate-400 hover:text-slate-600">✕</button>
-    </div>
-    
-    <div class="space-y-4">
-      <div>
-        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Total Kubikasi (m³)</label>
-        <input type="text" id="inputKubikasi" placeholder="Misal: 1.000" class="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none input-number-format">
+    <!-- MODAL POPUP PARAMETER KALKULASI -->
+    <div id="modalParam" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
+        <div class="flex justify-between items-center border-b pb-3">
+          <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">⚙️ Parameter Pengiriman & Pembagian</h2>
+          <button type="button" onclick="window.tutupModalParam()" class="text-slate-400 hover:text-slate-600">✕</button>
+        </div>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Total Kubikasi (m³)</label>
+            <input type="text" id="inputKubikasi" placeholder="Misal: 1.000" class="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none input-number-format">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Pajak PPN 11% (Rp)</label>
+            <input type="text" id="inputPajakPPN" placeholder="Misal: 2.500.000" class="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-purple-500 outline-none input-number-format">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Jumlah Pembagi (Orang)</label>
+            <input type="text" id="inputPembagi" value="5" class="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none input-number-format">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Fee Broker / m³ (Rp)</label>
+            <input type="text" id="inputTabunganPerM3" placeholder="Misal: 5.000" class="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 input-number-format">
+          </div>
+        </div>
+        
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="window.tutupModalParam()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
+          <button type="button" onclick="window.simpanParameter()" class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition">
+            Hitung & Simpan
+          </button>
+        </div>
       </div>
-      <div>
-        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Jumlah Pembagi (Orang)</label>
-        <input type="text" id="inputPembagi" value="5" class="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none input-number-format">
-      </div>
-      <div>
-        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Tabungan Intern / m³ (Rp)</label>
-        <input type="text" id="inputTabunganPerM3" placeholder="Misal: 5.000" class="w-full border rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 input-number-format">
-      </div>
     </div>
-    
-    <div class="flex justify-end gap-2 pt-2">
-      <button onclick="tutupModalParam()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
-      <button onclick="simpanParameter()" class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition">
-        Hitung & Simpan
-      </button>
-    </div>
-  </div>
-</div>
 
     <!-- RINGKASAN PEMBAGIAN RESULT -->
     <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-md space-y-6">
-      <h2 class="text-xl font-bold border-b border-slate-800 pb-3">📊 Ringkasan Pembagian Hasil</h2>
+      <h2 class="text-xl font-bold border-b border-slate-800 pb-3">📊 Ringkasan Rekapitulasi Kas</h2>
       
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-center">
         <div class="bg-slate-800 p-4 rounded-xl">
           <p class="text-xs text-slate-400">Total DP Masuk</p>
           <p id="resTotalDP" class="text-lg font-bold text-emerald-400">Rp 0</p>
@@ -176,32 +176,33 @@
           <p class="text-xs text-slate-400">Total Biaya Operasional</p>
           <p id="resTotalBiaya" class="text-lg font-bold text-rose-400">Rp 0</p>
         </div>
-        <div class="bg-slate-800 p-4 rounded-xl">
-          <p class="text-xs text-slate-400">Profit Eksternal</p>
-          <p id="resProfitEksternal" class="text-lg font-bold text-amber-400">Rp 0</p>
+        
+        <!-- PAJAK PPN 11% (Hanya muncul jika kubikasi terisi) -->
+        <div id="cardPajakPPN" class="bg-slate-800 p-4 rounded-xl hidden">
+          <p class="text-xs text-purple-400 font-semibold">Pajak PPN 11%</p>
+          <p id="resPajakPPN" class="text-lg font-bold text-purple-400">Rp 0</p>
         </div>
-        <div class="bg-slate-800 p-4 rounded-xl">
-          <p class="text-xs text-slate-400">Kas PT (10%)</p>
-          <p id="resKasPT" class="text-lg font-bold text-blue-400">Rp 0</p>
+
+        <!-- FEE BROKER (Hanya muncul jika kubikasi terisi) -->
+        <div id="cardFeeBroker" class="bg-slate-800 p-4 rounded-xl hidden">
+          <p class="text-xs text-amber-400 font-semibold">Fee Broker</p>
+          <p id="resFeeBroker" class="text-lg font-bold text-amber-400">Rp 0</p>
         </div>
       </div>
 
-      <!-- HIGHLIGHT HAK PER ORANG -->
-      <div class="bg-blue-900/40 border border-blue-500/30 p-6 rounded-xl flex flex-col md:flex-row justify-between items-center gap-4">
-        <div>
-          <span class="bg-blue-600 text-xs px-2.5 py-1 rounded-md font-semibold uppercase">Hasil Akhir Anggota</span>
-          <p class="text-sm text-slate-300 mt-2">Diterima masing-masing dari <span id="resJmlPembagi" class="font-bold text-white">5</span> orang:</p>
-        </div>
-        <div class="text-right">
-          <p id="resHakPerM3" class="text-sm text-blue-300 font-semibold">Rp 0 / m³</p>
-          <p id="resHakTotal" class="text-3xl font-extrabold text-emerald-400">Rp 0</p>
-        </div>
+      <!-- KAS PT (Hanya muncul jika kubikasi terisi) -->
+      <div id="cardKasPT" class="bg-slate-800/80 border border-slate-700 p-4 rounded-xl hidden justify-between items-center">
+        <p class="text-xs font-semibold text-blue-400 uppercase">🏢 Kas Perusahaan (10%)</p>
+        <p id="resKasPT" class="text-lg font-bold text-blue-400">Rp 0</p>
       </div>
+
     </div>
 
-    <!-- TABEL CATATAN TRANSAKSI -->
+    <!-- TABEL CATATAN TRANSAKSI DP & OPERASIONAL -->
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-      <h2 class="text-lg font-bold text-slate-800 mb-4">📜 Riwayat Transaksi DP & Operasional</h2>
+      <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+        📜 Riwayat Transaksi DP & Operasional
+      </h2>
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm">
           <thead>
@@ -221,33 +222,47 @@
 
   </div>
 
-  <!-- MODAL TABUNGAN INTERN (PASSWORD PROTECTED) -->
+  <!-- MODAL PROFIT ANGGOTA (BERPASSWORD) -->
   <div id="modalAdmin" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
       
-      <!-- FORM INPUT PASSWORD -->
+      <!-- BAGIAN 1: FORM PASSWORD -->
       <div id="secPass">
-        <h3 class="text-lg font-bold text-slate-800">🔒 Akses Tabungan Intern</h3>
-        <p class="text-xs text-slate-500 mb-4">Masukkan password admin untuk melihat saldo tabungan rahasia.</p>
+        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">🔒 Akses Profit Anggota</h3>
+        <p class="text-xs text-slate-500 mb-4">Masukkan password admin untuk melihat rincian pembagian profit.</p>
+        
         <input type="password" id="passAdmin" placeholder="Masukkan Password" class="w-full border rounded-xl p-2.5 text-sm mb-4 outline-none focus:ring-2 focus:ring-slate-800">
+        
         <div class="flex justify-end gap-2">
-          <button onclick="tutupModalAdmin()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
-          <button onclick="verifikasiPass()" class="px-4 py-2 text-sm bg-slate-900 text-white rounded-xl hover:bg-slate-800">Buka</button>
+          <button type="button" onclick="window.tutupModalAdmin()" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
+          <button type="button" onclick="window.verifikasiPass()" class="px-4 py-2 text-sm bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition">
+            Buka Access
+          </button>
         </div>
       </div>
 
-      <!-- KONTEN TABUNGAN INTERN -->
+      <!-- BAGIAN 2: HASIL PROFIT (TERSEMBUNYI SEBELUM PASSWORD BENAR) -->
       <div id="secDataAdmin" class="hidden space-y-4">
         <div class="flex justify-between items-center border-b pb-2">
-          <h3 class="text-lg font-bold text-amber-600">💰 Tabungan Intern (Rahasia)</h3>
-          <button onclick="tutupModalAdmin()" class="text-slate-400 hover:text-slate-600">✕</button>
+          <h3 class="text-lg font-bold text-amber-600 flex items-center gap-2">💰 Rincian Profit Anggota</h3>
+          <button type="button" onclick="window.tutupModalAdmin()" class="text-slate-400 hover:text-slate-600">✕</button>
         </div>
         
-        <div class="bg-amber-50 border border-amber-200 p-4 rounded-xl">
-          <p class="text-xs text-amber-800 uppercase font-semibold">Total Nilai Tabungan Intern</p>
-          <p id="resTotalTabunganIntern" class="text-2xl font-bold text-amber-600 mt-1">Rp 0</p>
-          <p class="text-xs text-amber-700 mt-2">*Dihitung dari (Tabungan / m³) × Total Kubikasi</p>
+        <div class="bg-blue-900/10 border border-blue-500/30 p-5 rounded-xl space-y-2">
+          <div class="flex justify-between items-center text-xs text-slate-600 font-semibold">
+            <span>Pembagi:</span>
+            <span id="resJmlPembagi" class="text-slate-900 font-bold">5</span> Orang
+          </div>
+          <div class="pt-2 border-t border-slate-200">
+            <p id="resHakPerM3" class="text-xs text-blue-600 font-semibold">Rp 0 / m³</p>
+            <p id="resHakTotal" class="text-2xl font-extrabold text-emerald-600 mt-1">Rp 0</p>
+            <p class="text-[11px] text-slate-400 mt-1">*Nilai profit bersih per anggota (setelah potong PPN 11%, Fee Broker & Kas PT 10%)</p>
+          </div>
         </div>
+
+        <button type="button" onclick="window.tutupModalAdmin()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition">
+          Tutup
+        </button>
       </div>
 
     </div>
@@ -273,260 +288,311 @@
     const db = getDatabase(app);
     const dbRefKas = ref(db, "KAS_TONGKANG");
 
-    // STATE LOCAL
-    let dataKas = {
-      transaksi: {},
-      params: {
-        kubikasi: 0,
-        pembagi: 5,
-        tabunganPerM3: 0
-      }
-    };
-
-    // DOM ELEMENTS
-    const formPenerimaan = document.getElementById('formPenerimaan');
-    const formPengeluaran = document.getElementById('formPengeluaran');
-    const tabelRiwayat = document.getElementById('tabelRiwayat');
-
-    // HELPER UTILS PEMFORATAN ANGKA (RIBUAN TANDA TITIK)
-    function cleanNumber(str) {
-      if (!str) return 0;
-      return parseFloat(str.toString().replace(/\./g, '')) || 0;
+  // STATE LOCAL
+  let dataKas = {
+    transaksi: {},
+    params: {
+      kubikasi: 0,
+      pembagi: 5,
+      tabunganPerM3: 0
     }
+  };
 
-    function formatNumberString(val) {
-      const num = cleanNumber(val);
-      if (num === 0 && val === '') return '';
-      return num.toLocaleString('id-ID');
-    }
+  // DOM ELEMENTS (DENGAN NULL-CHECKING AMAN)
+  const formPenerimaan = document.getElementById('formPenerimaan');
+  const formPengeluaran = document.getElementById('formPengeluaran');
 
-    // LISTENER OTOMATIS PEMFORMAT ANGKA SAAT MENGETIK
-    document.querySelectorAll('.input-number-format').forEach(input => {
-      input.addEventListener('input', (e) => {
-        const cursorPosition = e.target.selectionStart;
-        const originalLength = e.target.value.length;
-        
-        e.target.value = formatNumberString(e.target.value);
-        
-        const newLength = e.target.value.length;
-        e.target.setSelectionRange(cursorPosition + (newLength - originalLength), cursorPosition + (newLength - originalLength));
-      });
+  // HELPER UTILS PEMFORMATAN ANGKA (RIBUAN TANDA TITIK)
+  function cleanNumber(str) {
+    if (!str) return 0;
+    return parseFloat(str.toString().replace(/\./g, '')) || 0;
+  }
+
+  function formatNumberString(val) {
+    const num = cleanNumber(val);
+    if (num === 0 && val === '') return '';
+    return num.toLocaleString('id-ID');
+  }
+
+  // LISTENER OTOMATIS PEMFORMAT ANGKA SAAT MENGETIK
+  document.querySelectorAll('.input-number-format').forEach(input => {
+    input.addEventListener('input', (e) => {
+      const cursorPosition = e.target.selectionStart;
+      const originalLength = e.target.value.length;
+      
+      e.target.value = formatNumberString(e.target.value);
+      
+      const newLength = e.target.value.length;
+      e.target.setSelectionRange(cursorPosition + (newLength - originalLength), cursorPosition + (newLength - originalLength));
     });
-
-// HELPER TANGGAL & JAM (Format: DD/MM/YYYY | Jam HH:MM)
-function getFormattedDateTime() {
-  const now = new Date();
-  const tgl = now.toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-  const jam = now.toLocaleTimeString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit'
-  }).replace(/\./g, ':');
-
-  return `${tgl} | Jam ${jam}`;
-}
-
-// SUBMIT DP
-formPenerimaan.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const ket = document.getElementById('ketPenerimaan').value;
-  const nominal = cleanNumber(document.getElementById('nominalPenerimaan').value);
-
-  push(ref(db, "KAS_TONGKANG/transaksi"), {
-    tipe: 'MASUK',
-    keterangan: ket,
-    nominal: nominal,
-    timestamp: getFormattedDateTime() // <--- Otomatis Catat Tanggal & Jam
   });
 
-  formPenerimaan.reset();
-});
+  // HELPER TANGGAL & JAM (Format: DD/MM/YYYY | Jam HH:MM)
+  function getFormattedDateTime() {
+    const now = new Date();
+    const tgl = now.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+    const jam = now.toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit'
+    }).replace(/\./g, ':');
 
-// SUBMIT PENGELUARAN
-formPengeluaran.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const ket = document.getElementById('ketPengeluaran').value;
-  const nominal = cleanNumber(document.getElementById('nominalPengeluaran').value);
+    return `${tgl} | Jam ${jam}`;
+  }
 
-  push(ref(db, "KAS_TONGKANG/transaksi"), {
-    tipe: 'KELUAR',
-    keterangan: ket,
-    nominal: nominal,
-    timestamp: getFormattedDateTime() // <--- Otomatis Catat Tanggal & Jam
-  });
+  // SUBMIT DP
+  if (formPenerimaan) {
+    formPenerimaan.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const ket = document.getElementById('ketPenerimaan').value;
+      const nominal = cleanNumber(document.getElementById('nominalPenerimaan').value);
 
-  formPengeluaran.reset();
-});
-
-    // SIMPAN PARAMETER (KUBIKASI, PEMBAGI, TABUNGAN INTERN)
-    window.simpanParameter = () => {
-      const kubikasi = cleanNumber(document.getElementById('inputKubikasi').value);
-      const pembagi = cleanNumber(document.getElementById('inputPembagi').value) || 5;
-      const tabunganPerM3 = cleanNumber(document.getElementById('inputTabunganPerM3').value);
-
-      set(ref(db, "KAS_TONGKANG/params"), {
-        kubikasi: kubikasi,
-        pembagi: pembagi,
-        tabunganPerM3: tabunganPerM3
+      push(ref(db, "KAS_TONGKANG/transaksi"), {
+        tipe: 'MASUK',
+        keterangan: ket,
+        nominal: nominal,
+        timestamp: getFormattedDateTime()
       });
 
-      alert("Parameter berhasil disimpan!");
-    };
-
-    // HAPUS TRANSAKSI
-    window.hapusTransaksi = (key) => {
-      if (confirm("Hapus catatan transaksi ini?")) {
-        remove(ref(db, `KAS_TONGKANG/transaksi/${key}`));
-      }
-    };
-
-    // LISTEN FIREBASE
-    onValue(dbRefKas, (snapshot) => {
-      const val = snapshot.val() || {};
-      dataKas.transaksi = val.transaksi || {};
-      dataKas.params = val.params || { kubikasi: 0, pembagi: 5, tabunganPerM3: 0 };
-
-      // Fill Inputs dengan Format Ribuan
-      document.getElementById('inputKubikasi').value = dataKas.params.kubikasi ? formatNumberString(dataKas.params.kubikasi) : '';
-      document.getElementById('inputPembagi').value = dataKas.params.pembagi ? formatNumberString(dataKas.params.pembagi) : '5';
-      document.getElementById('inputTabunganPerM3').value = dataKas.params.tabunganPerM3 ? formatNumberString(dataKas.params.tabunganPerM3) : '';
-
-      renderTabel();
-      hitungKalkulasi();
+      formPenerimaan.reset();
     });
+  }
 
-    // RENDER TABEL (TANGGAL DITAMPILKAN DI SINI)
-    function renderTabel() {
-      tabelRiwayat.innerHTML = '';
-      const list = dataKas.transaksi;
+  // SUBMIT PENGELUARAN
+  if (formPengeluaran) {
+    formPengeluaran.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const ket = document.getElementById('ketPengeluaran').value;
+      const nominal = cleanNumber(document.getElementById('nominalPengeluaran').value);
 
-      for (let key in list) {
-        const item = list[key];
-        const isMasuk = item.tipe === 'MASUK';
-        // Mengambil timestamp dari firebase, jika tidak ada (data lama) diberi tanda '-'
-        const waktuFormatted = item.timestamp ? item.timestamp : '-';
-        
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="p-3">
-            <span class="px-2 py-1 text-xs rounded-md font-semibold ${isMasuk ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
-              ${item.tipe}
-            </span>
-          </td>
-          <td class="p-3">
-            <div class="font-medium text-slate-800">${item.keterangan}</div>
-            <div class="text-[11px] text-slate-400">📅 ${waktuFormatted}</div>
-          </td>
-          <td class="p-3 text-right font-semibold ${isMasuk ? 'text-emerald-600' : 'text-rose-600'}">
-            Rp ${item.nominal.toLocaleString('id-ID')}
-          </td>
-          <td class="p-3 text-center">
-            <button onclick="hapusTransaksi('${key}')" class="text-slate-400 hover:text-rose-600">🗑️</button>
-          </td>
-        `;
-        tabelRiwayat.appendChild(tr);
-      }
+      push(ref(db, "KAS_TONGKANG/transaksi"), {
+        tipe: 'KELUAR',
+        keterangan: ket,
+        nominal: nominal,
+        timestamp: getFormattedDateTime()
+      });
+
+      formPengeluaran.reset();
+    });
+  }
+
+  // HAPUS TRANSAKSI
+  window.hapusTransaksi = (key) => {
+    if (confirm("Hapus catatan transaksi ini?")) {
+      remove(ref(db, `KAS_TONGKANG/transaksi/${key}`));
     }
+  };
 
-    // UTILS FORMAT RUPIAH
-    function formatRupiah(num) {
-      return "Rp " + Math.round(num).toLocaleString('id-ID');
-    }
+  // LISTEN FIREBASE
+  onValue(dbRefKas, (snapshot) => {
+    const val = snapshot.val() || {};
+    dataKas.transaksi = val.transaksi || {};
+    dataKas.params = val.params || { kubikasi: 0, pembagi: 5, tabunganPerM3: 0, pajakPPN: 0 };
 
-    // LOGIKA HITUNGAN UTAMA
-    function hitungKalkulasi() {
-      let totalDP = 0;
-      let totalBiaya = 0;
+    // Fill Inputs dengan Format Ribuan (Aman jika element ada)
+    const inKubikasi = document.getElementById('inputKubikasi');
+    const inPajakPPN = document.getElementById('inputPajakPPN');
+    const inPembagi = document.getElementById('inputPembagi');
+    const inTabungan = document.getElementById('inputTabunganPerM3');
 
-      for (let key in dataKas.transaksi) {
-        const item = dataKas.transaksi[key];
-        if (item.tipe === 'MASUK') totalDP += item.nominal;
-        if (item.tipe === 'KELUAR') totalBiaya += item.nominal;
-      }
+    if (inKubikasi) inKubikasi.value = dataKas.params.kubikasi ? formatNumberString(dataKas.params.kubikasi) : '';
+    if (inPajakPPN) inPajakPPN.value = dataKas.params.pajakPPN ? formatNumberString(dataKas.params.pajakPPN) : '';
+    if (inPembagi) inPembagi.value = dataKas.params.pembagi !== undefined ? formatNumberString(dataKas.params.pembagi) : '5';
+    if (inTabungan) inTabungan.value = dataKas.params.tabunganPerM3 ? formatNumberString(dataKas.params.tabunganPerM3) : '';
 
-      const totalProfitKotor = totalDP - totalBiaya;
-      const kubikasi = dataKas.params.kubikasi || 0;
-      const pembagi = dataKas.params.pembagi || 5;
-      const tabunganPerM3 = dataKas.params.tabunganPerM3 || 0;
-
-      // Tabungan Intern Total
-      const totalTabunganIntern = tabunganPerM3 * kubikasi;
-
-      // Profit Eksternal (Diakui)
-      const profitEksternal = totalProfitKotor - totalTabunganIntern;
-
-      // Kas PT 10%
-      const kasPT = profitEksternal > 0 ? profitEksternal * 0.10 : 0;
-
-      // Sisa Profit Dibagi Anggota
-      const sisaProfitAnggota = profitEksternal - kasPT;
-
-      // Hak Per Orang
-      const hakPerOrangTotal = pembagi > 0 ? sisaProfitAnggota / pembagi : 0;
-      const hakPerOrangPerM3 = kubikasi > 0 ? hakPerOrangTotal / kubikasi : 0;
-
-      // Update UI Tampilan
-      document.getElementById('resTotalDP').innerText = formatRupiah(totalDP);
-      document.getElementById('resTotalBiaya').innerText = formatRupiah(totalBiaya);
-      document.getElementById('resProfitEksternal').innerText = formatRupiah(profitEksternal);
-      document.getElementById('resKasPT').innerText = formatRupiah(kasPT);
-      document.getElementById('resJmlPembagi').innerText = pembagi.toLocaleString('id-ID');
-
-      document.getElementById('resHakPerM3').innerText = formatRupiah(hakPerOrangPerM3) + " / m³";
-      document.getElementById('resHakTotal').innerText = formatRupiah(hakPerOrangTotal);
-
-      // Data Modal Admin (Hidden)
-      document.getElementById('resTotalTabunganIntern').innerText = formatRupiah(totalTabunganIntern);
-    }
-
-    // VERIFIKASI ADMIN (PASSWORD SEMENTARA: 1234)
-    window.bukaModalAdmin = () => {
-      document.getElementById('modalAdmin').classList.remove('hidden');
-      document.getElementById('secPass').classList.remove('hidden');
-      document.getElementById('secDataAdmin').classList.add('hidden');
-      document.getElementById('passAdmin').value = '';
-    };
-
-    window.tutupModalAdmin = () => {
-      document.getElementById('modalAdmin').classList.add('hidden');
-    };
-
-    window.verifikasiPass = () => {
-      const pass = document.getElementById('passAdmin').value;
-      if (pass === '1234') { // <-- GANTI PASSWORD ADMIN DI SINI JIKA INGIN DITUKAR
-        document.getElementById('secPass').classList.add('hidden');
-        document.getElementById('secDataAdmin').classList.remove('hidden');
-      } else {
-        alert("Password salah!");
-      }
-    };
-    // FUNGSI MODAL PARAMETER (GERIGI)
-window.bukaModalParam = () => {
-  document.getElementById('modalParam').classList.remove('hidden');
-};
-
-window.tutupModalParam = () => {
-  document.getElementById('modalParam').classList.add('hidden');
-};
-
-// SIMPAN PARAMETER & OTOMATIS TUTUP MODAL
-window.simpanParameter = () => {
-  const kubikasi = cleanNumber(document.getElementById('inputKubikasi').value);
-  const pembagi = cleanNumber(document.getElementById('inputPembagi').value) || 5;
-  const tabunganPerM3 = cleanNumber(document.getElementById('inputTabunganPerM3').value);
-
-  set(ref(db, "KAS_TONGKANG/params"), {
-    kubikasi: kubikasi,
-    pembagi: pembagi,
-    tabunganPerM3: tabunganPerM3
+    renderTabel();
+    hitungKalkulasi();
   });
 
-  tutupModalParam();
-  alert("Parameter berhasil disimpan!");
-};
+  // RENDER TABEL TRANSAKSI (AMAN NULL-CHECK)
+  function renderTabel() {
+    const elTabel = document.getElementById('tabelRiwayat');
+    if (!elTabel) return;
+
+    elTabel.innerHTML = '';
+    const list = dataKas.transaksi;
+
+    for (let key in list) {
+      const item = list[key];
+      const isMasuk = item.tipe === 'MASUK';
+      const waktuFormatted = item.timestamp ? item.timestamp : '-';
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="p-3">
+          <span class="px-2 py-1 text-xs rounded-md font-semibold ${isMasuk ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+            ${item.tipe}
+          </span>
+        </td>
+        <td class="p-3">
+          <div class="font-medium text-slate-800">${item.keterangan}</div>
+          <div class="text-[11px] text-slate-400">📅 ${waktuFormatted}</div>
+        </td>
+        <td class="p-3 text-right font-semibold ${isMasuk ? 'text-emerald-600' : 'text-rose-600'}">
+          Rp ${item.nominal.toLocaleString('id-ID')}
+        </td>
+        <td class="p-3 text-center">
+          <button onclick="hapusTransaksi('${key}')" class="text-slate-400 hover:text-rose-600">🗑️</button>
+        </td>
+      `;
+      elTabel.appendChild(tr);
+    }
+  }
+
+  // UTILS FORMAT RUPIAH
+  function formatRupiah(num) {
+    return "Rp " + Math.round(num || 0).toLocaleString('id-ID');
+  }
+
+  // LOGIKA HITUNGAN UTAMA (MENGGUNAKAN PAJAK PPN 11%)
+  function hitungKalkulasi() {
+    let totalDP = 0;
+    let totalBiaya = 0;
+
+    for (let key in dataKas.transaksi) {
+      const item = dataKas.transaksi[key];
+      if (item.tipe === 'MASUK') totalDP += item.nominal;
+      if (item.tipe === 'KELUAR') totalBiaya += item.nominal;
+    }
+
+    const kubikasi = Number(dataKas.params.kubikasi) || 0;
+    const pajakPPN = Number(dataKas.params.pajakPPN) || 0;
+    const pembagi = dataKas.params.pembagi !== undefined ? Number(dataKas.params.pembagi) : 5;
+    const feeBrokerPerM3 = Number(dataKas.params.tabunganPerM3) || 0;
+
+    // 1. Profit Kotor awal
+    const totalProfitKotor = totalDP - totalBiaya;
+    
+    // 2. Potong Pajak PPN 11%
+    const sisaSetelahPajak = totalProfitKotor - pajakPPN;
+    
+    // 3. Fee Broker
+    const totalFeeBroker = feeBrokerPerM3 * kubikasi;
+
+    // 4. Profit Eksternal (Sisa setelah Pajak & Fee Broker)
+    const profitEksternal = sisaSetelahPajak - totalFeeBroker;
+
+    // 5. Kas PT 10%
+    const kasPT = profitEksternal > 0 ? profitEksternal * 0.10 : 0;
+
+    // 6. Sisa Profit Bersih Anggota
+    const sisaProfitAnggota = profitEksternal - kasPT;
+
+    // 7. Hak Per Orang
+    const hakPerOrangTotal = pembagi > 0 ? sisaProfitAnggota / pembagi : 0;
+    const hakPerOrangPerM3 = (pembagi > 0 && kubikasi > 0) ? hakPerOrangTotal / kubikasi : 0;
+
+    // Helper Aman untuk Mengubah Teks HTML
+    const setTxt = (id, text) => {
+      const el = document.getElementById(id);
+      if (el) el.innerText = text;
+    };
+
+    setTxt('resTotalDP', formatRupiah(totalDP));
+    setTxt('resTotalBiaya', formatRupiah(totalBiaya));
+
+    // KONTROL VISIBILITAS: Sembunyikan PPN, Fee Broker & Kas PT jika Kubikasi = 0
+    const cardPajakPPN = document.getElementById('cardPajakPPN');
+    const cardFeeBroker = document.getElementById('cardFeeBroker');
+    const cardKasPT = document.getElementById('cardKasPT');
+
+    if (kubikasi > 0) {
+      if (cardPajakPPN) {
+        cardPajakPPN.classList.remove('hidden');
+        setTxt('resPajakPPN', formatRupiah(pajakPPN));
+      }
+      if (cardFeeBroker) {
+        cardFeeBroker.classList.remove('hidden');
+        setTxt('resFeeBroker', formatRupiah(totalFeeBroker));
+      }
+      if (cardKasPT) {
+        cardKasPT.classList.remove('hidden');
+        cardKasPT.classList.add('flex');
+        setTxt('resKasPT', formatRupiah(kasPT));
+      }
+    } else {
+      if (cardPajakPPN) cardPajakPPN.classList.add('hidden');
+      if (cardFeeBroker) cardFeeBroker.classList.add('hidden');
+      if (cardKasPT) {
+        cardKasPT.classList.add('hidden');
+        cardKasPT.classList.remove('flex');
+      }
+    }
+
+    // Data Modal Profit (Berpassword)
+    setTxt('resJmlPembagi', pembagi.toLocaleString('id-ID'));
+    setTxt('resHakPerM3', formatRupiah(hakPerOrangPerM3) + " / m³");
+    setTxt('resHakTotal', formatRupiah(hakPerOrangTotal));
+  }
+
+  // MODAL ADMIN (PROFIT - PASSWORD: 1234)
+  window.bukaModalAdmin = () => {
+    const modalAdmin = document.getElementById('modalAdmin');
+    const secPass = document.getElementById('secPass');
+    const secDataAdmin = document.getElementById('secDataAdmin');
+    const passInput = document.getElementById('passAdmin');
+
+    if (modalAdmin) modalAdmin.classList.remove('hidden');
+    if (secPass) secPass.classList.remove('hidden');
+    if (secDataAdmin) secDataAdmin.classList.add('hidden');
+    if (passInput) passInput.value = '';
+  };
+
+  window.tutupModalAdmin = () => {
+    const modalAdmin = document.getElementById('modalAdmin');
+    if (modalAdmin) modalAdmin.classList.add('hidden');
+  };
+
+  window.verifikasiPass = () => {
+    const passInput = document.getElementById('passAdmin');
+    const pass = passInput ? passInput.value : '';
+    
+    if (pass === '1234') {
+      const secPass = document.getElementById('secPass');
+      const secDataAdmin = document.getElementById('secDataAdmin');
+      if (secPass) secPass.classList.add('hidden');
+      if (secDataAdmin) secDataAdmin.classList.remove('hidden');
+    } else {
+      alert("Password salah!");
+    }
+  };
+
+  // FUNGSI MODAL PARAMETER (GERIGI)
+  window.bukaModalParam = () => {
+    const modalParam = document.getElementById('modalParam');
+    if (modalParam) modalParam.classList.remove('hidden');
+  };
+
+  window.tutupModalParam = () => {
+    const modalParam = document.getElementById('modalParam');
+    if (modalParam) modalParam.classList.add('hidden');
+  };
+
+  // SIMPAN PARAMETER & OTOMATIS TUTUP MODAL
+  window.simpanParameter = () => {
+    const inKubikasi = document.getElementById('inputKubikasi');
+    const inPajakPPN = document.getElementById('inputPajakPPN');
+    const inPembagi = document.getElementById('inputPembagi');
+    const inTabungan = document.getElementById('inputTabunganPerM3');
+
+    const kubikasi = cleanNumber(inKubikasi ? inKubikasi.value : 0);
+    const pajakPPN = cleanNumber(inPajakPPN ? inPajakPPN.value : 0);
+    const pembagi = cleanNumber(inPembagi ? inPembagi.value : 5);
+    const tabunganPerM3 = cleanNumber(inTabungan ? inTabungan.value : 0);
+
+    set(ref(db, "KAS_TONGKANG/params"), {
+      kubikasi: kubikasi,
+      pajakPPN: pajakPPN,
+      pembagi: pembagi,
+      tabunganPerM3: tabunganPerM3
+    });
+
+    tutupModalParam();
+    alert("Parameter berhasil disimpan!");
+  };
 
 // FUNGSI UNTUK GENERATE & DOWNLOAD PDF LAPORAN RESMI
 window.cetakPDF = () => {
