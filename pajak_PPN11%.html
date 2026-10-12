@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator PPN & Kas Tongkang</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    input, .val-font {
+      font-family: 'Arial Black', Gadget, sans-serif !important;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-8 flex flex-col justify-between">
+
+  <div class="max-w-2xl mx-auto w-full space-y-6">
+    
+    <!-- HEADER -->
+    <header class="text-center space-y-2 border-b border-slate-800 pb-5">
+      <div class="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-full text-xs font-bold text-amber-400 uppercase tracking-wider">
+        KALKULATOR PPN 11%
+      </div>
+      <h1 class="text-2xl md:text-3xl font-black text-white tracking-tight">
+        Simulasi & Perhitungan Pajak
+      </h1>
+      <p class="text-xs md:text-sm text-slate-400">
+        Rincian PPN Jual (Include), PPN Beli (Exclude), dan PPN Net yang wajib disetor.
+      </p>
+    </header>
+
+    <!-- FORM INPUT PARAMETER -->
+    <div class="bg-slate-900 border border-slate-800 p-5 md:p-6 rounded-2xl shadow-xl space-y-4">
+      <div class="flex justify-between items-center">
+        <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+          <span>⚙️</span> Parameter Transaksi
+        </h2>
+        <!-- TOMBOL RESET / HAPUS DATA -->
+        <button onclick="hapusDataInput()" class="text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all">
+          <span>🗑️</span> Hapus Data
+        </button>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- INPUT HARGA JUAL -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">
+            Harga Jual / m³ (Include PPN)
+          </label>
+          <div class="relative">
+            <span class="absolute left-3 top-2.5 text-xs font-bold text-slate-500">Rp</span>
+            <input type="text" id="inputHargaJual" value="320.000" class="w-full bg-slate-950 border border-slate-700 rounded-xl py-2 pl-9 pr-3 text-sm text-emerald-400 font-bold focus:ring-2 focus:ring-emerald-500 outline-none">
+          </div>
+        </div>
+
+        <!-- INPUT HARGA BELI -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">
+            Harga Beli / m³ (Exclude PPN)
+          </label>
+          <div class="relative">
+            <span class="absolute left-3 top-2.5 text-xs font-bold text-slate-500">Rp</span>
+            <input type="text" id="inputHargaBeli" value="272.000" class="w-full bg-slate-950 border border-slate-700 rounded-xl py-2 pl-9 pr-3 text-sm text-rose-400 font-bold focus:ring-2 focus:ring-rose-500 outline-none">
+          </div>
+        </div>
+
+        <!-- INPUT KUBIKASI -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">
+            Total Kubikasi (m³)
+          </label>
+          <input type="text" id="inputKubikasi" value="10.000" class="w-full bg-slate-950 border border-slate-700 rounded-xl py-2 px-3 text-sm text-amber-400 font-bold focus:ring-2 focus:ring-amber-500 outline-none">
+        </div>
+      </div>
+    </div>
+
+    <!-- HASIL PAJAK PPN NET DISETOR -->
+    <div class="bg-slate-900 border border-amber-500/40 p-5 rounded-2xl flex justify-between items-center shadow-lg">
+      <div>
+        <p class="text-xs font-bold text-amber-400 uppercase tracking-wider">🏛️ Pajak PPN Net Disetor ke Negara</p>
+        <p class="text-[11px] text-slate-400 mt-0.5">Selisih PPN Jual (Dipungut) - PPN Beli (Dibayar Supplier)</p>
+      </div>
+      <div class="text-right">
+        <p id="resPajakNetTotal" class="val-font text-2xl md:text-3xl font-black text-amber-400">Rp 0</p>
+        <p id="resPajakNetPerM3" class="val-font text-xs font-bold text-amber-300/80">Rp 0 / m³</p>
+      </div>
+    </div>
+
+    <!-- RINCIAN KOMPONEN PAJAK (JUAL VS BELI) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      
+      <!-- RINCIAN PAJAK JUAL (PPN KELUARAN) -->
+      <div class="bg-slate-900 border border-emerald-500/20 p-5 rounded-2xl space-y-3">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+          <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">📥 PPN Jual (Dipungut)</span>
+          <span class="text-[10px] bg-emerald-500/10 text-emerald-300 px-2 py-0.5 rounded-full font-bold">Include PPN</span>
+        </div>
+
+        <div>
+          <p class="text-xs text-slate-400">Titipan Pajak Dari Pembeli:</p>
+          <p id="resPpnJualTotal" class="val-font text-xl font-black text-emerald-400 mt-0.5">Rp 0</p>
+          <p id="resPpnJualPerM3" class="val-font text-xs font-bold text-emerald-500/80">Rp 0 / m³</p>
+        </div>
+
+        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
+          <div class="flex justify-between">
+            <span>Omzet Kotor (Termasuk PPN):</span>
+            <span id="resOmzetKotor" class="font-bold text-slate-200">Rp 0</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Pendapatan Asli (DPP):</span>
+            <span id="resDppJual" class="font-bold text-emerald-400">Rp 0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RINCIAN PAJAK BELI (PPN MASUKAN) -->
+      <div class="bg-slate-900 border border-rose-500/20 p-5 rounded-2xl space-y-3">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+          <span class="text-xs font-bold text-rose-400 uppercase tracking-wider">📤 Pajak Beli (Dibayar Supplier)</span>
+          <span class="text-[10px] bg-rose-500/10 text-rose-300 px-2 py-0.5 rounded-full font-bold">Exclude PPN</span>
+        </div>
+
+        <div>
+          <p class="text-xs text-slate-400">PPN Dibayar Ke Tambang & Kapal:</p>
+          <p id="resPpnBeliTotal" class="val-font text-xl font-black text-rose-400 mt-0.5">Rp 0</p>
+          <p id="resPpnBeliPerM3" class="val-font text-xs font-bold text-rose-500/80">Rp 0 / m³</p>
+        </div>
+
+        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
+          <div class="flex justify-between">
+            <span>Harga Beli Material & Kapal:</span>
+            <span id="resHargaBeliDasar" class="font-bold text-slate-200">Rp 0</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Total Bayar Supplier (+ PPN):</span>
+            <span id="resTotalBayarSupplier" class="font-bold text-rose-400">Rp 0</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CATATAN PERHITUNGAN & KEUNTUNGAN BERSIH KECIL DI BAWAH -->
+    <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl text-xs text-slate-400 space-y-2">
+      <p class="font-bold text-slate-300 uppercase tracking-wider">💡 Ringkasan & Alur Perhitungan:</p>
+      <ul class="list-disc list-inside space-y-1 text-[11px]">
+        <li><strong>Sisa Kas Kotor:</strong> Omzet Diterima - Total Bayar Supplier.</li>
+        <li><strong>Pajak PPN Net:</strong> PPN Jual - PPN Beli (Wajib disetor ke Kas Negara).</li>
+        <li class="text-emerald-400 font-semibold pt-1 border-t border-slate-800/80">
+          <strong>Keuntungan Bersih (Set. PPN):</strong> <span id="resKeuntunganRingkas">Rp 0 (Rp 0 / m³)</span>
+        </li>
+      </ul>
+    </div>
+
+  </div>
+
+  <footer class="text-center text-[11px] text-slate-600 mt-8">
+    Kalkulator PPN Kas Tongkang • Realtime Engine
+  </footer>
+
+  <!-- SCRIPT KALKULASI AUTOMATIS -->
+  <script>
+    function formatRupiah(num) {
+      return "Rp " + Math.round(num || 0).toLocaleString('id-ID');
+    }
+
+    function cleanNumber(str) {
+      if (typeof str === 'number') return str;
+      return Number(String(str || '').replace(/\D/g, '')) || 0;
+    }
+
+    function bindNumberFormatter(inputEl) {
+      inputEl.addEventListener('input', (e) => {
+        const raw = cleanNumber(e.target.value);
+        e.target.value = raw ? raw.toLocaleString('id-ID') : '';
+        hitungSemua();
+      });
+    }
+
+    const inJual = document.getElementById('inputHargaJual');
+    const inBeli = document.getElementById('inputHargaBeli');
+    const inKubikasi = document.getElementById('inputKubikasi');
+
+    bindNumberFormatter(inJual);
+    bindNumberFormatter(inBeli);
+    bindNumberFormatter(inKubikasi);
+
+    // FUNGSI UNTUK RESET / HAPUS SEMUA DATA INPUT
+    function hapusDataInput() {
+      inJual.value = '';
+      inBeli.value = '';
+      inKubikasi.value = '';
+      hitungSemua();
+      inJual.focus();
+    }
+
+    function hitungSemua() {
+      const hargaJual = cleanNumber(inJual.value); // Include PPN
+      const hargaBeli = cleanNumber(inBeli.value); // Exclude PPN
+      const kubikasi = cleanNumber(inKubikasi.value);
+
+      // 1. PENJUALAN (INCLUDE PPN 11%)
+      const totalOmzetJual = hargaJual * kubikasi;
+      const dppJualPerM3 = hargaJual / 1.11;
+      const totalDppJual = dppJualPerM3 * kubikasi;
+      const ppnJualPerM3 = hargaJual - dppJualPerM3;
+      const totalPpnJual = ppnJualPerM3 * kubikasi;
+
+      // 2. PEMBELIAN (EXCLUDE PPN 11%)
+      const totalBeliDasar = hargaBeli * kubikasi;
+      const ppnBeliPerM3 = hargaBeli * 0.11;
+      const totalPpnBeli = ppnBeliPerM3 * kubikasi;
+      const totalBayarSupplier = totalBeliDasar + totalPpnBeli;
+
+      // 3. PAJAK PPN NET DISETOR
+      const ppnNetPerM3 = ppnJualPerM3 - ppnBeliPerM3;
+      const totalPpnNet = totalPpnJual - totalPpnBeli;
+
+      // 4. KEUNTUNGAN BERSIH KAS RIIL
+      const sisaKasKotorTotal = totalOmzetJual - totalBayarSupplier;
+      const kasRiilTotal = sisaKasKotorTotal - totalPpnNet;
+      const kasRiilPerM3 = kubikasi > 0 ? kasRiilTotal / kubikasi : 0;
+
+      // UPDATE DOM - PAJAK NET
+      document.getElementById('resPajakNetTotal').innerText = formatRupiah(totalPpnNet);
+      document.getElementById('resPajakNetPerM3').innerText = formatRupiah(ppnNetPerM3) + " / m³";
+
+      // UPDATE DOM - DETAIL JUAL
+      document.getElementById('resPpnJualTotal').innerText = formatRupiah(totalPpnJual);
+      document.getElementById('resPpnJualPerM3').innerText = formatRupiah(ppnJualPerM3) + " / m³";
+      document.getElementById('resOmzetKotor').innerText = formatRupiah(totalOmzetJual);
+      document.getElementById('resDppJual').innerText = formatRupiah(totalDppJual);
+
+      // UPDATE DOM - DETAIL BELI
+      document.getElementById('resPpnBeliTotal').innerText = formatRupiah(totalPpnBeli);
+      document.getElementById('resPpnBeliPerM3').innerText = formatRupiah(ppnBeliPerM3) + " / m³";
+      document.getElementById('resHargaBeliDasar').innerText = formatRupiah(totalBeliDasar);
+      document.getElementById('resTotalBayarSupplier').innerText = formatRupiah(totalBayarSupplier);
+
+      // UPDATE DOM - KEUNTUNGAN BERSIH (TEKS KECIL BAWAH)
+      document.getElementById('resKeuntunganRingkas').innerText = `${formatRupiah(kasRiilTotal)} (${formatRupiah(kasRiilPerM3)} / m³)`;
+    }
+
+    // HITUNG OTOMATIS
+    hitungSemua();
+  </script>
+</body>
+</html>
