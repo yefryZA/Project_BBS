@@ -183,18 +183,19 @@
           <p id="resPajakPPN" class="text-lg font-bold text-purple-400">Rp 0</p>
         </div>
 
-        <!-- FEE BROKER (Hanya muncul jika kubikasi terisi) -->
-        <div id="cardFeeBroker" class="bg-slate-800 p-4 rounded-xl hidden">
-          <p class="text-xs text-amber-400 font-semibold">Fee Broker</p>
-          <p id="resFeeBroker" class="text-lg font-bold text-amber-400">Rp 0</p>
-        </div>
-      </div>
+<!-- FEE BROKER -->
+  <div id="cardFeeBroker" class="bg-slate-800 p-4 rounded-xl hidden flex-col justify-center items-center text-center border border-slate-700">
+    <p class="text-xs text-amber-400 font-semibold uppercase tracking-wider">Fee Broker</p>
+    <p id="resFeeBroker" class="text-lg font-bold text-amber-400 mt-0.5">Rp 0</p>
+    <p id="resFeeBrokerPPN" class="text-[10px] text-slate-400 mt-0.5">*Sudah dipotong PPN 11% (Rp 0)</p>
+  </div>
 
-      <!-- KAS PT (Hanya muncul jika kubikasi terisi) -->
-      <div id="cardKasPT" class="bg-slate-800/80 border border-slate-700 p-4 rounded-xl hidden justify-between items-center">
-        <p class="text-xs font-semibold text-blue-400 uppercase">🏢 Kas Perusahaan (10%)</p>
-        <p id="resKasPT" class="text-lg font-bold text-blue-400">Rp 0</p>
-      </div>
+  <!-- KAS PERUSAHAAN (10%) -->
+  <div id="cardKasPT" class="bg-slate-800 p-4 rounded-xl hidden flex-col justify-center items-center text-center border border-slate-700">
+    <p class="text-xs text-blue-400 font-semibold uppercase tracking-wider">🏢 KAS BBS (10%)</p>
+    <p id="resKasPT" class="text-lg font-bold text-blue-400 mt-0.5">Rp 0</p>
+    <p id="resKasPTHasPart" class="text-[10px] text-slate-400 mt-0.5">*Alokasi KAS & Operasional</p>
+  </div>
 
     </div>
 
@@ -447,7 +448,7 @@
     return "Rp " + Math.round(num || 0).toLocaleString('id-ID');
   }
 
-  // LOGIKA HITUNGAN UTAMA (MENGGUNAKAN PAJAK PPN 11%)
+ // LOGIKA HITUNGAN UTAMA (UPDATED: FEE BROKER + PPN 11%)
   function hitungKalkulasi() {
     let totalDP = 0;
     let totalBiaya = 0;
@@ -463,29 +464,30 @@
     const pembagi = dataKas.params.pembagi !== undefined ? Number(dataKas.params.pembagi) : 5;
     const feeBrokerPerM3 = Number(dataKas.params.tabunganPerM3) || 0;
 
-    // 1. Profit Kotor awal
+    // 1. Profit Kotor
     const totalProfitKotor = totalDP - totalBiaya;
     
-    // 2. Potong Pajak PPN 11%
+    // 2. Potong Pajak PPN 11% Utama
     const sisaSetelahPajak = totalProfitKotor - pajakPPN;
     
-    // 3. Fee Broker
-    const totalFeeBroker = feeBrokerPerM3 * kubikasi;
+    // 3. Kalkulasi Fee Broker + Potongan PPN 11%
+    const totalFeeBrokerKotor = feeBrokerPerM3 * kubikasi;
+    const ppnFeeBroker = totalFeeBrokerKotor * 0.11; // PPN 11% Fee Broker
+    const feeBrokerBersih = totalFeeBrokerKotor - ppnFeeBroker;
 
-    // 4. Profit Eksternal (Sisa setelah Pajak & Fee Broker)
-    const profitEksternal = sisaSetelahPajak - totalFeeBroker;
+    // 4. Profit Eksternal (Sisa setelah Pajak Utama & Fee Broker Kotor)
+    const profitEksternal = sisaSetelahPajak - totalFeeBrokerKotor;
 
     // 5. Kas PT 10%
     const kasPT = profitEksternal > 0 ? profitEksternal * 0.10 : 0;
 
-    // 6. Sisa Profit Bersih Anggota
+    // 6. Profit Bersih Anggota
     const sisaProfitAnggota = profitEksternal - kasPT;
 
     // 7. Hak Per Orang
     const hakPerOrangTotal = pembagi > 0 ? sisaProfitAnggota / pembagi : 0;
     const hakPerOrangPerM3 = (pembagi > 0 && kubikasi > 0) ? hakPerOrangTotal / kubikasi : 0;
 
-    // Helper Aman untuk Mengubah Teks HTML
     const setTxt = (id, text) => {
       const el = document.getElementById(id);
       if (el) el.innerText = text;
@@ -494,7 +496,7 @@
     setTxt('resTotalDP', formatRupiah(totalDP));
     setTxt('resTotalBiaya', formatRupiah(totalBiaya));
 
-    // KONTROL VISIBILITAS: Sembunyikan PPN, Fee Broker & Kas PT jika Kubikasi = 0
+    // Kontrol Visibilitas Card (Hanya muncul jika Kubikasi > 0)
     const cardPajakPPN = document.getElementById('cardPajakPPN');
     const cardFeeBroker = document.getElementById('cardFeeBroker');
     const cardKasPT = document.getElementById('cardKasPT');
@@ -506,7 +508,9 @@
       }
       if (cardFeeBroker) {
         cardFeeBroker.classList.remove('hidden');
-        setTxt('resFeeBroker', formatRupiah(totalFeeBroker));
+        // Tampilkan Fee Broker Bersih di Utama & PPN di Keterangan Bawah
+        setTxt('resFeeBroker', formatRupiah(feeBrokerBersih));
+        setTxt('resFeeBrokerPPN', `*Sudah dipotong PPN 11% (${formatRupiah(ppnFeeBroker)})`);
       }
       if (cardKasPT) {
         cardKasPT.classList.remove('hidden');
@@ -522,7 +526,7 @@
       }
     }
 
-    // Data Modal Profit (Berpassword)
+    // Modal Profit
     setTxt('resJmlPembagi', pembagi.toLocaleString('id-ID'));
     setTxt('resHakPerM3', formatRupiah(hakPerOrangPerM3) + " / m³");
     setTxt('resHakTotal', formatRupiah(hakPerOrangTotal));
@@ -603,14 +607,16 @@ window.cetakPDF = () => {
     format: "a4"
   });
 
-  const kubikasi = dataKas.params.kubikasi || 0;
-  const tabunganPerM3 = dataKas.params.tabunganPerM3 || 0;
-  const totalTabunganIntern = tabunganPerM3 * kubikasi;
+  // 1. AMBIL PARAMETER RELEVAN DARI DATA FIREBASE (onValue)
+  const kubikasi = Number(dataKas.params.kubikasi) || 0;
+  const pajakPPN = Number(dataKas.params.pajakPPN) || 0; // PPN Net dari Modal Param
+  const pembagi = dataKas.params.pembagi !== undefined ? Number(dataKas.params.pembagi) : 5;
+  const feeBrokerPerM3 = Number(dataKas.params.tabunganPerM3) || 0; // Fee Broker per m3
 
   let totalDP = 0;
   let totalBiaya = 0;
 
-  // 1. SIAPKAN DATA TABEL TRANSAKSI
+  // 2. SIAPKAN DATA TABEL TRANSAKSI
   const tableData = [];
   let no = 1;
 
@@ -634,21 +640,36 @@ window.cetakPDF = () => {
     ]);
   }
 
-  // KALKULASI BERJENJANG
+  // 3. KALKULASI BERJENJANG PERSIS SAMA DENGAN hitungKalkulasi()
   const profitKotor = totalDP - totalBiaya;
-  const profitEksternal = profitKotor - totalTabunganIntern;
+  
+  // A. Potong PPN Utama (dari Firebase)
+  const sisaSetelahPajak = profitKotor - pajakPPN;
+
+  // B. Fee Broker + PPN 11%
+  const totalFeeBrokerKotor = feeBrokerPerM3 * kubikasi;
+  const ppnFeeBroker = totalFeeBrokerKotor * 0.11;
+  const feeBrokerBersih = totalFeeBrokerKotor - ppnFeeBroker;
+
+  // C. Profit Eksternal
+  const profitEksternal = sisaSetelahPajak - totalFeeBrokerKotor;
+
+  // D. Kas PT (10%) & Total Profit Dibagi
   const kasPT = profitEksternal > 0 ? profitEksternal * 0.10 : 0;
   const totalProfitDibagi = profitEksternal - kasPT;
 
-  // 2. HEADER LAPORAN (BERSIH TANPA TANGGAL)
+  // E. Hak Per Orang
+  const hakPerOrangTotal = pembagi > 0 ? totalProfitDibagi / pembagi : 0;
+
+  // 4. HEADER LAPORAN
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.text("LAPORAN KEUANGAN PENGIRIMAN TONGKANG MATERIAL SPLIT", 105, 18, { align: "center" });
+  doc.text("LAPORAN KEUANGAN PENGIRIMAN TONGKANG MATERIAL ALAM", 105, 18, { align: "center" });
 
   doc.setLineWidth(0.5);
   doc.line(14, 22, 196, 22);
 
-  // 3. TABEL TRANSAKSI MASUK & KELUAR
+  // 5. TABEL TRANSAKSI MASUK & KELUAR
   doc.autoTable({
     startY: 27,
     head: [["No.", "Tgl & Waktu", "Keterangan", "Uang Masuk", "Uang Keluar"]],
@@ -661,70 +682,72 @@ window.cetakPDF = () => {
       halign: "center"
     },
     styles: {
-      fontSize: 9,
-      cellPadding: 2.5
+      fontSize: 8.5,
+      cellPadding: 2
     },
     columnStyles: {
-      0: { halign: "center", cellWidth: 12 },
-      1: { halign: "center", cellWidth: 38 },
+      0: { halign: "center", cellWidth: 10 },
+      1: { halign: "center", cellWidth: 35 },
       2: { halign: "left" },
       3: { halign: "right", cellWidth: 35 },
       4: { halign: "right", cellWidth: 35 }
     }
   });
 
-  // 4. TABEL REKAPITULASI TOTAL DI BAWAH TRANSAKSI
-  const finalY = doc.lastAutoTable.finalY + 8;
+  // 6. TABEL REKAPITULASI TOTAL & ALOKASI SESUAI ONVALUE
+  const finalY = doc.lastAutoTable.finalY + 6;
 
-  doc.autoTable({
+doc.autoTable({
     startY: finalY,
-    head: [["Ringkasan Rekapitulasi Keuangan", "Nilai (Rp)"]],
+    head: [["Ringkasan Rekapitulasi & Alokasi Keuangan", "Mata Uang", "Nilai (Rp)"]],
     body: [
-      ["Total Uang Masuk", "Rp " + totalDP.toLocaleString('id-ID')],
-      ["Total Uang Keluar", "Rp " + totalBiaya.toLocaleString('id-ID')],
-      ["Tabungan (" + formatRupiah(tabunganPerM3) + " x " + kubikasi.toLocaleString('id-ID') + " m3)", formatRupiah(totalTabunganIntern)],
-      ["Kas PT (10%)", formatRupiah(kasPT)],
-      ["TOTAL PROFIT DIBAGI ANGGOTA", formatRupiah(totalProfitDibagi)]
+      ["Total Uang Masuk (Omzet/DP)", "Rp", totalDP.toLocaleString('id-ID')],
+      ["Total Uang Keluar (Operasional)", "Rp", totalBiaya.toLocaleString('id-ID')],
+      ["Pajak PPN 11% Disetor (Param)", "Rp", Math.round(pajakPPN).toLocaleString('id-ID')],
+      ["Fee Broker Bersih (Set. PPN 11%)", "Rp", Math.round(feeBrokerBersih).toLocaleString('id-ID')],
+      ["Kas PT / Perusahaan (10%)", "Rp", Math.round(kasPT).toLocaleString('id-ID')],
+      ["TOTAL PROFIT BERSIH", "Rp", Math.round(totalProfitDibagi).toLocaleString('id-ID')]
     ],
     theme: "grid",
     headStyles: {
       fillColor: [226, 232, 240],
       textColor: [0, 0, 0],
-      fontStyle: "bold"
+      fontStyle: "bold",
+      halign: "center"
     },
     styles: {
-      fontSize: 9,
-      cellPadding: 2.5
+      fontSize: 8.5,
+      cellPadding: 2
     },
     columnStyles: {
       0: { fontStyle: "bold" },
-      1: { halign: "right", fontStyle: "bold", cellWidth: 55 }
+      1: { halign: "center", cellWidth: 15, fontStyle: "bold" }, // Kolom "Rp" dibuat CENTER
+      2: { halign: "right", cellWidth: 40, fontStyle: "bold" }   // Angka nominal tetap RIGHT
     }
   });
 
-  // 5. TANDA TANGAN (TTD) MANAGER
-  const ttdY = doc.lastAutoTable.finalY + 12;
+  // 7. TANDA TANGAN (TTD) MANAGER
+  const ttdY = doc.lastAutoTable.finalY + 10;
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.text("Manager,", 160, ttdY, { align: "center" });
 
   doc.setFont("helvetica", "bold");
-  doc.text("YEFRY DESFIRMANZA", 160, ttdY + 22, { align: "center" });
+  doc.text("YEFRY DESFIRMANZA", 160, ttdY + 20, { align: "center" });
 
   doc.setFontSize(8);
-  doc.text("MANAGER", 160, ttdY + 26, { align: "center" });
+  doc.text("MANAGER", 160, ttdY + 24, { align: "center" });
 
-// 6. CATATAN OTOMATIS TANGGAL & WAKTU CETAK DI PALING BAWAH
-  const bottomY = ttdY + 34;
+  // 8. CATATAN OTOMATIS TANGGAL & WAKTU CETAK DI PALING BAWAH
+  const bottomY = ttdY + 30;
   doc.setFont("helvetica", "italic");
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
 
-  // Penulisan rapi & benar:
   doc.text("Laporan ini dibuat secara otomatis pada tanggal " + getFormattedDateTime(), 14, bottomY);
 
-  // 7. DOWNLOAD FILE PDF
+  // 9. DOWNLOAD FILE PDF
   doc.save("Laporan_Kas_Tongkang_" + new Date().toISOString().slice(0, 10) + ".pdf");
 };
   </script>
