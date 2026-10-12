@@ -68,11 +68,12 @@
         <p id="cardValPajakPPN" class="val-font text-2xl font-black text-purple-400 mt-1">Rp 0</p>
       </div>
 
-      <!-- CARD FEE BROKER (HANYA MUNCUL JIKA KUBIKASI > 0) -->
-      <div id="cardFeeBroker" class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl shadow-md hidden">
-        <p class="text-xs font-bold text-amber-400 uppercase tracking-wider">🤝 Fee Broker</p>
-        <p id="cardValFeeBroker" class="val-font text-2xl font-black text-amber-400 mt-1">Rp 0</p>
-      </div>
+   <!-- CARD FEE BROKER MOBILE -->
+<div id="cardFeeBroker" class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl shadow-md hidden">
+  <p class="text-xs font-bold text-amber-400 uppercase tracking-wider">🤝 Fee Broker</p>
+  <p id="cardValFeeBroker" class="val-font text-2xl font-black text-amber-400 mt-1">Rp 0</p>
+  <p id="cardValFeeBrokerPPN" class="text-[10px] text-slate-400 mt-1">*Sudah dipotong PPN 11% (Rp 0)</p>
+</div>
 
       <!-- CARD KAS PT 10% (HANYA MUNCUL JIKA KUBIKASI > 0) -->
       <div id="cardKasPT" class="bg-slate-800/80 border border-slate-700 p-4 rounded-2xl shadow-md hidden">
@@ -154,129 +155,149 @@
       return "Rp " + Math.round(num || 0).toLocaleString('id-ID');
     }
 
-    // UPDATE DISPLAY MOBILE
-    onValue(dbRefKas, (snapshot) => {
-      const val = snapshot.val() || {};
-      dataKas.transaksi = val.transaksi || {};
-      dataKas.params = val.params || {};
+   // UPDATE DISPLAY MOBILE
+  onValue(dbRefKas, (snapshot) => {
+    const val = snapshot.val() || {};
+    dataKas.transaksi = val.transaksi || {};
+    dataKas.params = val.params || {};
 
-      let totalDP = 0;
-      let totalBiaya = 0;
+    let totalDP = 0;
+    let totalBiaya = 0;
 
-      for (let key in dataKas.transaksi) {
-        const item = dataKas.transaksi[key];
-        if (item.tipe === 'MASUK') totalDP += item.nominal;
-        if (item.tipe === 'KELUAR') totalBiaya += item.nominal;
+    for (let key in dataKas.transaksi) {
+      const item = dataKas.transaksi[key];
+      if (item.tipe === 'MASUK') totalDP += item.nominal;
+      if (item.tipe === 'KELUAR') totalBiaya += item.nominal;
+    }
+
+    // Ambil nilai parameter dari Firebase
+    const kubikasi = Number(dataKas.params.kubikasi) || 0;
+    const pajakPPN = Number(dataKas.params.pajakPPN) || 0;
+    const pembagi = dataKas.params.pembagi !== undefined ? Number(dataKas.params.pembagi) : 5;
+    const feeBrokerPerM3 = Number(dataKas.params.tabunganPerM3) || 0;
+
+    // ALUR PERHITUNGAN SESUAI ADMIN
+    const totalProfitKotor = totalDP - totalBiaya;
+    const sisaSetelahPajak = totalProfitKotor - pajakPPN;
+
+    // Kalkulasi Fee Broker + Potongan PPN 11%
+    const totalFeeBrokerKotor = feeBrokerPerM3 * kubikasi;
+    const ppnFeeBroker = totalFeeBrokerKotor * 0.11;
+    const feeBrokerBersih = totalFeeBrokerKotor - ppnFeeBroker;
+
+    // Profit Eksternal (Sisa setelah Pajak Utama & Fee Broker Kotor)
+    const profitEksternal = sisaSetelahPajak - totalFeeBrokerKotor;
+
+    // Kas PT 10%
+    const kasPT = profitEksternal > 0 ? profitEksternal * 0.10 : 0;
+    const sisaProfitAnggota = profitEksternal - kasPT;
+
+    // Hak Per Anggota
+    const hakPerOrangTotal = pembagi > 0 ? sisaProfitAnggota / pembagi : 0;
+    const hakPerOrangPerM3 = (pembagi > 0 && kubikasi > 0) ? hakPerOrangTotal / kubikasi : 0;
+
+    // Render Nilai Utama
+    const setTxt = (id, text) => {
+      const el = document.getElementById(id);
+      if (el) el.innerText = text;
+    };
+
+    setTxt('cardTotalDP', formatRupiah(totalDP));
+    setTxt('cardTotalBiaya', formatRupiah(totalBiaya));
+
+    // DOM Elemen Kartu Tambahan
+    const cardPajakPPN = document.getElementById('cardPajakPPN');
+    const cardFeeBroker = document.getElementById('cardFeeBroker');
+    const cardKasPT = document.getElementById('cardKasPT');
+    const cardHasilAnggota = document.getElementById('cardHasilAnggota');
+
+    // VISIBILITAS LOGIK: Tampilkan komponen kalkulasi HANYA jika Kubikasi > 0
+    if (kubikasi > 0) {
+      if (cardPajakPPN) {
+        cardPajakPPN.classList.remove('hidden');
+        setTxt('cardValPajakPPN', formatRupiah(pajakPPN));
       }
-
-      // Ambil nilai parameter dari Firebase
-      const kubikasi = Number(dataKas.params.kubikasi) || 0;
-      const pajakPPN = Number(dataKas.params.pajakPPN) || 0;
-      const pembagi = dataKas.params.pembagi !== undefined ? Number(dataKas.params.pembagi) : 5;
-      const feeBrokerPerM3 = Number(dataKas.params.tabunganPerM3) || 0;
-
-      // ALUR PERHITUNGAN SESUAI ADMIN
-      const totalProfitKotor = totalDP - totalBiaya;
-      const sisaSetelahPajak = totalProfitKotor - pajakPPN;
-      const totalFeeBroker = feeBrokerPerM3 * kubikasi;
-      const profitEksternal = sisaSetelahPajak - totalFeeBroker;
-      
-      const kasPT = profitEksternal > 0 ? profitEksternal * 0.10 : 0;
-      const sisaProfitAnggota = profitEksternal - kasPT;
-
-      const hakPerOrangTotal = pembagi > 0 ? sisaProfitAnggota / pembagi : 0;
-      const hakPerOrangPerM3 = (pembagi > 0 && kubikasi > 0) ? hakPerOrangTotal / kubikasi : 0;
-
-      // Render Nilai Utama
-      document.getElementById('cardTotalDP').innerText = formatRupiah(totalDP);
-      document.getElementById('cardTotalBiaya').innerText = formatRupiah(totalBiaya);
-
-      // DOM Elemen Tambahan
-      const cardPajakPPN = document.getElementById('cardPajakPPN');
-      const cardFeeBroker = document.getElementById('cardFeeBroker');
-      const cardKasPT = document.getElementById('cardKasPT');
-      const cardHasilAnggota = document.getElementById('cardHasilAnggota');
-
-      // VISIBILITAS LOGIK: Tampilkan komponen kalkulasi HANYA jika Kubikasi > 0
-      if (kubikasi > 0) {
-        if (cardPajakPPN) {
-          cardPajakPPN.classList.remove('hidden');
-          document.getElementById('cardValPajakPPN').innerText = formatRupiah(pajakPPN);
-        }
-        if (cardFeeBroker) {
-          cardFeeBroker.classList.remove('hidden');
-          document.getElementById('cardValFeeBroker').innerText = formatRupiah(totalFeeBroker);
-        }
-        if (cardKasPT) {
-          cardKasPT.classList.remove('hidden');
-          document.getElementById('cardValKasPT').innerText = formatRupiah(kasPT);
-        }
-        if (cardHasilAnggota) {
-          cardHasilAnggota.classList.remove('hidden');
-          document.getElementById('cardJmlPembagi').innerText = pembagi.toLocaleString('id-ID');
-          document.getElementById('cardHakPerM3').innerText = formatRupiah(hakPerOrangPerM3) + " / m³";
-          document.getElementById('cardHakTotal').innerText = formatRupiah(hakPerOrangTotal);
-        }
-      } else {
-        if (cardPajakPPN) cardPajakPPN.classList.add('hidden');
-        if (cardFeeBroker) cardFeeBroker.classList.add('hidden');
-        if (cardKasPT) cardKasPT.classList.add('hidden');
-        if (cardHasilAnggota) cardHasilAnggota.classList.add('hidden');
+      if (cardFeeBroker) {
+        cardFeeBroker.classList.remove('hidden');
+        setTxt('cardValFeeBroker', formatRupiah(feeBrokerBersih));
+        setTxt('cardValFeeBrokerPPN', `*Sudah dipotong PPN 11% (${formatRupiah(ppnFeeBroker)})`);
       }
-    });
+      if (cardKasPT) {
+        cardKasPT.classList.remove('hidden');
+        setTxt('cardValKasPT', formatRupiah(kasPT));
+      }
+      if (cardHasilAnggota) {
+        cardHasilAnggota.classList.remove('hidden');
+        setTxt('cardJmlPembagi', pembagi.toLocaleString('id-ID'));
+        setTxt('cardHakPerM3', formatRupiah(hakPerOrangPerM3) + " / m³");
+        setTxt('cardHakTotal', formatRupiah(hakPerOrangTotal));
+      }
+    } else {
+      if (cardPajakPPN) cardPajakPPN.classList.add('hidden');
+      if (cardFeeBroker) cardFeeBroker.classList.add('hidden');
+      if (cardKasPT) cardKasPT.classList.add('hidden');
+      if (cardHasilAnggota) cardHasilAnggota.classList.add('hidden');
+    }
+  });
 
-    // MODAL RINCIAN POP-UP LOGIC
-    window.bukaModalRincian = (tipeFilter) => {
-      const modal = document.getElementById('modalRincian');
-      const listContent = document.getElementById('modalListContent');
-      const title = document.getElementById('modalTitle');
-      const subtitle = document.getElementById('modalSubtitle');
+  // MODAL RINCIAN POP-UP LOGIC
+  window.bukaModalRincian = (tipeFilter) => {
+    const modal = document.getElementById('modalRincian');
+    const listContent = document.getElementById('modalListContent');
+    const title = document.getElementById('modalTitle');
+    const subtitle = document.getElementById('modalSubtitle');
 
-      listContent.innerHTML = '';
+    if (!listContent) return;
+    listContent.innerHTML = '';
 
-      if (tipeFilter === 'MASUK') {
+    if (tipeFilter === 'MASUK') {
+      if (title) {
         title.innerText = "📥 Rincian DP Masuk";
         title.className = "text-lg font-black text-emerald-400";
-        subtitle.innerText = "Daftar histori transaksi DP dari pembeli";
-      } else {
+      }
+      if (subtitle) subtitle.innerText = "Daftar histori transaksi DP dari pembeli";
+    } else {
+      if (title) {
         title.innerText = "📤 Rincian Biaya Operasional";
         title.className = "text-lg font-black text-rose-400";
-        subtitle.innerText = "Daftar pengeluaran material & tongkang";
       }
+      if (subtitle) subtitle.innerText = "Daftar pengeluaran material & tongkang";
+    }
 
-      let count = 0;
-      for (let key in dataKas.transaksi) {
-        const item = dataKas.transaksi[key];
-        if (item.tipe === tipeFilter) {
-          count++;
-          const div = document.createElement('div');
-          div.className = "bg-slate-800/90 border border-slate-700/60 p-3 rounded-xl flex justify-between items-center";
-          
-          const waktuFormatted = item.timestamp ? item.timestamp : "Tanpa Tanggal";
+    let count = 0;
+    for (let key in dataKas.transaksi) {
+      const item = dataKas.transaksi[key];
+      if (item.tipe === tipeFilter) {
+        count++;
+        const div = document.createElement('div');
+        div.className = "bg-slate-800/90 border border-slate-700/60 p-3 rounded-xl flex justify-between items-center";
+        
+        const waktuFormatted = item.timestamp ? item.timestamp : "Tanpa Tanggal";
 
-          div.innerHTML = `
-            <div>
-              <p class="text-sm font-bold text-white">${item.keterangan}</p>
-              <p class="text-[11px] text-slate-400 mt-0.5">📅 ${waktuFormatted}</p>
-            </div>
-            <p class="val-font text-sm font-bold ${tipeFilter === 'MASUK' ? 'text-emerald-400' : 'text-rose-400'}">
-              ${formatRupiah(item.nominal)}
-            </p>
-          `;
-          listContent.appendChild(div);
-        }
+        div.innerHTML = `
+          <div>
+            <p class="text-sm font-bold text-white">${item.keterangan}</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">📅 ${waktuFormatted}</p>
+          </div>
+          <p class="val-font text-sm font-bold ${tipeFilter === 'MASUK' ? 'text-emerald-400' : 'text-rose-400'}">
+            ${formatRupiah(item.nominal)}
+          </p>
+        `;
+        listContent.appendChild(div);
       }
+    }
 
-      if (count === 0) {
-        listContent.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">Belum ada data transaksi.</p>`;
-      }
+    if (count === 0) {
+      listContent.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">Belum ada data transaksi.</p>`;
+    }
 
-      modal.classList.remove('hidden');
-    };
+    if (modal) modal.classList.remove('hidden');
+  };
 
-    window.tutupModalRincian = () => {
-      document.getElementById('modalRincian').classList.add('hidden');
-    };
+  window.tutupModalRincian = () => {
+    const modal = document.getElementById('modalRincian');
+    if (modal) modal.classList.add('hidden');
+  };
   </script>
 </body>
 </html>
