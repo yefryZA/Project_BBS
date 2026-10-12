@@ -150,9 +150,9 @@
       <p class="font-bold text-slate-300 uppercase tracking-wider">💡 Ringkasan & Alur Perhitungan:</p>
       <ul class="list-disc list-inside space-y-1 text-[11px]">
         <li><strong>Sisa Kas Kotor:</strong> Omzet Diterima - Total Bayar Supplier.</li>
-        <li><strong>Pajak PPN :</strong> PPN Jual - PPN Beli (Disetor ke Kas Negara).</li>
+        <li><strong>Pajak PPN Net:</strong> PPN Jual - PPN Beli (Wajib disetor ke Kas Negara).</li>
         <li class="text-emerald-400 font-semibold pt-1 border-t border-slate-800/80">
-          <strong>Keuntungan Bersih :</strong> <span id="resKeuntunganRingkas">Rp 0 (Rp 0 / m³)</span>
+          <strong>Keuntungan Bersih (Set. PPN):</strong> <span id="resKeuntunganRingkas">Rp 0 (Rp 0 / m³)</span>
         </li>
       </ul>
     </div>
@@ -163,91 +163,154 @@
     Kalkulator PPN Kas Tongkang • Realtime Engine
   </footer>
 
-  <!-- SCRIPT KALKULASI AUTOMATIS -->
-  <script>
-    function formatRupiah(num) {
-      return "Rp " + Math.round(num || 0).toLocaleString('id-ID');
-    }
 
-    function cleanNumber(str) {
-      if (typeof str === 'number') return str;
-      return Number(String(str || '').replace(/\D/g, '')) || 0;
-    }
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    function bindNumberFormatter(inputEl) {
-      inputEl.addEventListener('input', (e) => {
-        const raw = cleanNumber(e.target.value);
-        e.target.value = raw ? raw.toLocaleString('id-ID') : '';
-        hitungSemua();
-      });
-    }
+  // CONFIG FIREBASE
+  const firebaseConfig = {
+    apiKey: "AIzaSyA_wvEsCCOEjiwxui7_pdOrG8-xMBCw3mw",
+    authDomain: "barcode-warung-81e97.firebaseapp.com",
+    databaseURL: "https://barcode-warung-81e97-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "barcode-warung-81e97",
+    storageBucket: "barcode-warung-81e97.firebasestorage.app",
+    messagingSenderId: "1089837830503",
+    appId: "1:1089837830503:web:410644c17a04314e37dfc2",
+    measurementId: "G-92V3E8BM6J"
+  };
 
-    const inJual = document.getElementById('inputHargaJual');
-    const inBeli = document.getElementById('inputHargaBeli');
-    const inKubikasi = document.getElementById('inputKubikasi');
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  
+  // KAMAR BARU KHUSUS PARAMETER KALKULATOR PAJAK
+  const dbRefKalkulator = ref(db, "KAS_TONGKANG/kalkulator_pajak");
 
-    bindNumberFormatter(inJual);
-    bindNumberFormatter(inBeli);
-    bindNumberFormatter(inKubikasi);
+  // ELEMEN INPUT
+  const inJual = document.getElementById('inputHargaJual');
+  const inBeli = document.getElementById('inputHargaBeli');
+  const inKubikasi = document.getElementById('inputKubikasi');
 
-    // FUNGSI UNTUK RESET / HAPUS SEMUA DATA INPUT
-    function hapusDataInput() {
-      inJual.value = '';
-      inBeli.value = '';
-      inKubikasi.value = '';
-      hitungSemua();
-      inJual.focus();
-    }
+  // UTILS HELPER
+  function formatRupiah(num) {
+    return "Rp " + Math.round(num || 0).toLocaleString('id-ID');
+  }
 
-    function hitungSemua() {
-      const hargaJual = cleanNumber(inJual.value); // Include PPN
-      const hargaBeli = cleanNumber(inBeli.value); // Exclude PPN
-      const kubikasi = cleanNumber(inKubikasi.value);
+  function cleanNumber(str) {
+    if (typeof str === 'number') return str;
+    return Number(String(str || '').replace(/\D/g, '')) || 0;
+  }
 
-      // 1. PENJUALAN (INCLUDE PPN 11%)
-      const totalOmzetJual = hargaJual * kubikasi;
-      const dppJualPerM3 = hargaJual / 1.11;
-      const totalDppJual = dppJualPerM3 * kubikasi;
-      const ppnJualPerM3 = hargaJual - dppJualPerM3;
-      const totalPpnJual = ppnJualPerM3 * kubikasi;
+  // LISTEN FIREBASE REALTIME (READ & AUTO FILL FORM)
+  onValue(dbRefKalkulator, (snapshot) => {
+    const val = snapshot.val() || {};
+    
+    if (inJual) inJual.value = val.hargaJual ? cleanNumber(val.hargaJual).toLocaleString('id-ID') : '';
+    if (inBeli) inBeli.value = val.hargaBeli ? cleanNumber(val.hargaBeli).toLocaleString('id-ID') : '';
+    if (inKubikasi) inKubikasi.value = val.kubikasi ? cleanNumber(val.kubikasi).toLocaleString('id-ID') : '';
 
-      // 2. PEMBELIAN (EXCLUDE PPN 11%)
-      const totalBeliDasar = hargaBeli * kubikasi;
-      const ppnBeliPerM3 = hargaBeli * 0.11;
-      const totalPpnBeli = ppnBeliPerM3 * kubikasi;
-      const totalBayarSupplier = totalBeliDasar + totalPpnBeli;
-
-      // 3. PAJAK PPN NET DISETOR
-      const ppnNetPerM3 = ppnJualPerM3 - ppnBeliPerM3;
-      const totalPpnNet = totalPpnJual - totalPpnBeli;
-
-      // 4. KEUNTUNGAN BERSIH KAS RIIL
-      const sisaKasKotorTotal = totalOmzetJual - totalBayarSupplier;
-      const kasRiilTotal = sisaKasKotorTotal - totalPpnNet;
-      const kasRiilPerM3 = kubikasi > 0 ? kasRiilTotal / kubikasi : 0;
-
-      // UPDATE DOM - PAJAK NET
-      document.getElementById('resPajakNetTotal').innerText = formatRupiah(totalPpnNet);
-      document.getElementById('resPajakNetPerM3').innerText = formatRupiah(ppnNetPerM3) + " / m³";
-
-      // UPDATE DOM - DETAIL JUAL
-      document.getElementById('resPpnJualTotal').innerText = formatRupiah(totalPpnJual);
-      document.getElementById('resPpnJualPerM3').innerText = formatRupiah(ppnJualPerM3) + " / m³";
-      document.getElementById('resOmzetKotor').innerText = formatRupiah(totalOmzetJual);
-      document.getElementById('resDppJual').innerText = formatRupiah(totalDppJual);
-
-      // UPDATE DOM - DETAIL BELI
-      document.getElementById('resPpnBeliTotal').innerText = formatRupiah(totalPpnBeli);
-      document.getElementById('resPpnBeliPerM3').innerText = formatRupiah(ppnBeliPerM3) + " / m³";
-      document.getElementById('resHargaBeliDasar').innerText = formatRupiah(totalBeliDasar);
-      document.getElementById('resTotalBayarSupplier').innerText = formatRupiah(totalBayarSupplier);
-
-      // UPDATE DOM - KEUNTUNGAN BERSIH (TEKS KECIL BAWAH)
-      document.getElementById('resKeuntunganRingkas').innerText = `${formatRupiah(kasRiilTotal)} (${formatRupiah(kasRiilPerM3)} / m³)`;
-    }
-
-    // HITUNG OTOMATIS
     hitungSemua();
-  </script>
+  });
+
+  // SIMPAN DATA KE FIREBASE TIAP INPUT DIUBAH
+  function simpanKeFirebase() {
+    const dataSimpan = {
+      hargaJual: cleanNumber(inJual ? inJual.value : 0),
+      hargaBeli: cleanNumber(inBeli ? inBeli.value : 0),
+      kubikasi: cleanNumber(inKubikasi ? inKubikasi.value : 0)
+    };
+
+    set(dbRefKalkulator, dataSimpan);
+  }
+
+  // BIND FORMATTER RIBUAN & DEBOUNCE SAVE TO FIREBASE
+  let timerSave;
+  function bindNumberFormatter(inputEl) {
+    if (!inputEl) return;
+    inputEl.addEventListener('input', (e) => {
+      const raw = cleanNumber(e.target.value);
+      e.target.value = raw ? raw.toLocaleString('id-ID') : '';
+      
+      hitungSemua();
+
+      // Simpan ke Firebase dengan delay halus 300ms
+      clearTimeout(timerSave);
+      timerSave = setTimeout(() => {
+        simpanKeFirebase();
+      }, 300);
+    });
+  }
+
+  bindNumberFormatter(inJual);
+  bindNumberFormatter(inBeli);
+  bindNumberFormatter(inKubikasi);
+
+  // FUNGSI RESET / HAPUS DATA (MENGOSONGKAN INPUT & FIREBASE)
+  window.hapusDataInput = function() {
+    if (inJual) inJual.value = '';
+    if (inBeli) inBeli.value = '';
+    if (inKubikasi) inKubikasi.value = '';
+    
+    // Hapus data dari Firebase
+    remove(dbRefKalkulator);
+
+    hitungSemua();
+    if (inJual) inJual.focus();
+  };
+
+  // LOGIKA HITUNGAN UTAMA
+  function hitungSemua() {
+    const hargaJual = cleanNumber(inJual ? inJual.value : 0); // Include PPN
+    const hargaBeli = cleanNumber(inBeli ? inBeli.value : 0); // Exclude PPN
+    const kubikasi = cleanNumber(inKubikasi ? inKubikasi.value : 0);
+
+    // 1. PENJUALAN (INCLUDE PPN 11%)
+    const totalOmzetJual = hargaJual * kubikasi;
+    const dppJualPerM3 = hargaJual / 1.11;
+    const totalDppJual = dppJualPerM3 * kubikasi;
+    const ppnJualPerM3 = hargaJual - dppJualPerM3;
+    const totalPpnJual = ppnJualPerM3 * kubikasi;
+
+    // 2. PEMBELIAN (EXCLUDE PPN 11%)
+    const totalBeliDasar = hargaBeli * kubikasi;
+    const ppnBeliPerM3 = hargaBeli * 0.11;
+    const totalPpnBeli = ppnBeliPerM3 * kubikasi;
+    const totalBayarSupplier = totalBeliDasar + totalPpnBeli;
+
+    // 3. PAJAK PPN NET DISETOR
+    const ppnNetPerM3 = ppnJualPerM3 - ppnBeliPerM3;
+    const totalPpnNet = totalPpnJual - totalPpnBeli;
+
+    // 4. KEUNTUNGAN BERSIH KAS RIIL
+    const sisaKasKotorTotal = totalOmzetJual - totalBayarSupplier;
+    const kasRiilTotal = sisaKasKotorTotal - totalPpnNet;
+    const kasRiilPerM3 = kubikasi > 0 ? kasRiilTotal / kubikasi : 0;
+
+    // UPDATE DOM (SAFE NULL CHECK)
+    const setTxt = (id, txt) => {
+      const el = document.getElementById(id);
+      if (el) el.innerText = txt;
+    };
+
+    // UPDATE DOM - PAJAK NET
+    setTxt('resPajakNetTotal', formatRupiah(totalPpnNet));
+    setTxt('resPajakNetPerM3', formatRupiah(ppnNetPerM3) + " / m³");
+
+    // UPDATE DOM - DETAIL JUAL
+    setTxt('resPpnJualTotal', formatRupiah(totalPpnJual));
+    setTxt('resPpnJualPerM3', formatRupiah(ppnJualPerM3) + " / m³");
+    setTxt('resOmzetKotor', formatRupiah(totalOmzetJual));
+    setTxt('resDppJual', formatRupiah(totalDppJual));
+
+    // UPDATE DOM - DETAIL BELI
+    setTxt('resPpnBeliTotal', formatRupiah(totalPpnBeli));
+    setTxt('resPpnBeliPerM3', formatRupiah(ppnBeliPerM3) + " / m³");
+    setTxt('resHargaBeliDasar', formatRupiah(totalBeliDasar));
+    setTxt('resTotalBayarSupplier', formatRupiah(totalBayarSupplier));
+
+    // UPDATE DOM - KEUNTUNGAN BERSIH (TEKS KECIL BAWAH)
+    setTxt('resKeuntunganRingkas', `${formatRupiah(kasRiilTotal)} (${formatRupiah(kasRiilPerM3)} / m³)`);
+  }
+</script>
 </body>
 </html>
