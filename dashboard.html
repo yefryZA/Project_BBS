@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Dashboard Kiriman - PT. Farafa Lestari Abadi</title>
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="./manifest-dashboard.json" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Library jsPDF & AutoTable untuk Export PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+    input, button { -webkit-tap-highlight-color: transparent; }
+  </style>
+</head>
+<body class="min-h-screen pb-12 text-slate-800">
+
+  <!-- Navbar Sticky -->
+  <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+    <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <p class="text-[10px] uppercase tracking-wider text-amber-400 font-semibold">Dashboard Monitoring</p>
+        <h1 class="text-sm sm:text-base font-bold truncate">PT. Farafa Lestari Abadi</h1>
+      </div>
+
+      <div class="flex items-center gap-2.5 shrink-0">
+        <div class="text-right">
+          <p class="text-[10px] text-slate-400">Total Kiriman</p>
+          <p id="totalAllUnits" class="text-xs font-bold text-white">0 Unit</p>
+        </div>
+
+        <!-- Ikon Gembok Kecil di Pojok Kanan Atas -->
+        <button id="lockBtn" title="Buka Rincian Harga & Margin"
+          class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center justify-center text-amber-400 transition active:scale-95 relative">
+          <svg id="lockIconClosed" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          <svg id="lockIconOpen" class="w-4 h-4 hidden text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Konten Utama: Daftar Container Per Hari -->
+  <main class="max-w-3xl mx-auto px-3.5 sm:px-4 pt-4">
+    <div id="daysContainer" class="space-y-4">
+      <div class="bg-white rounded-2xl p-8 text-center border border-slate-200 shadow-xs">
+        <div class="w-7 h-7 border-3 border-slate-300 border-t-slate-800 rounded-full animate-spin mx-auto mb-2"></div>
+        <p class="text-xs font-medium text-slate-500">Memuat data kiriman...</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================================= -->
+  <!-- MODAL 1: INPUT PIN GEMBOK -->
+  <!-- ========================================================= -->
+  <div id="pinModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs items-center justify-center p-4">
+    <div class="bg-white w-full max-w-xs rounded-2xl p-5 shadow-2xl border border-slate-200">
+      <div class="text-center mb-4">
+        <div class="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <h3 class="text-sm font-bold text-slate-800">Masukkan PIN Akses</h3>
+        <p class="text-[11px] text-slate-500 mt-0.5">Untuk melihat harga beli, jual & margin</p>
+      </div>
+
+      <input type="password" id="pinInput" inputmode="numeric" maxlength="6" placeholder="••••"
+        class="w-full text-center text-xl tracking-[0.5em] font-extrabold py-2.5 px-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none mb-2" />
+      <p id="pinError" class="text-[11px] text-red-600 font-semibold text-center h-4 mb-2"></p>
+
+      <!-- Keypad Cepat untuk HP -->
+      <div class="grid grid-cols-3 gap-2 mb-3 text-sm font-bold text-slate-700">
+        <button type="button" class="pin-key py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95">1</button>
+        <button type="button" class="pin-key py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95">2</button>
+        <button type="button" class="pin-key py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95">3</button>
+        <button type="button" class="pin-key py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95">4</button>
+        <button type="button" class="pin-key py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95">5</button>
+        <button type="button" class="pin-key py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95">6</button>
+        <button type="button" class="pin-key py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95">7</button>
+        <button type="button" class="pin-key py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95">8</button>
+        <button type="button" class="pin-key py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95">9</button>
+        <button type="button" id="pinClear" class="py-2.5 rounded-xl bg-rose-50 text-rose-600 text-xs font-bold active:scale-95">Hapus</button>
+        <button type="button" class="pin-key py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95">0</button>
+        <button type="button" id="pinSubmit" class="py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold active:scale-95">Buka</button>
+      </div>
+
+      <button type="button" id="closePinModal" class="w-full py-2 text-xs font-semibold text-slate-500 hover:text-slate-700">
+        Batal
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL 2: POPUP RINCIAN HARGA, TOTAL MARGIN, PDF & HAPUS -->
+  <!-- ========================================================= -->
+  <div id="financeModal" class="fixed inset-0 z-50 hidden bg-slate-900/70 backdrop-blur-xs items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-2xl rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[92vh]">
+      
+      <!-- Head Popup -->
+      <div class="p-4 sm:p-5 bg-slate-900 text-white rounded-t-3xl sm:rounded-t-2xl shrink-0">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div>
+            <h2 class="text-sm sm:text-base font-bold">Rincian Harga & Total Margin</h2>
+            <p id="financeSubtitle" class="text-[11px] text-slate-400">Menampilkan semua data kiriman</p>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button id="relockBtn" type="button"
+              class="text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-amber-400 px-2.5 py-1.5 rounded-lg border border-slate-700">
+              Kunci
+            </button>
+            <button id="closeFinanceModal" type="button"
+              class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300">
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- Bar Pilihan Tanggal + Tombol Download PDF & Hapus Data -->
+        <div class="bg-slate-800/90 border border-slate-700/80 rounded-xl p-2.5 mb-3 space-y-2">
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
+            <div class="sm:col-span-2">
+              <label for="filterStartDate" class="block text-[10px] font-semibold text-slate-400 mb-1">Dari Tanggal</label>
+              <input type="date" id="filterStartDate"
+                class="w-full rounded-lg bg-slate-900 border border-slate-600 px-2.5 py-1.5 text-xs text-white font-semibold outline-none focus:border-amber-400" />
+            </div>
+            <div class="sm:col-span-2">
+              <label for="filterEndDate" class="block text-[10px] font-semibold text-slate-400 mb-1">Sampai Tanggal</label>
+              <input type="date" id="filterEndDate"
+                class="w-full rounded-lg bg-slate-900 border border-slate-600 px-2.5 py-1.5 text-xs text-white font-semibold outline-none focus:border-amber-400" />
+            </div>
+            <button id="resetFilterDateBtn" type="button"
+              class="col-span-2 sm:col-span-1 py-1.5 px-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-[11px] font-bold text-slate-200 transition">
+              Semua Tgl
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2 pt-1">
+            <button id="downloadPdfBtn" type="button"
+              class="flex-1 text-[11px] font-bold bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>Download PDF</span>
+            </button>
+
+            <button id="deleteFilteredBtn" type="button"
+              class="text-[11px] font-bold bg-rose-600/90 hover:bg-rose-600 active:scale-[0.99] text-white px-3 py-2 rounded-lg flex items-center justify-center gap-1.5 shadow-sm transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              <span>Hapus Data</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3 Kartu Total di Bagian Head -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div class="bg-slate-800/90 border border-slate-700/80 rounded-xl p-2.5">
+            <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Total Harga Beli</p>
+            <p id="sumHargaBeli" class="text-sm font-extrabold text-white mt-0.5">Rp 0</p>
+          </div>
+          <div class="bg-slate-800/90 border border-slate-700/80 rounded-xl p-2.5">
+            <p class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Total Harga Jual</p>
+            <p id="sumHargaJual" class="text-sm font-extrabold text-sky-400 mt-0.5">Rp 0</p>
+          </div>
+          <div class="bg-emerald-950/80 border border-emerald-700/60 rounded-xl p-2.5">
+            <p class="text-[10px] uppercase tracking-wider text-emerald-300 font-semibold">Total Margin</p>
+            <p id="sumMargin" class="text-sm font-extrabold text-emerald-400 mt-0.5">Rp 0</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabel Rincian -->
+      <div class="p-3 sm:p-4 overflow-y-auto flex-1">
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-slate-600 font-bold border-b border-slate-200">
+                <th class="py-2.5 px-2 text-center w-9">No</th>
+                <th class="py-2.5 px-2.5">No. Surat</th>
+                <th class="py-2.5 px-2.5">Tgl</th>
+                <th class="py-2.5 px-2.5">Plat</th>
+                <th class="py-2.5 px-2.5 text-right">Harga Beli</th>
+                <th class="py-2.5 px-2.5 text-right">Harga Jual</th>
+                <th class="py-2.5 px-2.5 text-right">Margin</th>
+              </tr>
+            </thead>
+            <tbody id="financeTableBody" class="divide-y divide-slate-100">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- ========================================================= -->
+  <!-- MODAL KONFIRMASI HAPUS DATA (PILIHAN: MENGHAPUS / TIDAK) -->
+  <!-- ========================================================= -->
+  <div id="deleteConfirmModal" class="fixed inset-0 z-[60] hidden bg-slate-900/75 backdrop-blur-xs items-center justify-center p-4">
+    <div class="bg-white w-full max-w-xs rounded-2xl p-5 shadow-2xl border border-slate-200 text-center">
+      <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-3">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+
+      <h3 class="text-sm font-extrabold text-slate-900">Konfirmasi Hapus Data</h3>
+      <p id="deleteConfirmText" class="text-xs text-slate-600 mt-1.5 leading-relaxed">
+        Apakah Anda yakin ingin menghapus data kiriman ini?
+      </p>
+
+      <div class="grid grid-cols-2 gap-2.5 mt-5">
+        <button id="confirmDeleteNoBtn" type="button"
+          class="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-extrabold transition">
+          TIDAK
+        </button>
+        <button id="confirmDeleteYesBtn" type="button"
+          class="py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-extrabold shadow-sm transition">
+          MENGHAPUS
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL 3: OPSI / EDIT DATA KIRIMAN -->
+  <!-- ========================================================= -->
+  <div id="editModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+        <div>
+          <h3 class="text-sm font-bold text-slate-800">Opsi & Edit Data Kiriman</h3>
+          <p class="text-[11px] text-slate-500">Perbaiki data jika ada kesalahan input</p>
+        </div>
+        <button id="closeEditModal" class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center">✕</button>
+      </div>
+
+      <form id="editForm" class="space-y-3">
+        <input type="hidden" id="editId" />
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Nomor Surat Jalan</label>
+          <input type="text" id="editNoRef" required placeholder="01/FLA/XI/2026" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold uppercase text-blue-700 outline-none focus:border-blue-600" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal</label>
+            <input type="date" id="editTanggal" required class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold outline-none focus:border-blue-600" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Waktu Loading</label>
+            <input type="time" id="editWaktu" required class="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold outline-none focus:border-blue-600" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Plat Mobil</label>
+          <input type="text" id="editPlat" required class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-bold uppercase outline-none focus:border-blue-600" />
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Nama Muatan</label>
+          <input type="text" id="editMuatan" required class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs font-semibold outline-none focus:border-blue-600" />
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Nama Sopir</label>
+          <input type="text" id="editSopir" required class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs font-semibold outline-none focus:border-blue-600" />
+        </div>
+
+        <!-- Bagian Harga di Form Edit -->
+        <div id="editPriceSection" class="pt-2 border-t border-slate-100">
+          <div id="editPriceLockedNotice" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
+            <p class="text-[11px] text-amber-800 font-medium mb-2">Kolom harga terkunci. Masukkan PIN untuk mengubah harga.</p>
+            <button type="button" id="unlockFromEditBtn" class="bg-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">
+              Masukkan PIN
+            </button>
+          </div>
+
+          <div id="editPriceFields" class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Harga Beli (Rp)</label>
+              <input type="text" inputmode="numeric" id="editHargaBeli" required class="edit-rupiah w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold outline-none focus:border-blue-600" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Harga Jual (Rp)</label>
+              <input type="text" inputmode="numeric" id="editHargaJual" required class="edit-rupiah w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-bold outline-none focus:border-blue-600" />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 pt-3">
+          <button type="button" id="deleteItemBtn" class="px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition">
+            Hapus
+          </button>
+          <button type="submit" class="flex-1 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm transition">
+            Simpan Perubahan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    // ========================================================
+    // PENGATURAN PIN GEMBOK (Ubah angka di bawah sesuai keinginan)
+    // ========================================================
+    const PIN_RAHASIA = "1234";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBu9ANqvS0EwCnSrq6C5QJLuBvTIXO432s",
+      authDomain: "toko-berkah-baja-steel.firebaseapp.com",
+      databaseURL: "https://toko-berkah-baja-steel-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "toko-berkah-baja-steel",
+      storageBucket: "toko-berkah-baja-steel.firebasestorage.app",
+      messagingSenderId: "249336564882",
+      appId: "1:249336564882:web:469cb1a9b41b114179ea4b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const kirimanRef = ref(db, "kiriman");
+
+    let allItems = [];
+    let isUnlocked = false;
+    let pendingActionAfterPin = "finance"; // "finance" atau "edit"
+
+    // Palet warna background tipis-tipis untuk membedakan container tiap hari
+    const dayThemes = [
+      { bg: "bg-sky-50/90", border: "border-sky-200", badge: "bg-sky-100 text-sky-800" },
+      { bg: "bg-emerald-50/90", border: "border-emerald-200", badge: "bg-emerald-100 text-emerald-800" },
+      { bg: "bg-amber-50/90", border: "border-amber-200", badge: "bg-amber-100 text-amber-800" },
+      { bg: "bg-violet-50/90", border: "border-violet-200", badge: "bg-violet-100 text-violet-800" },
+      { bg: "bg-rose-50/90", border: "border-rose-200", badge: "bg-rose-100 text-rose-800" }
+    ];
+
+    function formatRupiah(num) {
+      return "Rp " + (Number(num) || 0).toLocaleString("id-ID");
+    }
+
+    function formatTanggalLengkap(isoDate) {
+      if (!isoDate || !isoDate.includes("-")) return isoDate || "Tanpa Tanggal";
+      const [y, m, d] = isoDate.split("-").map(Number);
+      const dt = new Date(y, m - 1, d);
+      return dt.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    }
+
+    function formatTanggalSingkat(isoDate) {
+      if (!isoDate || !isoDate.includes("-")) return isoDate || "-";
+      const [y, m, d] = isoDate.split("-");
+      return `${d}/${m}/${y.slice(2)}`;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text ?? "";
+      return div.innerHTML;
+    }
+
+    function getDisplayNoSurat(item) {
+      return item.noRef ? item.noRef : "#" + String(item.id || "").slice(-5).toUpperCase();
+    }
+
+    // ========================================================
+    // RENDER SATU CONTAINER PER HARI
+    // ========================================================
+    function renderDashboard() {
+      const container = document.getElementById("daysContainer");
+      document.getElementById("totalAllUnits").textContent = `${allItems.length} Unit`;
+
+      if (allItems.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl p-8 text-center border border-dashed border-slate-300">
+            <p class="text-sm font-bold text-slate-600">Belum Ada Data Kiriman</p>
+            <p class="text-xs text-slate-400 mt-1">Data yang diinput ceker akan otomatis muncul di sini.</p>
+          </div>`;
+        return;
+      }
+
+      const grouped = {};
+      allItems.forEach((item) => {
+        const tgl = (item.tanggal || "Tanpa Tanggal").trim();
+        if (!grouped[tgl]) grouped[tgl] = [];
+        grouped[tgl].push(item);
+      });
+
+      const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+      container.innerHTML = sortedDates.map((tgl, dayIdx) => {
+        const theme = dayThemes[dayIdx % dayThemes.length];
+
+        const itemsInDay = grouped[tgl].sort((a, b) => {
+          const timeCmp = (a.waktu || "").localeCompare(b.waktu || "");
+          return timeCmp !== 0 ? timeCmp : (a.timestamp || 0) - (b.timestamp || 0);
+        });
+
+        const isTargetMet = itemsInDay.length >= 5;
+
+        const rowsHtml = itemsInDay.map((item, idx) => {
+          const noSurat = getDisplayNoSurat(item);
+          return `
+            <div class="p-3 sm:p-3.5 flex items-start justify-between gap-2.5 hover:bg-slate-50/70 transition">
+              <div class="flex items-start gap-2.5 min-w-0">
+                <span class="w-6 h-6 rounded-lg bg-slate-800 text-white text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                  ${idx + 1}
+                </span>
+
+                <div class="min-w-0 space-y-1">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="text-xs font-extrabold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
+                      ${escapeHtml(noSurat)}
+                    </span>
+                    <span class="text-xs font-extrabold text-slate-900 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md tracking-wide">
+                      ${escapeHtml(item.plat)}
+                    </span>
+                  </div>
+
+                  <p class="text-xs font-semibold text-slate-700">
+                    <span class="font-medium text-slate-500">Waktu Loading :</span> ${escapeHtml(item.waktu)} WIB
+                  </p>
+
+                  <p class="text-xs sm:text-sm font-bold text-slate-800 leading-snug break-words">
+                    <span class="font-medium text-slate-500">Muatan :</span> ${escapeHtml(item.muatan)}
+                  </p>
+
+                  <p class="text-xs font-semibold text-slate-700">
+                    <span class="font-medium text-slate-500">Sopir :</span> ${escapeHtml(item.sopir)}
+                  </p>
+                </div>
+              </div>
+
+              <button type="button" data-id="${item.id}" class="opsi-btn shrink-0 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-[11px] font-bold flex items-center gap-1 transition">
+                <span>Opsi</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v.01M12 12v.01M12 18v.01" />
+                </svg>
+              </button>
+            </div>
+          `;
+        }).join("");
+
+        return `
+          <section class="${theme.bg} ${theme.border} border rounded-2xl p-3 sm:p-4 shadow-xs">
+            <div class="flex items-center justify-between gap-2 mb-3 px-0.5">
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Rekap Kiriman Harian</p>
+                <h2 class="text-xs sm:text-sm font-extrabold text-slate-900">${formatTanggalLengkap(tgl)}</h2>
+              </div>
+              <span class="text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0 ${isTargetMet ? "bg-emerald-600 text-white" : theme.badge}">
+                ${itemsInDay.length} Unit ${isTargetMet ? "✓" : ""}
+              </span>
+            </div>
+
+            <div class="bg-white/95 rounded-xl border border-slate-200/80 divide-y divide-slate-200/80 overflow-hidden shadow-2xs">
+              ${rowsHtml}
+            </div>
+          </section>
+        `;
+      }).join("");
+
+      document.querySelectorAll(".opsi-btn").forEach((btn) => {
+        btn.addEventListener("click", () => openEditModal(btn.dataset.id));
+      });
+    }
+
+  // ========================================================
+    // FILTER TANGGAL, POPUP RINCIAN, PDF & HAPUS DATA
+    // ========================================================
+    function getFilteredFinanceItems() {
+      const start = document.getElementById("filterStartDate").value;
+      const end = document.getElementById("filterEndDate").value;
+
+      return allItems.filter((item) => {
+        const tgl = item.tanggal || "";
+        if (start && end) return tgl >= start && tgl <= end;
+        if (start) return tgl >= start;
+        if (end) return tgl <= end;
+        return true;
+      });
+    }
+
+    function getSelectedPeriodLabel() {
+      const start = document.getElementById("filterStartDate").value;
+      const end = document.getElementById("filterEndDate").value;
+
+      if (start && end) {
+        return start === end
+          ? formatTanggalLengkap(start)
+          : `${formatTanggalSingkat(start)} s/d ${formatTanggalSingkat(end)}`;
+      }
+      if (start) return `Mulai ${formatTanggalSingkat(start)}`;
+      if (end) return `Sampai ${formatTanggalSingkat(end)}`;
+      return "Semua Tanggal";
+    }
+
+    function renderFinancePopup() {
+      let totalBeli = 0;
+      let totalJual = 0;
+
+      const filtered = getFilteredFinanceItems();
+      document.getElementById("financeSubtitle").textContent =
+        `Periode: ${getSelectedPeriodLabel()} (${filtered.length} Unit)`;
+
+      const sorted = [...filtered].sort((a, b) => {
+        const dCmp = (b.tanggal || "").localeCompare(a.tanggal || "");
+        if (dCmp !== 0) return dCmp;
+        return (b.waktu || "").localeCompare(a.waktu || "");
+      });
+
+      const tbody = document.getElementById("financeTableBody");
+      if (sorted.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-400">Tidak ada data pada tanggal yang dipilih</td></tr>`;
+      } else {
+        tbody.innerHTML = sorted.map((item, idx) => {
+          const beli = Number(item.hargaBeli) || 0;
+          const jual = Number(item.hargaJual) || 0;
+          const margin = jual - beli;
+          totalBeli += beli;
+          totalJual += jual;
+
+          return `
+            <tr class="hover:bg-slate-50">
+              <td class="py-2.5 px-2 text-center font-bold text-slate-500">${idx + 1}</td>
+              <td class="py-2.5 px-2.5 whitespace-nowrap font-bold text-blue-700">${escapeHtml(getDisplayNoSurat(item))}</td>
+              <td class="py-2.5 px-2.5 whitespace-nowrap text-slate-600 font-medium">${formatTanggalSingkat(item.tanggal)}</td>
+              <td class="py-2.5 px-2.5 whitespace-nowrap font-bold text-slate-800">${escapeHtml(item.plat)}</td>
+              <td class="py-2.5 px-2.5 whitespace-nowrap text-right text-slate-700">${beli.toLocaleString("id-ID")}</td>
+              <td class="py-2.5 px-2.5 whitespace-nowrap text-right font-semibold text-sky-700">${jual.toLocaleString("id-ID")}</td>
+              <td class="py-2.5 px-2.5 whitespace-nowrap text-right font-bold ${margin >= 0 ? "text-emerald-600" : "text-rose-600"}">
+                ${margin.toLocaleString("id-ID")}
+              </td>
+            </tr>
+          `;
+        }).join("");
+      }
+
+      const totalMargin = totalJual - totalBeli;
+      document.getElementById("sumHargaBeli").textContent = formatRupiah(totalBeli);
+      document.getElementById("sumHargaJual").textContent = formatRupiah(totalJual);
+      document.getElementById("sumMargin").textContent = formatRupiah(totalMargin);
+    }
+
+// Event Listener Filter Tanggal
+    const filterStartEl = document.getElementById("filterStartDate");
+    const filterEndEl = document.getElementById("filterEndDate");
+
+    filterStartEl.addEventListener("change", () => {
+      if (filterStartEl.value && (!filterEndEl.value || filterEndEl.value < filterStartEl.value)) {
+        filterEndEl.value = filterStartEl.value;
+      }
+      renderFinancePopup();
+    });
+
+    filterEndEl.addEventListener("change", () => {
+      if (filterEndEl.value && !filterStartEl.value) {
+        filterStartEl.value = filterEndEl.value;
+      }
+      renderFinancePopup();
+    });
+
+    document.getElementById("resetFilterDateBtn").addEventListener("click", () => {
+      filterStartEl.value = "";
+      filterEndEl.value = "";
+      renderFinancePopup();
+    });
+
+    // ========================================================
+    // KONFIRMASI HAPUS DATA (PILIHAN: MENGHAPUS / TIDAK)
+    // ========================================================
+    const deleteConfirmModal = document.getElementById("deleteConfirmModal");
+    const deleteConfirmText = document.getElementById("deleteConfirmText");
+    const confirmDeleteYesBtn = document.getElementById("confirmDeleteYesBtn");
+    const confirmDeleteNoBtn = document.getElementById("confirmDeleteNoBtn");
+
+    document.getElementById("deleteFilteredBtn").addEventListener("click", () => {
+      if (!isUnlocked) return;
+      const targets = getFilteredFinanceItems();
+
+      if (targets.length === 0) {
+        alert("Tidak ada data pada tanggal yang dipilih untuk dihapus.");
+        return;
+      }
+
+      const periodLabel = getSelectedPeriodLabel();
+      deleteConfirmText.innerHTML = `Apakah Anda yakin ingin menghapus <strong class="text-slate-900">${targets.length} data kiriman</strong> pada periode <strong class="text-slate-900">${escapeHtml(periodLabel)}</strong>?<br><span class="text-[11px] text-rose-600 font-semibold">Data yang dihapus tidak dapat dikembalikan.</span>`;
+
+      deleteConfirmModal.classList.remove("hidden");
+      deleteConfirmModal.classList.add("flex");
+    });
+
+    // Pilihan: TIDAK
+    confirmDeleteNoBtn.addEventListener("click", () => {
+      deleteConfirmModal.classList.add("hidden");
+      deleteConfirmModal.classList.remove("flex");
+    });
+
+    // Pilihan: MENGHAPUS
+    confirmDeleteYesBtn.addEventListener("click", async () => {
+      if (!isUnlocked) return;
+      const targets = getFilteredFinanceItems();
+      if (targets.length === 0) return;
+
+      confirmDeleteYesBtn.disabled = true;
+      confirmDeleteYesBtn.textContent = "Menghapus...";
+
+      try {
+        const updates = {};
+        targets.forEach((item) => {
+          updates[item.id] = null;
+        });
+        await update(kirimanRef, updates);
+
+        deleteConfirmModal.classList.add("hidden");
+        deleteConfirmModal.classList.remove("flex");
+      } catch (err) {
+        alert("Gagal menghapus data: " + err.message);
+      } finally {
+        confirmDeleteYesBtn.disabled = false;
+        confirmDeleteYesBtn.textContent = "MENGHAPUS";
+      }
+    });
+
+    // ========================================================
+    // GENERATOR DOWNLOAD PDF RINCIAN & MARGIN (KIRI: RINCIAN, KANAN: TTD)
+    // ========================================================
+    function downloadFinancePDF() {
+      if (!isUnlocked) return;
+      const filtered = getFilteredFinanceItems();
+
+      if (filtered.length === 0) {
+        alert("Tidak ada data kiriman pada tanggal yang dipilih.");
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF("p", "mm", "a4");
+
+      // Kop Laporan
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.setTextColor(15, 23, 42);
+      doc.text("PT. FARAFA LESTARI ABADI", 14, 18);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      doc.setTextColor(71, 85, 105);
+      doc.text(`Laporan Rincian Kiriman Material • Periode: ${getSelectedPeriodLabel()}`, 14, 24);
+
+      const tglCetak = new Date().toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      });
+      doc.setFontSize(8.5);
+      doc.text(`Dicetak: ${tglCetak}`, 196, 24, { align: "right" });
+
+      // Garis Pembatas Header
+      doc.setDrawColor(203, 213, 225);
+      doc.setLineWidth(0.5);
+      doc.line(14, 28, 196, 28);
+
+      // Siapkan Data Tabel (Urut kronologis dari awal)
+      const sorted = [...filtered].sort((a, b) => {
+        const dCmp = (a.tanggal || "").localeCompare(b.tanggal || "");
+        if (dCmp !== 0) return dCmp;
+        return (a.waktu || "").localeCompare(b.waktu || "");
+      });
+
+      let totalBeli = 0;
+      let totalJual = 0;
+
+      const rows = sorted.map((item, idx) => {
+        const beli = Number(item.hargaBeli) || 0;
+        const jual = Number(item.hargaJual) || 0;
+        const margin = jual - beli;
+        totalBeli += beli;
+        totalJual += jual;
+
+        return [
+          idx + 1,
+          getDisplayNoSurat(item),
+          formatTanggalSingkat(item.tanggal),
+          item.plat || "-",
+          item.muatan || "-",
+          beli.toLocaleString("id-ID"),
+          jual.toLocaleString("id-ID"),
+          margin.toLocaleString("id-ID")
+        ];
+      });
+
+      const totalMargin = totalJual - totalBeli;
+
+      doc.autoTable({
+        startY: 33,
+        head: [["No", "No. Surat", "Tgl", "Plat", "Muatan", "Harga Beli", "Harga Jual", "Margin"]],
+        body: rows,
+        theme: "grid",
+        styles: {
+          font: "helvetica",
+          fontSize: 8.5,
+          cellPadding: 2.5,
+          textColor: [30, 41, 59],
+          lineColor: [226, 232, 240],
+          lineWidth: 0.3
+        },
+        headStyles: {
+          fillColor: [15, 23, 42],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          halign: "center"
+        },
+        columnStyles: {
+          0: { halign: "center", cellWidth: 10 },
+          1: { cellWidth: 31, fontStyle: "bold" },
+          2: { halign: "center", cellWidth: 18 },
+          3: { cellWidth: 23, fontStyle: "bold" },
+          4: { cellWidth: 34 },
+          5: { halign: "right", cellWidth: 22 },
+          6: { halign: "right", cellWidth: 22 },
+          7: { halign: "right", cellWidth: 22, fontStyle: "bold" }
+        },
+        margin: { left: 14, right: 14 }
+      });
+
+      // Posisi setelah tabel utama selesai
+      let currentY = doc.lastAutoTable.finalY + 10;
+
+      // Pindah halaman baru jika sisa ruang bawah tidak cukup
+      if (currentY + 42 > 285) {
+        doc.addPage();
+        currentY = 20;
+      }
+
+      // ========================================================
+      // BAGIAN KIRI: TABEL RINCIAN TOTAL (x = 14)
+      // ========================================================
+      const boxX = 14;
+      const boxW = 88;
+      const boxH = 27;
+
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(203, 213, 225);
+      doc.setLineWidth(0.35);
+      doc.roundedRect(boxX, currentY, boxW, boxH, 1.5, 1.5, "FD");
+
+      // Baris 1: Total Harga Beli
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(71, 85, 105);
+      doc.text("Total Harga Beli", boxX + 4, currentY + 6.5);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(15, 23, 42);
+      doc.text(formatRupiah(totalBeli), boxX + boxW - 4, currentY + 6.5, { align: "right" });
+
+      doc.line(boxX, currentY + 9.5, boxX + boxW, currentY + 9.5);
+
+      // Baris 2: Total Harga Jual
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(71, 85, 105);
+      doc.text("Total Harga Jual", boxX + 4, currentY + 15.5);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(3, 105, 161);
+      doc.text(formatRupiah(totalJual), boxX + boxW - 4, currentY + 15.5, { align: "right" });
+
+      doc.line(boxX, currentY + 18.5, boxX + boxW, currentY + 18.5);
+
+      // Baris 3: Margin
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(15, 23, 42);
+      doc.text("Margin", boxX + 4, currentY + 24);
+      doc.setTextColor(5, 150, 105);
+      doc.text(formatRupiah(totalMargin), boxX + boxW - 4, currentY + 24, { align: "right" });
+
+      // ========================================================
+      // BAGIAN KANAN: BLOK TANDA TANGAN SEJAJAR (x = 160)
+      // ========================================================
+      const signCenterX = 160;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      doc.setTextColor(30, 41, 59);
+      doc.text("Hormat kami,", signCenterX, currentY + 4, { align: "center" });
+
+      // Ruang kosong untuk TTD (21mm)
+      const nameY = currentY + 25;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(15, 23, 42);
+      doc.text("Yefry Desfirmanza", signCenterX, nameY, { align: "center" });
+
+      const nameWidth = doc.getTextWidth("Yefry Desfirmanza");
+      doc.setDrawColor(15, 23, 42);
+      doc.setLineWidth(0.4);
+      doc.line(signCenterX - nameWidth / 2, nameY + 1.2, signCenterX + nameWidth / 2, nameY + 1.2);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(71, 85, 105);
+      doc.text("PT. FARAFA LESTARI ABADI", signCenterX, nameY + 6, { align: "center" });
+
+      // Nama File PDF sesuai Pilihan Tanggal
+      const startVal = filterStartEl.value;
+      const endVal = filterEndEl.value;
+      let fileSuffix = "Semua";
+      if (startVal && endVal) {
+        fileSuffix = startVal === endVal ? startVal : `${startVal}_sd_${endVal}`;
+      } else if (startVal) {
+        fileSuffix = `Dari_${startVal}`;
+      } else if (endVal) {
+        fileSuffix = `Sampai_${endVal}`;
+      }
+
+      doc.save(`Laporan_Kiriman_FLA_${fileSuffix}.pdf`);
+    }
+
+    document.getElementById("downloadPdfBtn").addEventListener("click", downloadFinancePDF);
+
+    document.getElementById("downloadPdfBtn").addEventListener("click", downloadFinancePDF);
+
+    // ========================================================
+    // LOGIKA GEMBOK & PIN
+    // ========================================================
+    const pinModal = document.getElementById("pinModal");
+    const pinInput = document.getElementById("pinInput");
+    const pinError = document.getElementById("pinError");
+    const financeModal = document.getElementById("financeModal");
+
+    function updateLockIconUI() {
+      document.getElementById("lockIconClosed").classList.toggle("hidden", isUnlocked);
+      document.getElementById("lockIconOpen").classList.toggle("hidden", !isUnlocked);
+    }
+
+    function openPinPrompt(nextAction = "finance") {
+      pendingActionAfterPin = nextAction;
+      pinInput.value = "";
+      pinError.textContent = "";
+      pinModal.classList.remove("hidden");
+      pinModal.classList.add("flex");
+      setTimeout(() => pinInput.focus(), 100);
+    }
+
+    function closePinPrompt() {
+      pinModal.classList.add("hidden");
+      pinModal.classList.remove("flex");
+    }
+
+    function verifyPin() {
+      if (pinInput.value === PIN_RAHASIA) {
+        isUnlocked = true;
+        updateLockIconUI();
+        closePinPrompt();
+        if (pendingActionAfterPin === "finance") {
+          renderFinancePopup();
+          financeModal.classList.remove("hidden");
+          financeModal.classList.add("flex");
+        } else if (pendingActionAfterPin === "edit") {
+          document.getElementById("editPriceLockedNotice").classList.add("hidden");
+          document.getElementById("editPriceFields").classList.remove("hidden");
+        }
+      } else {
+        pinError.textContent = "PIN salah, silakan coba lagi.";
+        pinInput.value = "";
+      }
+    }
+
+    document.getElementById("lockBtn").addEventListener("click", () => {
+      if (isUnlocked) {
+        renderFinancePopup();
+        financeModal.classList.remove("hidden");
+        financeModal.classList.add("flex");
+      } else {
+        openPinPrompt("finance");
+      }
+    });
+
+    document.querySelectorAll(".pin-key").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (pinInput.value.length < 6) {
+          pinInput.value += btn.textContent.trim();
+          pinError.textContent = "";
+          if (pinInput.value.length === PIN_RAHASIA.length) {
+            verifyPin();
+          }
+        }
+      });
+    });
+
+    document.getElementById("pinClear").addEventListener("click", () => {
+      pinInput.value = "";
+      pinError.textContent = "";
+    });
+
+    document.getElementById("pinSubmit").addEventListener("click", verifyPin);
+    pinInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") verifyPin();
+    });
+    document.getElementById("closePinModal").addEventListener("click", closePinPrompt);
+
+    document.getElementById("closeFinanceModal").addEventListener("click", () => {
+      financeModal.classList.add("hidden");
+      financeModal.classList.remove("flex");
+    });
+
+    document.getElementById("relockBtn").addEventListener("click", () => {
+      isUnlocked = false;
+      updateLockIconUI();
+      financeModal.classList.add("hidden");
+      financeModal.classList.remove("flex");
+    });
+
+    // ========================================================
+    // LOGIKA MODAL OPSI / EDIT DATA
+    // ========================================================
+    const editModal = document.getElementById("editModal");
+
+    document.querySelectorAll(".edit-rupiah").forEach((input) => {
+      input.addEventListener("input", (e) => {
+        const raw = e.target.value.replace(/\D/g, "");
+        e.target.value = raw ? Number(raw).toLocaleString("id-ID") : "";
+      });
+    });
+
+    function openEditModal(id) {
+      const item = allItems.find((x) => x.id === id);
+      if (!item) return;
+
+      document.getElementById("editId").value = item.id;
+      document.getElementById("editNoRef").value = item.noRef || "";
+      document.getElementById("editTanggal").value = item.tanggal || "";
+      document.getElementById("editWaktu").value = item.waktu || "";
+      document.getElementById("editPlat").value = item.plat || "";
+      document.getElementById("editMuatan").value = item.muatan || "";
+      document.getElementById("editSopir").value = item.sopir || "";
+      document.getElementById("editHargaBeli").value = (Number(item.hargaBeli) || 0).toLocaleString("id-ID");
+      document.getElementById("editHargaJual").value = (Number(item.hargaJual) || 0).toLocaleString("id-ID");
+
+      if (isUnlocked) {
+        document.getElementById("editPriceLockedNotice").classList.add("hidden");
+        document.getElementById("editPriceFields").classList.remove("hidden");
+      } else {
+        document.getElementById("editPriceLockedNotice").classList.remove("hidden");
+        document.getElementById("editPriceFields").classList.add("hidden");
+      }
+
+      editModal.classList.remove("hidden");
+      editModal.classList.add("flex");
+    }
+
+    document.getElementById("unlockFromEditBtn").addEventListener("click", () => {
+      openPinPrompt("edit");
+    });
+
+    document.getElementById("closeEditModal").addEventListener("click", () => {
+      editModal.classList.add("hidden");
+      editModal.classList.remove("flex");
+    });
+
+    document.getElementById("editForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = document.getElementById("editId").value;
+      const existing = allItems.find((x) => x.id === id);
+      if (!existing) return;
+
+      const updatedData = {
+        noRef: document.getElementById("editNoRef").value.trim().toUpperCase(),
+        tanggal: document.getElementById("editTanggal").value,
+        waktu: document.getElementById("editWaktu").value,
+        plat: document.getElementById("editPlat").value.trim().toUpperCase(),
+        muatan: document.getElementById("editMuatan").value.trim(),
+        sopir: document.getElementById("editSopir").value.trim(),
+        hargaBeli: isUnlocked ? (Number(document.getElementById("editHargaBeli").value.replace(/\D/g, "")) || 0) : existing.hargaBeli,
+        hargaJual: isUnlocked ? (Number(document.getElementById("editHargaJual").value.replace(/\D/g, "")) || 0) : existing.hargaJual
+      };
+
+      try {
+        await update(ref(db, `kiriman/${id}`), updatedData);
+        editModal.classList.add("hidden");
+        editModal.classList.remove("flex");
+      } catch (err) {
+        alert("Gagal menyimpan perubahan: " + err.message);
+      }
+    });
+
+    document.getElementById("deleteItemBtn").addEventListener("click", async () => {
+      const id = document.getElementById("editId").value;
+      if (!confirm("Yakin ingin menghapus data kiriman ini?")) return;
+      try {
+        await remove(ref(db, `kiriman/${id}`));
+        editModal.classList.add("hidden");
+        editModal.classList.remove("flex");
+      } catch (err) {
+        alert("Gagal menghapus data: " + err.message);
+      }
+    });
+
+    // Listener Real-time Firebase
+    onValue(kirimanRef, (snapshot) => {
+      const val = snapshot.val() || {};
+      allItems = Object.entries(val).map(([id, item]) => ({ id, ...item }));
+      renderDashboard();
+      if (!financeModal.classList.contains("hidden")) {
+        renderFinancePopup();
+      }
+    });
+  </script>
+</body>
+</html>

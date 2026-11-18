@@ -1,0 +1,19 @@
+{
+  "name": "Dashboard Kiriman - PT. Farafa Lestari Abadi",
+  "short_name": "Dashboard FLA",
+  "description": "Dashboard Monitoring Kiriman & Margin PT. Farafa Lestari Abadi",
+  "start_url": "./dashboard.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/logo.png' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%230f172a'/%3E%3Crect x='128' y='260' width='56' height='128' rx='14' fill='%23f59e0b'/%3E%3Crect x='228' y='190' width='56' height='198' rx='14' fill='%2338bdf8'/%3E%3Crect x='328' y='124' width='56' height='264' rx='14' fill='%2310b981'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

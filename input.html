@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Input Kiriman - PT. Farafa Lestari Abadi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="./manifest-input.json" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
+    input, button { -webkit-tap-highlight-color: transparent; }
+  </style>
+</head>
+<body class="min-h-screen pb-10 text-slate-800">
+
+  <!-- Header -->
+  <header class="bg-slate-900 text-white sticky top-0 z-20 shadow-md">
+    <div class="max-w-lg mx-auto px-4 py-3.5 flex items-center justify-between">
+      <div>
+        <p class="text-[11px] uppercase tracking-wider text-amber-400 font-semibold">Form Ceker Lapangan</p>
+        <h1 class="text-base font-bold leading-tight">PT. Farafa Lestari Abadi</h1>
+      </div>
+      <div class="bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-xl text-right">
+        <p class="text-[10px] text-slate-400">Target Harian</p>
+        <p class="text-xs font-bold text-amber-400">Min. 5 Unit</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-lg mx-auto px-4 pt-4">
+    <!-- Status Waktu Otomatis -->
+    <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80 mb-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-[11px] text-slate-500 font-medium">Waktu & Tanggal Pencatatan</p>
+            <p id="liveClockDisplay" class="text-sm font-bold text-slate-800">Memuat waktu...</p>
+          </div>
+        </div>
+        <label class="inline-flex items-center cursor-pointer">
+          <input type="checkbox" id="autoTimeToggle" class="sr-only peer" checked>
+          <div class="relative w-10 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          <span class="ml-1.5 text-xs font-medium text-slate-600">Auto</span>
+        </label>
+      </div>
+
+      <!-- Input Manual Tanggal & Jam -->
+      <div id="manualTimeBox" class="hidden grid-cols-2 gap-2.5 mt-3 pt-3 border-t border-slate-100">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-600 mb-1">Tanggal Manual</label>
+          <input type="date" id="manualDate" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-600 mb-1">Jam Manual</label>
+          <input type="time" id="manualTime" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Utama -->
+    <form id="kirimanForm" class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 space-y-4">
+      <div>
+        <label for="platMobil" class="block text-xs font-bold text-slate-700 mb-1.5">Plat Mobil <span class="text-red-500">*</span></label>
+        <input type="text" id="platMobil" required placeholder="Contoh: B 9123 KLA"
+          class="w-full rounded-xl border border-slate-300 px-3.5 py-3 text-base font-bold uppercase tracking-wider placeholder:font-normal placeholder:tracking-normal focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none" />
+      </div>
+
+      <div>
+        <label for="namaMuatan" class="block text-xs font-bold text-slate-700 mb-1.5">Nama Muatan / Material <span class="text-red-500">*</span></label>
+        <input type="text" id="namaMuatan" required placeholder="Contoh: SIRDAM / SPLIT / PASIR"
+          class="w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none" />
+      </div>
+
+      <div>
+        <label for="namaSopir" class="block text-xs font-bold text-slate-700 mb-1.5">Nama Sopir <span class="text-red-500">*</span></label>
+        <input type="text" id="namaSopir" required placeholder="Contoh: Mahmud"
+          class="w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none" />
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+        <div>
+          <label for="hargaBeli" class="block text-xs font-bold text-slate-700 mb-1.5">Harga Beli (Modal) <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
+            <input type="text" inputmode="numeric" id="hargaBeli" required placeholder="0"
+              class="rupiah-input w-full rounded-xl border border-slate-300 pl-9 pr-3.5 py-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none" />
+          </div>
+        </div>
+
+        <div>
+          <label for="hargaJual" class="block text-xs font-bold text-slate-700 mb-1.5">Harga Jual <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
+            <input type="text" inputmode="numeric" id="hargaJual" required placeholder="0"
+              class="rupiah-input w-full rounded-xl border border-slate-300 pl-9 pr-3.5 py-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none" />
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" id="submitBtn"
+        class="w-full mt-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold py-3.5 px-4 rounded-xl shadow-md shadow-blue-600/20 transition flex items-center justify-center gap-2 text-sm">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>Simpan Data & Unduh Struk</span>
+      </button>
+    </form>
+  </main>
+
+  <!-- Toast Notifikasi -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-lg items-center gap-2 whitespace-nowrap">
+    <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+    <span id="toastMsg">Data disimpan & struk terunduh!</span>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getDatabase, ref, push, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBu9ANqvS0EwCnSrq6C5QJLuBvTIXO432s",
+      authDomain: "toko-berkah-baja-steel.firebaseapp.com",
+      databaseURL: "https://toko-berkah-baja-steel-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "toko-berkah-baja-steel",
+      storageBucket: "toko-berkah-baja-steel.firebasestorage.app",
+      messagingSenderId: "249336564882",
+      appId: "1:249336564882:web:469cb1a9b41b114179ea4b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const kirimanRef = ref(db, "kiriman");
+    const counterStrukRef = ref(db, "counters/struk");
+
+    // Helper Tanggal & Jam Lokal
+    function getLocalDateParts(dateObj = new Date()) {
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const d = String(dateObj.getDate()).padStart(2, "0");
+      const hh = String(dateObj.getHours()).padStart(2, "0");
+      const mm = String(dateObj.getMinutes()).padStart(2, "0");
+      const ss = String(dateObj.getSeconds()).padStart(2, "0");
+      return {
+        tanggal: `${y}-${m}-${d}`,
+        waktu: `${hh}:${mm}`,
+        waktuLengkap: `${hh}:${mm}:${ss}`
+      };
+    }
+
+    function formatTanggalIndo(isoDate) {
+      if (!isoDate) return "-";
+      const [y, m, d] = isoDate.split("-").map(Number);
+      const dt = new Date(y, m - 1, d);
+      return dt.toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+    }
+
+    // Konversi Bulan ke Angka Romawi (1 -> I, 11 -> XI, 12 -> XII)
+    function getRomanMonth(monthNumber) {
+      const romans = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+      return romans[Number(monthNumber)] || "I";
+    }
+
+    // Generate Nomor Struk Berurutan via Firebase Transaction (01/FLA/XI/2026, dst.)
+    async function getNextNomorStruk(isoDate) {
+      const txResult = await runTransaction(counterStrukRef, (currentValue) => {
+        return (Number(currentValue) || 0) + 1;
+      });
+
+      const urut = txResult.snapshot.val() || 1;
+      const nomorPad = String(urut).padStart(2, "0");
+      const [tahun, bulan] = (isoDate || getLocalDateParts().tanggal).split("-");
+      const bulanRomawi = getRomanMonth(bulan);
+
+      return `${nomorPad}/FLA/${bulanRomawi}/${tahun}`;
+    }
+
+    // ========================================================
+    // GENERATOR & AUTO-DOWNLOAD STRUK KIRIMAN (PNG)
+    // ========================================================
+    function wrapCanvasText(ctx, text, maxWidth) {
+      const words = String(text || "-").split(" ");
+      const lines = [];
+      let currentLine = "";
+
+      for (let i = 0; i < words.length; i++) {
+        const testLine = currentLine ? currentLine + " " + words[i] : words[i];
+        const width = ctx.measureText(testLine).width;
+        if (width > maxWidth && currentLine !== "") {
+          lines.push(currentLine);
+          currentLine = words[i];
+        } else {
+          currentLine = testLine;
+        }
+      }
+      if (currentLine) lines.push(currentLine);
+      return lines.length ? lines : ["-"];
+    }
+
+    function generateAndDownloadStruk(item) {
+      const width = 620;
+      const padX = 42;
+      const contentWidth = width - padX * 2;
+
+      const tempCanvas = document.createElement("canvas");
+      const tempCtx = tempCanvas.getContext("2d");
+      tempCtx.font = "bold 23px 'Plus Jakarta Sans', sans-serif";
+      const muatanLines = wrapCanvasText(tempCtx, item.muatan, contentWidth - 175);
+
+      const dynamicMuatanHeight = muatanLines.length * 32;
+      const height = 650 + dynamicMuatanHeight;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+
+      // Background Putih Bersih Struk
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+
+      // Bingkai Tipis Luar
+      ctx.strokeStyle = "#cbd5e1";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(14, 14, width - 28, height - 28);
+
+      let y = 62;
+
+      // Header Perusahaan
+      ctx.fillStyle = "#0f172a";
+      ctx.textAlign = "center";
+      ctx.font = "800 28px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillText("PT. FARAFA LESTARI ABADI", width / 2, y);
+
+      y += 30;
+      ctx.fillStyle = "#475569";
+      ctx.font = "600 17px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillText("STRUK KIRIMAN MATERIAL", width / 2, y);
+
+      // Garis Putus-Putus 1
+      y += 28;
+      drawDashedLine(ctx, padX, y, width - padX);
+
+      // Info Referensi & Waktu
+      y += 38;
+      const refCode = item.noRef || "01/FLA/XI/2026";
+      drawRow(ctx, padX, width - padX, y, "No. Struk", refCode, true);
+
+      y += 36;
+      drawRow(ctx, padX, width - padX, y, "Tanggal", formatTanggalIndo(item.tanggal), false);
+
+      y += 36;
+      drawRow(ctx, padX, width - padX, y, "Waktu", `${item.waktu} WIB`, false);
+
+      // Garis Putus-Putus 2
+      y += 28;
+      drawDashedLine(ctx, padX, y, width - padX);
+
+      // Detail Kendaraan & Muatan
+      y += 42;
+      drawRow(ctx, padX, width - padX, y, "Plat Mobil", item.plat, true, 26);
+
+      y += 40;
+      drawRow(ctx, padX, width - padX, y, "Nama Sopir", item.sopir, true, 22);
+
+      y += 40;
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#475569";
+      ctx.font = "500 20px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillText("Muatan", padX, y);
+
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "700 22px 'Plus Jakarta Sans', sans-serif";
+      muatanLines.forEach((line, idx) => {
+        ctx.fillText(line, width - padX, y + idx * 32);
+      });
+
+      y += dynamicMuatanHeight + 16;
+
+      // Garis Putus-Putus 3
+      drawDashedLine(ctx, padX, y, width - padX);
+
+      // Area Tanda Tangan (TTD Sopir & TTD Checker)
+      y += 38;
+      const leftCenter = padX + 125;
+      const rightCenter = width - padX - 125;
+
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#334155";
+      ctx.font = "600 19px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillText("TTD Sopir", leftCenter, y);
+      ctx.fillText("TTD Checker", rightCenter, y);
+
+      // Ruang kosong untuk tanda tangan
+      y += 105;
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "600 18px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillText(`( ${item.sopir || "................"} )`, leftCenter, y);
+      ctx.fillText("( ...................... )", rightCenter, y);
+
+      // Footer Struk
+      y += 42;
+      drawDashedLine(ctx, padX, y, width - padX);
+
+      y += 30;
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#64748b";
+      ctx.font = "500 15px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillText("Harap simpan struk ini sebagai bukti sah pengiriman.", width / 2, y);
+
+      // Trigger Auto Download
+      const cleanNo = refCode.replace(/\//g, "-");
+      const cleanPlat = (item.plat || "KIRIMAN").replace(/[^A-Z0-9]/gi, "");
+      const fileName = `Struk_${cleanNo}_${cleanPlat}.png`;
+
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+      }, "image/png");
+    }
+
+    function drawDashedLine(ctx, x1, y, x2) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.setLineDash([8, 6]);
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 2;
+      ctx.moveTo(x1, y);
+      ctx.lineTo(x2, y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawRow(ctx, leftX, rightX, y, label, value, isBold = false, fontSize = 21) {
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#475569";
+      ctx.font = "500 20px 'Plus Jakarta Sans', sans-serif";
+      ctx.fillText(label, leftX, y);
+
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#0f172a";
+      ctx.font = `${isBold ? "800" : "600"} ${fontSize}px 'Plus Jakarta Sans', sans-serif`;
+      ctx.fillText(String(value || "-"), rightX, y);
+    }
+
+    // ========================================================
+    // LIVE CLOCK & TOGGLE MANUAL
+    // ========================================================
+    const autoToggle = document.getElementById("autoTimeToggle");
+    const manualBox = document.getElementById("manualTimeBox");
+    const manualDate = document.getElementById("manualDate");
+    const manualTime = document.getElementById("manualTime");
+    const liveClockDisplay = document.getElementById("liveClockDisplay");
+
+    function updateClock() {
+      const now = getLocalDateParts();
+      if (autoToggle.checked) {
+        liveClockDisplay.textContent = `${formatTanggalIndo(now.tanggal)} • ${now.waktuLengkap}`;
+      } else {
+        const dVal = manualDate.value || now.tanggal;
+        const tVal = manualTime.value || now.waktu;
+        liveClockDisplay.textContent = `${formatTanggalIndo(dVal)} • ${tVal} (Manual)`;
+      }
+    }
+
+    autoToggle.addEventListener("change", () => {
+      const now = getLocalDateParts();
+      if (!autoToggle.checked) {
+        manualDate.value = now.tanggal;
+        manualTime.value = now.waktu;
+        manualBox.classList.remove("hidden");
+        manualBox.classList.add("grid");
+      } else {
+        manualBox.classList.add("hidden");
+        manualBox.classList.remove("grid");
+      }
+      updateClock();
+    });
+
+    manualDate.addEventListener("input", updateClock);
+    manualTime.addEventListener("input", updateClock);
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Auto Format Ribuan Rupiah saat Mengetik
+    document.querySelectorAll(".rupiah-input").forEach((input) => {
+      input.addEventListener("input", (e) => {
+        const raw = e.target.value.replace(/\D/g, "");
+        e.target.value = raw ? Number(raw).toLocaleString("id-ID") : "";
+      });
+    });
+
+    function parseRupiah(str) {
+      return Number(String(str).replace(/\D/g, "")) || 0;
+    }
+
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById("toast");
+      const toastMsg = document.getElementById("toastMsg");
+      toastMsg.textContent = msg;
+      toast.className = `fixed bottom-5 left-1/2 -translate-x-1/2 z-50 flex ${isError ? "bg-red-600" : "bg-slate-900"} text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-lg items-center gap-2 whitespace-nowrap`;
+      setTimeout(() => {
+        toast.classList.add("hidden");
+        toast.classList.remove("flex");
+      }, 3200);
+    }
+
+    // Submit Data ke Firebase & Auto Download Struk
+    const form = document.getElementById("kirimanForm");
+    const submitBtn = document.getElementById("submitBtn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const now = getLocalDateParts();
+      const tanggal = autoToggle.checked ? now.tanggal : (manualDate.value || now.tanggal);
+      const waktu = autoToggle.checked ? now.waktu : (manualTime.value || now.waktu);
+
+      const plat = document.getElementById("platMobil").value.trim().toUpperCase();
+      const muatan = document.getElementById("namaMuatan").value.trim();
+      const sopir = document.getElementById("namaSopir").value.trim();
+      const hargaBeli = parseRupiah(document.getElementById("hargaBeli").value);
+      const hargaJual = parseRupiah(document.getElementById("hargaJual").value);
+
+      if (!plat || !muatan || !sopir) {
+        showToast("Lengkapi semua kolom terlebih dahulu!", true);
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.classList.add("opacity-70");
+
+      try {
+        const noRef = await getNextNomorStruk(tanggal);
+
+        const payload = {
+          noRef,
+          plat,
+          muatan,
+          sopir,
+          hargaBeli,
+          hargaJual,
+          tanggal,
+          waktu,
+          timestamp: Date.now()
+        };
+
+        await push(kirimanRef, payload);
+
+        // Otomatis download struk
+        generateAndDownloadStruk(payload);
+
+        form.reset();
+        if (!autoToggle.checked) {
+          autoToggle.checked = true;
+          manualBox.classList.add("hidden");
+          manualBox.classList.remove("grid");
+        }
+        updateClock();
+        showToast(`Struk ${noRef} tersimpan & terunduh!`);
+      } catch (err) {
+        console.error(err);
+        showToast("Gagal menyimpan! Cek koneksi atau Rules Firebase.", true);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove("opacity-70");
+      }
+    });
+  </script>
+</body>
+</html>
