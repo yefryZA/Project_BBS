@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Dashboard Kiriman - PT. Farafa Lestari Abadi</title>
+  <title>Dashboard Kiriman - PT. Berkah Baja Steel</title>
   <meta name="theme-color" content="#0f172a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -25,7 +25,7 @@
     <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
       <div class="min-w-0">
         <p class="text-[10px] uppercase tracking-wider text-amber-400 font-semibold">Dashboard Monitoring</p>
-        <h1 class="text-sm sm:text-base font-bold truncate">PT. Farafa Lestari Abadi</h1>
+        <h1 class="text-sm sm:text-base font-bold truncate">PT. Berkah Baja Steel</h1>
       </div>
 
       <div class="flex items-center gap-2.5 shrink-0">
@@ -274,7 +274,7 @@
         </div>
 
         <div>
-          <label class="block text-[11px] font-bold text-slate-600 mb-1">Nama Sopir</label>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Nama Pengurus Mobil</label>
           <input type="text" id="editSopir" required class="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-xs font-semibold outline-none focus:border-blue-600" />
         </div>
 
@@ -318,7 +318,7 @@
     // ========================================================
     // PENGATURAN PIN GEMBOK (Ubah angka di bawah sesuai keinginan)
     // ========================================================
-    const PIN_RAHASIA = "1234";
+    const PIN_RAHASIA = "BBS2026";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBu9ANqvS0EwCnSrq6C5QJLuBvTIXO432s",
@@ -437,7 +437,7 @@
                   </p>
 
                   <p class="text-xs font-semibold text-slate-700">
-                    <span class="font-medium text-slate-500">Sopir :</span> ${escapeHtml(item.sopir)}
+                    <span class="font-medium text-slate-500">Pengurus Mobil :</span> ${escapeHtml(item.sopir)}
                   </p>
                 </div>
               </div>
@@ -652,7 +652,7 @@
       doc.setFont("helvetica", "bold");
       doc.setFontSize(14);
       doc.setTextColor(15, 23, 42);
-      doc.text("PT. FARAFA LESTARI ABADI", 14, 18);
+      doc.text("PT. BERKAH BAJA STEEL", 14, 18);
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9.5);
@@ -809,7 +809,7 @@
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8.5);
       doc.setTextColor(71, 85, 105);
-      doc.text("PT. FARAFA LESTARI ABADI", signCenterX, nameY + 6, { align: "center" });
+      doc.text("PT. Berkah Baja Steel", signCenterX, nameY + 6, { align: "center" });
 
       // Nama File PDF sesuai Pilihan Tanggal
       const startVal = filterStartEl.value;
@@ -823,7 +823,7 @@
         fileSuffix = `Sampai_${endVal}`;
       }
 
-      doc.save(`Laporan_Kiriman_FLA_${fileSuffix}.pdf`);
+      doc.save(`Laporan_Kiriman_BBS_${fileSuffix}.pdf`);
     }
 
     document.getElementById("downloadPdfBtn").addEventListener("click", downloadFinancePDF);
